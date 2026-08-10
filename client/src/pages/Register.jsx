@@ -196,9 +196,12 @@ export default function Register() {
       </div>
     );
   }
-  const isEnrolledEvent = !!(location.state?.fromEventEnroll || (location.state?.event && role === 'Participant'));
-  const registerBgImage = isEnrolledEvent
-    ? getEventFallbackImage(event || location.state?.event)
+  const isFromEventEnroll = location.state?.fromEventEnroll === true;
+  const enrolledEvent = isFromEventEnroll ? (event || location.state?.event) : null;
+  const assignedEventBg = enrolledEvent ? (enrolledEvent.loginBgUrl || enrolledEvent.imageUrl || enrolledEvent.image || enrolledEvent.coverImage) : null;
+
+  const registerBgImage = (isFromEventEnroll && assignedEventBg)
+    ? assignedEventBg
     : '/hero-bg.jpg';
 
   return (

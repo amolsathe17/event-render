@@ -225,9 +225,12 @@ export default function Login() {
     }
   };
 
-  const isEnrolledEvent = !!(location.state?.fromEventEnroll || (location.state?.event && loginRole === 'Participant'));
-  const loginBgImage = isEnrolledEvent
-    ? getEventFallbackImage(event || location.state?.event)
+  const isFromEventEnroll = location.state?.fromEventEnroll === true;
+  const enrolledEvent = isFromEventEnroll ? (event || location.state?.event) : null;
+  const assignedEventBg = enrolledEvent ? (enrolledEvent.loginBgUrl || enrolledEvent.imageUrl || enrolledEvent.image || enrolledEvent.coverImage) : null;
+
+  const loginBgImage = (isFromEventEnroll && assignedEventBg)
+    ? assignedEventBg
     : '/hero-bg.jpg';
 
   return (
