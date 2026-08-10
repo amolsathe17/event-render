@@ -225,15 +225,11 @@ export default function Login() {
     }
   };
 
-  const loginBgImage = (loginRole === 'Admin' || loginRole === 'Judge')
-    ? '/hero-bg.jpg'
-    : getEventFallbackImage(event);
-
   return (
     <div 
       className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative login-bg-responsive"
       style={{
-        '--login-bg': `url('${getBackendUrl(loginBgImage)}')`
+        '--login-bg': `url('${getBackendUrl('/hero-bg.jpg')}')`
       }}
     >
       <style>{`
