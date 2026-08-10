@@ -26,7 +26,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
   const handleImgError = (e) => {
     if (!hasError) {
       setHasError(true);
-      setCurrentSrc('/hero-bg.jpg');
+      setCurrentSrc('/wild.jpg');
     }
   };
 
@@ -84,7 +84,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
       onTouchCancel={handleTouchEnd}
     >
       <img 
-        src={currentSrc || '/hero-bg.jpg'} 
+        src={currentSrc || '/wild.jpg'} 
         alt="Image Preview" 
         onError={handleImgError}
         style={enableZoom ? zoomStyle : undefined}

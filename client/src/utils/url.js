@@ -61,12 +61,12 @@ export const getApiBaseUrl = () => {
 };
 
 export const getEventFallbackImage = (event) => {
-  if (!event) return '/hero-bg.jpg';
+  if (!event) return '/wild.jpg';
 
   const customBg = event.loginBgUrl || event.imageUrl || event.image || event.coverImage;
   if (customBg && typeof customBg === 'string' && customBg.trim() !== '') {
     // If Admin uploaded a custom background image, use it!
-    if (!customBg.includes('/wild.jpg') && !customBg.includes('wild.jpg') && !customBg.includes('/hero-bg.jpg')) {
+    if (!customBg.includes('/wild.jpg') && !customBg.includes('wild.jpg')) {
       return customBg;
     }
   }
@@ -77,5 +77,5 @@ export const getEventFallbackImage = (event) => {
     return '/painting.jpeg';
   }
 
-  return '/hero-bg.jpg';
+  return '/wild.jpg';
 };
