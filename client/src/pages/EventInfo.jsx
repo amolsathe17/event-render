@@ -889,7 +889,12 @@ export default function EventInfo() {
   }, []);
 
   const handleEnroll = (event) => {
-    navigate("/register", { state: { eventId: event._id, event } });
+    if (!user) {
+      navigate("/register", { state: { eventId: event._id, event, fromEventEnroll: true } });
+    } else {
+      localStorage.setItem(`selectedEventId_${user.role}`, event._id);
+      navigate("/dashboard", { state: { eventId: event._id } });
+    }
   };
 
   const scrollTo = (ref) =>

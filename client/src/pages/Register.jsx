@@ -196,11 +196,16 @@ export default function Register() {
       </div>
     );
   }
+  const isEnrolledEvent = !!(location.state?.fromEventEnroll || (location.state?.event && role === 'Participant'));
+  const registerBgImage = isEnrolledEvent
+    ? getEventFallbackImage(event || location.state?.event)
+    : '/hero-bg.jpg';
+
   return (
     <div 
       className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative login-bg-responsive"
       style={{
-        '--login-bg': `url('${getBackendUrl('/hero-bg.jpg')}')`
+        '--login-bg': `url('${getBackendUrl(registerBgImage)}')`
       }}
     >
       <style>{`
@@ -504,7 +509,7 @@ export default function Register() {
                 Already have an account?{' '}
                 <Link
                   to="/login"
-                  state={{ fromRegister: true }}
+                  state={{ ...location.state, fromRegister: true }}
                   className="font-semibold text-white hover:text-black transition-colors hover:underline inline-flex items-center gap-0.5"
                 >
                   Login here
