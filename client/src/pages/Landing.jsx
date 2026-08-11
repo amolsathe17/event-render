@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronDown, Sparkles, Compass, Feather, Quote, Palette } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import WaterRippleBackground from "../components/WaterRippleBackground";
 
 export default function Landing() {
   const { user } = useAuth();
@@ -12,18 +13,11 @@ export default function Landing() {
 
       {/* ══════════════════════════════════ HERO ═══════════════════════════════ */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-24 text-white text-center overflow-hidden">
-        {/* Background Image - Scoped strictly to Hero section */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: "url('/hero-bg.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        />
+        {/* Interactive Water Ripple Background on hero-bg.jpg */}
+        <WaterRippleBackground imageUrl="/hero-bg.jpg" />
+
         {/* Dark overlay */}
-        <div className="absolute inset-0 z-0 bg-black/60" />
+        <div className="absolute inset-0 z-0 bg-black/60 pointer-events-none" />
 
         {/* Dot grid texture */}
         <div
