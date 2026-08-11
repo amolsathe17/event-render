@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getBackendUrl, getEventFallbackImage } from '../utils/url';
 import { Camera, User, Mail, Phone, Lock, Building, ShieldAlert, ArrowRight, ShieldCheck, Key, Calendar, MapPin, Clock, RotateCcw, Info } from 'lucide-react';
+import WaterRippleBackground from '../components/WaterRippleBackground';
 
 export default function Register() {
   const { user, register, verifyOtp, requestMobileOtp, verifyMobileOtp, apiFetch } = useAuth();
@@ -200,20 +201,19 @@ export default function Register() {
   const enrolledEvent = isFromEventEnroll ? (event || location.state?.event) : null;
   const assignedEventBg = enrolledEvent ? (enrolledEvent.loginBgUrl || enrolledEvent.imageUrl || enrolledEvent.image || enrolledEvent.coverImage) : null;
 
-  const registerBgImage = (isFromEventEnroll && assignedEventBg)
-    ? assignedEventBg
-    : '/hero-bg.jpg';
-
   return (
     <div 
-      className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative login-bg-responsive"
+      className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative overflow-hidden login-bg-responsive"
       style={{
-        '--login-bg': `url('${getBackendUrl(registerBgImage)}')`
+        '--login-bg': isFromEventEnroll && assignedEventBg ? `url('${getBackendUrl(assignedEventBg)}')` : 'none'
       }}
     >
+      {!isFromEventEnroll && (
+        <WaterRippleBackground imageUrl="/hero-bg.jpg" />
+      )}
       <style>{`
         .login-bg-responsive {
-          background-image: var(--login-bg) !important;
+          ${isFromEventEnroll && assignedEventBg ? 'background-image: var(--login-bg) !important;' : ''}
           background-size: cover;
           background-position: center;
         }
