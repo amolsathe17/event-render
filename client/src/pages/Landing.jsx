@@ -24,7 +24,7 @@ export default function Landing() {
         />
 
         {/* Dark overlay */}
-        <div className="absolute inset-0 z-0 bg-black/60 pointer-events-none" />
+        <div className="absolute inset-0 z-0 bg-black/50 pointer-events-none" />
 
         {/* Dot grid texture */}
         <div
@@ -44,7 +44,7 @@ export default function Landing() {
                 Conquer
               </span>
             </h1>
-            <p className="text-base sm:text-lg text-white/80 leading-relaxed max-w-2xl mx-auto drop-shadow pt-70">
+            <p className="text-base sm:text-lg text-white/80 leading-relaxed max-w-2xl mx-auto drop-shadow pt-80">
               A unified platform for Photography, Painting, Drawing,  more.
               Discover active events, submit your work, and win recognition.
             </p>
