@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, File, CheckCircle2, AlertCircle, X, Image as ImageIcon } from 'lucide-react';
 
-export default function DragDropUpload({ onUpload, isUploading, allowedTypes = ['image/jpeg', 'image/png', 'image/tiff'] }) {
+export default function DragDropUpload({ onUpload, isUploading, mediaType = 'photo', allowedTypes = [] }) {
   const [dragActive, setDragActive] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [rawFile, setRawFile] = useState(null);
@@ -10,6 +10,8 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
 
   const photoInputRef = useRef(null);
   const rawInputRef = useRef(null);
+
+  const isVideoMode = mediaType === 'video';
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -21,19 +23,31 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
     }
   };
 
-  const validateImageFile = (file) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/tiff', 'image/tif'];
+  const validateMediaFile = (file) => {
     const ext = file.name.split('.').pop().toLowerCase();
-    const isExtensionValid = ['jpg', 'jpeg', 'png', 'tiff', 'tif'].includes(ext);
     
-    if (!validTypes.includes(file.type) && !isExtensionValid) {
-      setError('Only JPEG, PNG, or TIFF files are allowed for the main photograph.');
-      return false;
-    }
-    
-    if (file.size > 800 * 1024) {
-      setError('Photograph file size must be below 800 KB.');
-      return false;
+    if (isVideoMode) {
+      const validVideoExts = ['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', '3gp'];
+      const isVideoExt = validVideoExts.includes(ext) || file.type.startsWith('video/');
+      if (!isVideoExt) {
+        setError('Only video files (MP4, MOV, WEBM, AVI) are allowed for short video competitions.');
+        return false;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        setError('Video file size must be below 25 MB.');
+        return false;
+      }
+    } else {
+      const validPhotoExts = ['jpg', 'jpeg', 'png', 'tiff', 'tif', 'webp'];
+      const isPhotoExt = validPhotoExts.includes(ext) || file.type.startsWith('image/');
+      if (!isPhotoExt) {
+        setError('Only JPEG, PNG, or TIFF files are allowed for the main photograph.');
+        return false;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        setError('Photograph file size must be below 50 MB.');
+        return false;
+      }
     }
 
     setError('');
@@ -47,7 +61,7 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (validateImageFile(file)) {
+      if (validateMediaFile(file)) {
         setPhotoFile(file);
       }
     }
@@ -56,7 +70,7 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
   const handlePhotoSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (validateImageFile(file)) {
+      if (validateMediaFile(file)) {
         setPhotoFile(file);
       }
     }
@@ -121,7 +135,7 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
 
   return (
     <div className="w-full flex flex-col gap-4">
-      {/* Photo Upload Zone */}
+      {/* Upload Zone */}
       {!photoFile ? (
         <div
           onDragEnter={handleDrag}
@@ -139,21 +153,21 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
             ref={photoInputRef}
             type="file"
             className="hidden"
-            accept=".jpg,.jpeg,.png,.tiff,.tif"
+            accept={isVideoMode ? ".mp4,.mov,.webm,.avi,.mkv,.m4v,.3gp,video/*" : ".jpg,.jpeg,.png,.tiff,.tif,image/*"}
             onChange={handlePhotoSelect}
           />
           <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl mb-4">
             <Upload size={24} />
           </div>
           <p className="font-display font-semibold text-slate-800 dark:text-slate-200 text-center mb-1">
-            Drag & Drop your photograph here
+            {isVideoMode ? 'Drag & Drop your short video / reel here' : 'Drag & Drop your photograph here'}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-3">
-            Supports JPEG, PNG, TIFF (Max size 800 KB)
+            {isVideoMode ? 'Supports MP4, MOV, WEBM, AVI (Max size 25 MB)' : 'Supports JPEG, PNG, TIFF (Max size 50 MB)'}
           </p>
           <button
             type="button"
-            className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs py-1.5 px-4 rounded-lg shadow-sm transition-all"
+            className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs py-1.5 px-4 rounded-lg shadow-xs transition-all"
           >
             Browse files
           </button>
@@ -170,7 +184,7 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
                   {photoFile.name}
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {formatBytes(photoFile.size)} • Photograph
+                  {formatBytes(photoFile.size)} • {isVideoMode ? 'Short Video Asset' : 'Photograph'}
                 </p>
               </div>
             </div>
@@ -184,57 +198,70 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
             )}
           </div>
 
-          {/* Optional RAW File Upload */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-            {!rawFile ? (
-              <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <File size={16} className="text-slate-400" />
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Upload RAW file for verification (Optional)
-                  </span>
-                </div>
-                <input
-                  ref={rawInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".cr2,.nef,.arw,.dng,.raf,.orf"
-                  onChange={handleRawSelect}
-                />
-                {!isUploading && (
-                  <button
-                    type="button"
-                    onClick={() => rawInputRef.current.click()}
-                    className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 rounded font-medium transition-colors"
-                  >
-                    Select RAW
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/50 dark:border-emerald-900/30 p-2.5 rounded-lg gap-3 min-w-0 w-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 block truncate" data-tooltip={rawFile.name}>
-                      {rawFile.name}
-                    </span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-500">
-                      {formatBytes(rawFile.size)} • RAW File
+          {/* Video Preview Player if video mode */}
+          {isVideoMode && photoFile && (
+            <div className="w-full rounded-xl overflow-hidden bg-black border border-slate-800">
+              <video 
+                src={URL.createObjectURL(photoFile)} 
+                controls 
+                className="w-full max-h-56 object-contain"
+              />
+            </div>
+          )}
+
+          {/* Optional RAW File Upload for Photos */}
+          {!isVideoMode && (
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+              {!rawFile ? (
+                <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <File size={16} className="text-slate-400" />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Upload RAW file for verification (Optional)
                     </span>
                   </div>
+                  <input
+                    ref={rawInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".cr2,.nef,.arw,.dng,.raf,.orf"
+                    onChange={handleRawSelect}
+                  />
+                  {!isUploading && (
+                    <button
+                      type="button"
+                      onClick={() => rawInputRef.current.click()}
+                      className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 rounded font-medium transition-colors"
+                    >
+                      Select RAW
+                    </button>
+                  )}
                 </div>
-                {!isUploading && (
-                  <button
-                    onClick={clearRaw}
-                    className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-950/30 rounded text-emerald-500"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/50 dark:border-emerald-900/30 p-2.5 rounded-lg gap-3 min-w-0 w-full">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 block truncate" data-tooltip={rawFile.name}>
+                        {rawFile.name}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-500">
+                        {formatBytes(rawFile.size)} • RAW File
+                      </span>
+                    </div>
+                  </div>
+                  {!isUploading && (
+                    <button
+                      onClick={clearRaw}
+                      className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-950/30 rounded text-emerald-500"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Trigger */}
           {error && (
@@ -265,7 +292,7 @@ export default function DragDropUpload({ onUpload, isUploading, allowedTypes = [
                 onClick={triggerUpload}
                 className="w-fit px-8 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
               >
-                Upload Photo & Metadata
+                {isVideoMode ? 'Upload Video Entry & Details' : 'Upload Photo & Metadata'}
               </button>
             </div>
           )}

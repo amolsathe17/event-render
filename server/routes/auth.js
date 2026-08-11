@@ -203,7 +203,7 @@ router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found with this email' });
+      return res.status(400).json({ success: false, message: 'User not found with this email' });
     }
 
     const otp = generateOTP();
@@ -294,40 +294,48 @@ router.post('/notifications/:notifId/read', protect, async (req, res) => {
 
     const { notifId } = req.params;
     
-    // Try to find by id
-    let notifFound = false;
-    if (user.notifications && typeof user.notifications.id === 'function') {
-      const notif = user.notifications.id(notifId);
-      if (notif) {
-        notif.isRead = true;
-        notifFound = true;
-      }
-    }
-
-    // Fallback to matching index or manual search
-    if (!notifFound && user.notifications) {
-      const idx = parseInt(notifId);
-      if (!isNaN(idx) && user.notifications[idx]) {
-        user.notifications[idx].isRead = true;
-        notifFound = true;
-      } else {
-        const foundIdx = user.notifications.findIndex(n => n._id && n._id.toString() === notifId);
-        if (foundIdx !== -1) {
-          user.notifications[foundIdx].isRead = true;
-          notifFound = true;
+    if (user.notifications && user.notifications.length > 0) {
+      user.notifications.forEach((n, idx) => {
+        const idStr = n._id ? n._id.toString() : String(idx);
+        if (idStr === notifId || String(idx) === notifId) {
+          n.isRead = true;
         }
-      }
+      });
+      await user.save();
     }
 
-    await user.save();
-    res.json({ success: true });
+    res.json({ success: true, notifications: user.notifications });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// @desc    Delete a notification
+// @desc    Mark all notifications as read
+// @route   POST /api/auth/notifications/read-all
+// @access  Private
+router.post('/notifications/read-all', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.notifications && user.notifications.length > 0) {
+      user.notifications.forEach(n => {
+        n.isRead = true;
+      });
+      await user.save();
+    }
+
+    res.json({ success: true, notifications: user.notifications });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @desc    Delete all notifications
 // @route   DELETE /api/auth/notifications/all
 // @access  Private
 router.delete('/notifications/all', protect, async (req, res) => {
@@ -339,13 +347,14 @@ router.delete('/notifications/all', protect, async (req, res) => {
 
     user.notifications = [];
     await user.save();
-    res.json({ success: true, message: 'All notifications deleted' });
+    res.json({ success: true, message: 'All notifications deleted', notifications: [] });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
+// @desc    Delete a notification
 // @route   DELETE /api/auth/notifications/:notifId
 // @access  Private
 router.delete('/notifications/:notifId', protect, async (req, res) => {
@@ -357,36 +366,15 @@ router.delete('/notifications/:notifId', protect, async (req, res) => {
 
     const { notifId } = req.params;
 
-    let deleted = false;
-    if (user.notifications) {
-      // 1. Try to find by _id string comparison
-      const foundIdx = user.notifications.findIndex(n => n._id && n._id.toString() === notifId);
-      if (foundIdx !== -1) {
-        user.notifications.splice(foundIdx, 1);
-        deleted = true;
-      }
-      
-      // 2. If not found by _id, try by index fallback
-      if (!deleted) {
-        const idx = parseInt(notifId);
-        if (!isNaN(idx) && user.notifications[idx]) {
-          user.notifications.splice(idx, 1);
-          deleted = true;
-        }
-      }
-      
-      // 3. Fallback to mongoose .pull
-      if (!deleted && typeof user.notifications.pull === 'function') {
-        try {
-          user.notifications.pull(notifId);
-        } catch (err) {
-          // ignore
-        }
-      }
+    if (user.notifications && user.notifications.length > 0) {
+      user.notifications = user.notifications.filter((n, idx) => {
+        const idStr = n._id ? n._id.toString() : String(idx);
+        return idStr !== notifId && String(idx) !== notifId;
+      });
+      await user.save();
     }
 
-    await user.save();
-    res.json({ success: true });
+    res.json({ success: true, notifications: user.notifications });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server error' });

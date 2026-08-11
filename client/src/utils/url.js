@@ -41,6 +41,13 @@ export const getBackendUrl = (path = '') => {
 
   // If path is an external URL (e.g. Cloudinary), proxy it through our backend server
   // to serve it as a first-party resource and permanently eliminate Tracking Prevention browser warnings!
+  // If path is a video URL (ends with .mp4, .webm, .mov, .m4v, or contains /video/upload/), return direct URL
+  if (typeof path === 'string' && (path.includes('/video/upload/') || path.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i))) {
+    return path;
+  }
+
+  // If path is an external URL (e.g. Cloudinary image), proxy it through our backend server
+  // to serve it as a first-party resource and permanently eliminate Tracking Prevention browser warnings!
   if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://'))) {
     if (path.includes('/api/image-proxy?url=')) return path;
     return `${baseUrl}/api/image-proxy?url=${encodeURIComponent(path)}`;
@@ -65,8 +72,8 @@ export const getEventFallbackImage = (event) => {
 
   const customBg = event.loginBgUrl || event.imageUrl || event.image || event.coverImage;
   if (customBg && typeof customBg === 'string' && customBg.trim() !== '') {
-    // If Admin uploaded a custom background image, use it!
-    if (!customBg.includes('/wild.jpg') && !customBg.includes('wild.jpg')) {
+    // If Admin uploaded a custom background image (and not a video), use it!
+    if (!customBg.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) && !customBg.includes('/video/upload/') && !customBg.includes('/wild.jpg') && !customBg.includes('wild.jpg')) {
       return customBg;
     }
   }

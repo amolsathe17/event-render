@@ -73,9 +73,16 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
     });
   };
 
+  const isVideoSrc = src && (
+    src.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) ||
+    src.includes('/video/upload/') ||
+    src.includes('/video/') ||
+    src.includes('video_')
+  );
+
   return (
     <div 
-      className={`relative overflow-hidden bg-slate-900 rounded-lg ${enableZoom ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
+      className={`relative overflow-hidden w-full h-full ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchMove}
@@ -83,13 +90,27 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      <img 
-        src={currentSrc || '/wild.jpg'} 
-        alt="Image Preview" 
-        onError={handleImgError}
-        style={enableZoom ? zoomStyle : undefined}
-        className="w-full h-full object-contain mx-auto" 
-      />
+      {isVideoSrc ? (
+        <video 
+          src={src} 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover mx-auto pointer-events-none" 
+        />
+      ) : (
+        <img 
+          src={currentSrc || '/wild.jpg'} 
+          alt="Image Preview" 
+          onError={handleImgError}
+          style={enableZoom ? zoomStyle : undefined}
+          className="absolute inset-0 w-full h-full object-cover mx-auto" 
+        />
+      )}
     </div>
   );
 }

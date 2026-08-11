@@ -205,6 +205,7 @@ function ActiveEventDetailCard({ event, onEnroll }) {
   const [expanded, setExpanded] = useState(false);
   const [themeExpanded, setThemeExpanded] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   const rulesList = Array.isArray(event.rules)
     ? event.rules.filter(r => r && String(r).trim() !== '')
@@ -212,6 +213,7 @@ function ActiveEventDetailCard({ event, onEnroll }) {
 
   const fallbackImg = getEventFallbackImage(event);
   const headerBgImg = (event.loginBgUrl || event.imageUrl || event.image || event.coverImage) || fallbackImg;
+  const isVideoHeader = (headerBgImg && (headerBgImg.includes('/video/upload/') || headerBgImg.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i))) && !videoError;
 
   return (
     <div
@@ -225,15 +227,30 @@ function ActiveEventDetailCard({ event, onEnroll }) {
       <div
         className={`relative bg-linear-to-br ${colors.header} px-6 pt-6 pb-5 text-white flex flex-col justify-between min-h-48 overflow-hidden`}
       >
-        <img
-          src={getBackendUrl(headerBgImg)}
-          alt={event.title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = fallbackImg;
-          }}
-        />
+        {isVideoHeader ? (
+          <video
+            src={getBackendUrl(headerBgImg)}
+            autoPlay
+            loop
+            muted
+            playsInline
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+            preload="metadata"
+            onError={() => setVideoError(true)}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <img
+            src={getBackendUrl(headerBgImg)}
+            alt={event.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = fallbackImg;
+            }}
+          />
+        )}
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[1px]" />
 
@@ -479,8 +496,10 @@ function UpcomingEventCard({ event, onEnroll }) {
   const colors = getColors(event.eventType);
   const Icon = EVENT_ICONS[event.eventType] || EVENT_ICONS.default;
   const [themeExpanded, setThemeExpanded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const fallbackImg = getEventFallbackImage(event);
   const headerBgImg = (event.loginBgUrl || event.imageUrl || event.image || event.coverImage) || fallbackImg;
+  const isVideoHeader = (headerBgImg && (headerBgImg.includes('/video/upload/') || headerBgImg.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i))) && !videoError;
 
   return (
     <div
@@ -493,15 +512,28 @@ function UpcomingEventCard({ event, onEnroll }) {
       <div
         className={`relative bg-linear-to-br ${colors.header} px-5 pt-5 pb-8 text-white flex flex-col justify-between min-h-44 overflow-hidden`}
       >
-        <img
-          src={getBackendUrl(headerBgImg)}
-          alt={event.title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = fallbackImg;
-          }}
-        />
+        {isVideoHeader ? (
+          <video
+            src={getBackendUrl(headerBgImg)}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            onError={() => setVideoError(true)}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <img
+            src={getBackendUrl(headerBgImg)}
+            alt={event.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = fallbackImg;
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[1px]" />
 
         <div className="relative z-10">
@@ -616,22 +648,37 @@ function UpcomingEventCard({ event, onEnroll }) {
 function ClosedEventCard({ event }) {
   const Icon = EVENT_ICONS[event.eventType] || EVENT_ICONS.default;
   const [themeExpanded, setThemeExpanded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const fallbackImg = getEventFallbackImage(event);
   const headerBgImg = (event.loginBgUrl || event.imageUrl || event.image || event.coverImage) || fallbackImg;
+  const isVideoHeader = (headerBgImg && (headerBgImg.includes('/video/upload/') || headerBgImg.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i))) && !videoError;
 
   return (
     <div className="group relative flex flex-col rounded-3xl overflow-hidden border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
       <div className="absolute inset-0 bg-slate-50/40 pointer-events-none rounded-3xl" />
       <div className="relative bg-linear-to-br from-slate-500 to-slate-700 px-5 pt-5 pb-8 text-white flex flex-col justify-between min-h-44 overflow-hidden">
-        <img
-          src={getBackendUrl(headerBgImg)}
-          alt={event.title}
-          className="absolute inset-0 w-full h-full object-cover grayscale opacity-40 transition-transform duration-700 group-hover:scale-105"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = fallbackImg;
-          }}
-        />
+        {isVideoHeader ? (
+          <video
+            src={getBackendUrl(headerBgImg)}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            onError={() => setVideoError(true)}
+            className="absolute inset-0 w-full h-full object-cover grayscale opacity-40 transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <img
+            src={getBackendUrl(headerBgImg)}
+            alt={event.title}
+            className="absolute inset-0 w-full h-full object-cover grayscale opacity-40 transition-transform duration-700 group-hover:scale-105"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = fallbackImg;
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[1px]" />
 
         <div className="relative z-10">

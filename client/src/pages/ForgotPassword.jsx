@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Camera, Mail, Lock, ShieldAlert, ArrowLeft, Key, Check } from 'lucide-react';
+import WaterRippleBackground from '../components/WaterRippleBackground';
+import { getBackendUrl } from '../utils/url';
 
 export default function ForgotPassword() {
   const { forgotPassword, resetPassword, apiFetch } = useAuth();
@@ -88,11 +90,15 @@ export default function ForgotPassword() {
 
   return (
     <div 
-      className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative"
-      style={{ backgroundImage: `url('${loginBgUrl || '/hero-bg.jpg'}')` }}
+      className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative overflow-hidden bg-slate-900"
+      style={{
+        backgroundImage: "url('/hero-bg.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
     >
-      {/* Dark tint overlay without blur */}
-      <div className="absolute inset-0 bg-slate-950/15"></div>
+      <WaterRippleBackground imageUrl="/hero-bg.jpg" />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex justify-center md:justify-start">
         <div className="relative w-full max-w-md bg-white/85 dark:bg-slate-950/75 border border-white/20 dark:border-white/5 rounded-3xl shadow-2xl p-6 sm:p-8 flex flex-col gap-6 backdrop-blur-lg">
@@ -118,7 +124,7 @@ export default function ForgotPassword() {
         {!isResetting ? (
           <form onSubmit={handleRequestOtp} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-white">Email Address</label>
+              <label className="text-xs font-semibold text-black dark:text-white">Email Address</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -144,14 +150,14 @@ export default function ForgotPassword() {
           /* Step 2: Reset Form */
           <form onSubmit={handleReset} className="flex flex-col gap-4">
             <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col gap-1">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400">Test OTP Code (Development Only)</span>
+              <span className="text-[10px] font-extrabold uppercase text-black dark:text-white">Test OTP Code (Development Only)</span>
               <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">
                 {devOtp}
               </span>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">Enter 6-Digit OTP</label>
+              <label className="text-xs font-semibold text-black dark:text-white">Enter 6-Digit OTP</label>
               <div className="relative">
                 <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -167,7 +173,7 @@ export default function ForgotPassword() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">New Password</label>
+              <label className="text-xs font-semibold text-whaite">New Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -191,7 +197,7 @@ export default function ForgotPassword() {
             <button
               type="button"
               onClick={() => setIsResetting(false)}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-center"
+              className="text-xs text-black hover:text-slate-600 dark:hover:text-slate-200 text-center"
             >
               Go back
             </button>
@@ -201,7 +207,7 @@ export default function ForgotPassword() {
         <div className="text-center text-xs">
           <Link
             to="/login"
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 inline-flex items-center gap-1 hover:underline"
+            className="text-black hover:text-slate-600 dark:hover:text-slate-200 inline-flex items-center gap-1 hover:underline"
           >
             <ArrowLeft size={14} />
             Back to Login
@@ -221,7 +227,7 @@ export default function ForgotPassword() {
             <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white mt-2">
               Password Reset Successful!
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-white dark:text-slate-400 leading-relaxed">
               Your password has been successfully updated. You are now being redirected to the login page.
             </p>
             <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mt-2"></div>

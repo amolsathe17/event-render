@@ -5,6 +5,8 @@ const photographSchema = new mongoose.Schema({
   id: { type: String, required: true },
   title: { type: String, required: true },
   category: { type: String, required: true },
+  mediaType: { type: String, enum: ['photo', 'video'], default: 'photo' },
+  videoDuration: { type: Number },
   cameraBrand: { type: String },
   cameraModel: { type: String },
   lensUsed: { type: String },

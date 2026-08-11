@@ -4,6 +4,9 @@ const { getModel } = require('../config/db');
 const eventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   eventType: { type: String, default: 'Photography' },
+  mediaType: { type: String, enum: ['photo', 'video'], default: 'photo' },
+  maxVideoDurationSeconds: { type: Number, default: 60 },
+  maxVideoSizeBytes: { type: Number, default: 104857600 },
   theme: { type: String, required: true },
   description: { type: String },
   rules: [{ type: String }],

@@ -41,6 +41,7 @@ const seedData = async () => {
     if (contestTypeCount === 0) {
       const defaultTypes = [
         { name: 'Photography', description: 'Photo contests, wildlife, landscape, macro, and architecture' },
+        { name: 'Short Video / Reels', description: 'Instagram Reels, YouTube Shorts, cinematic reels, and wildlife short videos' },
         { name: 'Painting', description: 'Water color, oil, acrylic, folk and traditional art paintings' },
         { name: 'Drawing', description: 'Sketching, pastels, digital, calligraphy and folk art drawings' },
         { name: 'Paper Craft', description: 'Origami, quilling, paper sculptures and papier-mâché' }

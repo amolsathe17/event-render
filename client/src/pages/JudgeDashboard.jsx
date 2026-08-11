@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Camera, ShieldAlert, Award, Star, Star as StarIcon, CheckCircle2, ChevronRight, X, Check, AlertTriangle, Clock, XCircle, ListChecks, Layers, BarChart2, History } from 'lucide-react';
+import { Camera, ShieldAlert, Award, Star, Star as StarIcon, CheckCircle2, ChevronRight, X, Check, AlertTriangle, Clock, XCircle, ListChecks, Layers, BarChart2, History, Calendar, Send, Bell, Trash2, Users, UserCheck } from 'lucide-react';
 import WatermarkPreview from '../components/WatermarkPreview';
 import { getBackendUrl } from '../utils/url';
 
 export default function JudgeDashboard() {
   const { apiFetch, user } = useAuth();
+  const location = useLocation();
   
   const [event, setEvent] = useState(null);
   const [events, setEvents] = useState([]);
@@ -48,10 +50,84 @@ export default function JudgeDashboard() {
   const [showSignOffModal, setShowSignOffModal] = useState(false);
   const [showSignedOffBlockModal, setShowSignedOffBlockModal] = useState(false);
 
+  // Broadcast Notification State
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastRecipient, setBroadcastRecipient] = useState('Participant');
+  const [broadcastEventId, setBroadcastEventId] = useState('');
+  const [broadcastParticipantId, setBroadcastParticipantId] = useState('');
+  const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
+
   const triggerSuccess = (title, message) => {
     setSuccessTitle(title);
     setSuccessMessage(message);
     setShowSuccessModal(true);
+  };
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setJudgeDashboardTab(location.state.tab);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (judgeDashboardTab === 'notifications') {
+      fetchBroadcasts();
+    }
+  }, [judgeDashboardTab]);
+
+  const fetchBroadcasts = async () => {
+    try {
+      const data = await apiFetch('/api/judges/broadcasts');
+      if (data.success) {
+        setBroadcasts(data.broadcasts || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch judge broadcasts:', err.message);
+    }
+  };
+
+  const handleSendBroadcast = async (e) => {
+    e.preventDefault();
+    if (!broadcastMessage || !broadcastMessage.trim()) {
+      triggerSuccess('Missing Message', 'Notification message cannot be empty');
+      return;
+    }
+    setBroadcastSubmitting(true);
+    try {
+      const data = await apiFetch('/api/judges/broadcasts', {
+        method: 'POST',
+        body: JSON.stringify({
+          message: broadcastMessage.trim(),
+          recipientType: broadcastRecipient,
+          eventId: broadcastEventId,
+          participantId: broadcastRecipient === 'Specific' ? broadcastParticipantId : undefined
+        })
+      });
+      if (data.success) {
+        setBroadcastMessage('');
+        fetchBroadcasts();
+        triggerSuccess('Notification Sent', 'Your notification message has been successfully sent.');
+      }
+    } catch (err) {
+      triggerSuccess('Failed to Send', err.message || 'Failed to send notification');
+    } finally {
+      setBroadcastSubmitting(false);
+    }
+  };
+
+  const handleDeleteBroadcast = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this notification record?')) return;
+    try {
+      const data = await apiFetch(`/api/judges/broadcasts/${id}`, {
+        method: 'DELETE'
+      });
+      if (data.success) {
+        fetchBroadcasts();
+      }
+    } catch (err) {
+      triggerSuccess('Delete Failed', err.message || 'Failed to delete broadcast');
+    }
   };
 
   const fetchJudgeData = async () => {
@@ -277,6 +353,7 @@ export default function JudgeDashboard() {
 
   const handleOpenOfflineScoring = (photo) => {
     if (photo.paymentStatus === 'Unpaid') return;
+    if (hasConfirmed && user?.role !== 'Admin') return;
     setOfflineZoomPhoto(photo);
     const existing = photo.score || {
       averageScore: 5,
@@ -483,6 +560,31 @@ export default function JudgeDashboard() {
     <div className="w-full min-h-screen bg-[#e3e7f0] dark:bg-slate-950 py-5 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
       
+      {/* Top Header Bar matching Admin Dashboard */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Judge Dashboard</h1>
+          <p className="text-xs text-slate-400">Official panel grading workspace & competition ledger</p>
+        </div>
+        {/* Event Selector Dropdown - matching Admin Dashboard */}
+        {events.length > 0 && (
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
+            <Calendar size={15} className="text-amber-500 shrink-0" />
+            <select
+              value={event?._id || ''}
+              onChange={(e) => handleEventChange(e.target.value)}
+              className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
+            >
+              {events.map((ev) => (
+                <option key={ev._id} value={ev._id}>
+                  {ev.title} ({ev.status})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {user?.role === 'Admin' && (
         <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex items-center gap-3 text-amber-600 dark:text-amber-400 mb-6 text-xs font-semibold">
           <ShieldAlert size={18} className="shrink-0" />
@@ -563,6 +665,8 @@ export default function JudgeDashboard() {
           {/* Stats Widgets - 5 Cards in a single row matching Participant Dashboard */}
           {(() => {
             const totalEvents = events.length;
+            const activeEv = event || (events && events[0]) || null;
+            const isVidEv = activeEv && (activeEv.mediaType === 'video' || String(activeEv.eventType).toLowerCase().includes('video') || String(activeEv.eventType).toLowerCase().includes('reel'));
             const allPhotos = Object.values(allPhotographsByEvent).reduce((acc, arr) => [...acc, ...(arr || [])], []);
             const totalPhotos = allPhotos.length;
             const unpaidCount = allPhotos.filter(p => p.paymentStatus === 'Unpaid').length;
@@ -580,32 +684,42 @@ export default function JudgeDashboard() {
                     <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Total events panel seat</span>
                   </div>
 
-                  {/* Card 2: Graded Photos */}
+                  {/* Card 2: Graded Photos / Videos */}
                   <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">Graded Photos</span>
+                    <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                      {isVidEv ? 'GRADED VIDEOS' : 'GRADED PHOTOS'}
+                    </span>
                     <h3 className="font-display font-extrabold text-2xl text-emerald-600 dark:text-emerald-400">{gradedCount}</h3>
                     <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Completed assessments</span>
                   </div>
 
-                  {/* Card 3: Ungraded Photos */}
+                  {/* Card 3: Ungraded Photos / Videos */}
                   <div className="bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-red-900/80 dark:text-red-300 font-extrabold uppercase tracking-wider">Ungraded Photos</span>
+                    <span className="text-[10px] text-red-900/80 dark:text-red-300 font-extrabold uppercase tracking-wider">
+                      {isVidEv ? 'UNGRADED VIDEOS' : 'UNGRADED PHOTOS'}
+                    </span>
                     <h3 className="font-display font-extrabold text-2xl text-red-600 dark:text-red-400">{pendingCount}</h3>
                     <span className="text-[10px] text-red-600/70 dark:text-red-400/70 font-medium">Assessments remaining</span>
                   </div>
 
-                  {/* Card 4: Unpaid Photos */}
+                  {/* Card 4: Unpaid Photos / Videos */}
                   <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">Unpaid Photos</span>
+                    <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">
+                      {isVidEv ? 'UNPAID VIDEOS' : 'UNPAID PHOTOS'}
+                    </span>
                     <h3 className="font-display font-extrabold text-2xl text-rose-600 dark:text-rose-400">{unpaidCount}</h3>
                     <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Payment pending entries</span>
                   </div>
 
-                  {/* Card 5: Total Photographs */}
+                  {/* Card 5: Total Photographs / Videos */}
                   <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">Total Photographs</span>
+                    <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                      {isVidEv ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
+                    </span>
                     <h3 className="font-display font-extrabold text-2xl text-purple-600 dark:text-purple-400">{totalPhotos}</h3>
-                    <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Total assigned photo frames</span>
+                    <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
+                      {isVidEv ? 'Total assigned video assets' : 'Total assigned photo frames'}
+                    </span>
                   </div>
                 </div>
 
@@ -864,7 +978,21 @@ export default function JudgeDashboard() {
                               <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                   <div className="w-16 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
-                                    <img src={getBackendUrl(item.fileUrl)} alt={item.title} className="w-full h-full object-cover" />
+                                    {item.mediaType === 'video' || item.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || item.fileUrl?.includes('/video/upload/') ? (
+                                      <video 
+                                        src={getBackendUrl(item.fileUrl)} 
+                                        autoPlay 
+                                        loop 
+                                        muted 
+                                        playsInline 
+                                        crossOrigin="anonymous"
+                                        referrerPolicy="no-referrer"
+                                        preload="metadata"
+                                        className="w-full h-full object-cover" 
+                                      />
+                                    ) : (
+                                      <img src={getBackendUrl(item.fileUrl)} alt={item.title} className="w-full h-full object-cover" />
+                                    )}
                                   </div>
                                 </td>
                                 <td className="py-3.5 px-4">
@@ -912,49 +1040,36 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "portal" && (
+      {judgeDashboardTab === "portal" && (() => {
+        const isVidEv = event && (event.mediaType === 'video' || String(event.eventType).toLowerCase().includes('video') || String(event.eventType).toLowerCase().includes('reel'));
+        return (
         <>
           {/* Header */}
           <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
               <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
-                Judge Evaluation Portal
+                Evaluation
               </h1>
               <p className="text-xs text-slate-400 mt-1">
                 Evaluating submissions assigned to your profile
               </p>
             </div>
 
-            {events.length > 0 && (
+            {events.length > 0 && participants.length > 0 && (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto animate-in fade-in duration-150">
                 <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                  <span className="text-xs font-semibold text-slate-500 shrink-0">Contest:</span>
+                  <span className="text-xs font-semibold text-slate-500 shrink-0">Participant:</span>
                   <select
-                    value={event?._id || ''}
-                    onChange={(e) => handleEventChange(e.target.value)}
+                    value={selectedSubmissionId}
+                    onChange={(e) => setSelectedSubmissionId(e.target.value)}
                     className="grow sm:grow-0 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer max-w-50 sm:max-w-xs truncate"
                   >
-                    {events.map(e => (
-                      <option key={e._id} value={e._id}>{e.title}</option>
+                    <option value="all">All ({participants.length})</option>
+                    {participants.map(p => (
+                      <option key={p.submissionId} value={p.submissionId}>{p.name}</option>
                     ))}
                   </select>
                 </div>
-
-                {participants.length > 0 && (
-                  <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                    <span className="text-xs font-semibold text-slate-500 shrink-0">Participant:</span>
-                    <select
-                      value={selectedSubmissionId}
-                      onChange={(e) => setSelectedSubmissionId(e.target.value)}
-                      className="grow sm:grow-0 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer max-w-50 sm:max-w-xs truncate"
-                    >
-                      <option value="all">All ({participants.length})</option>
-                      {participants.map(p => (
-                        <option key={p.submissionId} value={p.submissionId}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1000,7 +1115,7 @@ export default function JudgeDashboard() {
                     {event?.title}
                   </h2>
                   <span className="text-[10px] text-slate-400 block font-semibold mt-0.5">
-                    Mode: {event?.scoringType} Scoring | Category limits: {event?.photoLimit} photo slots
+                    Mode: {event?.scoringType} Scoring | Category limits: {event?.photoLimit} {(event?.mediaType === 'video' || String(event?.eventType).toLowerCase().includes('video') || String(event?.eventType).toLowerCase().includes('reel')) ? (event?.photoLimit > 1 ? 'video slots' : 'video slot') : (event?.photoLimit > 1 ? 'photo slots' : 'photo slot')}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 shrink-0">
@@ -1009,7 +1124,7 @@ export default function JudgeDashboard() {
                     onChange={(e) => setFilterGradingStatus(e.target.value)}
                     className="px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="all">All Photos</option>
+                    <option value="all">{(event?.mediaType === 'video' || String(event?.eventType).toLowerCase().includes('video') || String(event?.eventType).toLowerCase().includes('reel')) ? 'All Videos' : 'All Photos / Videos'}</option>
                     <option value="graded">Graded</option>
                     <option value="ungraded">Ungraded</option>
                     <option value="disapproved">Disapproved</option>
@@ -1058,11 +1173,25 @@ export default function JudgeDashboard() {
                         key={photo.photoId}
                         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow transition-all flex flex-col justify-between"
                       >
-                        <div className="w-full h-48 bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                          <WatermarkPreview
-                            src={getBackendUrl(photo.fileUrl)}
-                            className="w-full h-full object-contain"
-                          />
+                        <div className="w-full aspect-video relative overflow-hidden flex items-center justify-center bg-slate-950">
+                          {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') || photo.fileUrl?.includes('/video/') || photo.fileUrl?.includes('video_') ? (
+                            <video 
+                              src={getBackendUrl(photo.fileUrl)} 
+                              autoPlay 
+                              loop 
+                              muted 
+                              playsInline 
+                              crossOrigin="anonymous"
+                              referrerPolicy="no-referrer"
+                              preload="metadata"
+                              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                            />
+                          ) : (
+                            <WatermarkPreview
+                              src={getBackendUrl(photo.fileUrl)}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          )}
                           <span className={`absolute top-3 left-3 px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full shadow-sm ${
                             photo.paymentStatus === 'Unpaid'
                               ? 'bg-rose-500 text-white'
@@ -1117,7 +1246,7 @@ export default function JudgeDashboard() {
                               Evaluation Disabled
                             </button>
                           ) : (
-                            photo.score?.approvalStatus !== 'Disapproved' && (
+                            photo.score?.approvalStatus !== 'Disapproved' && (!hasConfirmed || user?.role === 'Admin') && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenScoring(photo)}
@@ -1152,14 +1281,27 @@ export default function JudgeDashboard() {
                         >
                           {/* Thumbnail / Click handler */}
                           <div 
-                            onClick={() => photo.paymentStatus !== 'Unpaid' && handleOpenOfflineScoring(photo)}
-                            className={`w-full h-48 bg-slate-950 relative overflow-hidden flex items-center justify-center ${photo.paymentStatus === 'Unpaid' ? 'cursor-not-allowed' : 'cursor-zoom-in'}`}
+                            onClick={() => photo.paymentStatus !== 'Unpaid' && (!hasConfirmed || user?.role === 'Admin') && handleOpenOfflineScoring(photo)}
+                            className={`w-full aspect-video relative overflow-hidden flex items-center justify-center bg-slate-950 ${photo.paymentStatus === 'Unpaid' || (hasConfirmed && user?.role !== 'Admin') ? 'cursor-default' : 'cursor-zoom-in'}`}
                           >
-                            <WatermarkPreview
-                              src={getBackendUrl(photo.fileUrl)}
-                              className="w-full h-full object-contain"
-                            >
-                            </WatermarkPreview>
+                            {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') || photo.fileUrl?.includes('/video/') || photo.fileUrl?.includes('video_') ? (
+                              <video 
+                                src={getBackendUrl(photo.fileUrl)} 
+                                autoPlay 
+                                loop 
+                                muted 
+                                playsInline 
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer"
+                                preload="metadata"
+                                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                              />
+                            ) : (
+                              <WatermarkPreview
+                                src={getBackendUrl(photo.fileUrl)}
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            )}
                             <span className={`absolute top-3 left-3 px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full shadow-sm ${
                               photo.paymentStatus === 'Unpaid'
                                 ? 'bg-rose-500 text-white'
@@ -1214,7 +1356,7 @@ export default function JudgeDashboard() {
                                 Evaluation Disabled
                               </button>
                             ) : (
-                              photo.score?.approvalStatus !== 'Disapproved' && (
+                              photo.score?.approvalStatus !== 'Disapproved' && (!hasConfirmed || user?.role === 'Admin') && (
                                 <button
                                   type="button"
                                   onClick={() => handleOpenOfflineScoring(photo)}
@@ -1243,7 +1385,8 @@ export default function JudgeDashboard() {
             </>
           )}
         </>
-      )}
+        );
+      })()}
 
       {/* Online Evaluation Grade Sheet / Modal popup */}
       {activePhoto && (
@@ -1264,12 +1407,26 @@ export default function JudgeDashboard() {
               </div>
 
               <div className="grow flex items-center justify-center p-4 shrink-0">
-                <div className="relative w-full h-64 sm:h-80 md:h-full md:max-h-[68vh] flex items-center justify-center group cursor-zoom-in shrink-0">
-                  <WatermarkPreview
-                    src={getBackendUrl(activePhoto.fileUrl)}
-                    className="w-full h-full max-h-[40vh] md:max-h-[68vh] object-contain rounded-lg shadow-lg"
-                    enableZoom={true}
-                  />
+                <div className="relative w-full h-64 sm:h-80 md:h-full md:max-h-[68vh] flex items-center justify-center group shrink-0">
+                  {activePhoto.mediaType === 'video' || activePhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
+                    <div className="w-full h-full max-h-[40vh] md:max-h-[68vh] flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
+                      <video
+                        src={getBackendUrl(activePhoto.fileUrl)}
+                        controls
+                        controlsList="nodownload"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        preload="metadata"
+                        className="w-full h-full max-h-[68vh] object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <WatermarkPreview
+                      src={getBackendUrl(activePhoto.fileUrl)}
+                      className="w-full h-full max-h-[40vh] md:max-h-[68vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
+                      enableZoom={true}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -2017,7 +2174,21 @@ export default function JudgeDashboard() {
                               <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                   <div className="w-20 h-14 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
-                                    <img src={getBackendUrl(item.fileUrl)} alt={item.title} className="w-full h-full object-cover" />
+                                    {item.mediaType === 'video' || item.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || item.fileUrl?.includes('/video/upload/') ? (
+                                      <video 
+                                        src={getBackendUrl(item.fileUrl)} 
+                                        autoPlay 
+                                        loop 
+                                        muted 
+                                        playsInline 
+                                        crossOrigin="anonymous"
+                                        referrerPolicy="no-referrer"
+                                        preload="metadata"
+                                        className="w-full h-full object-cover" 
+                                      />
+                                    ) : (
+                                      <img src={getBackendUrl(item.fileUrl)} alt={item.title} className="w-full h-full object-cover" />
+                                    )}
                                   </div>
                                 </td>
                                 <td className="py-3.5 px-4">
@@ -2086,6 +2257,203 @@ export default function JudgeDashboard() {
           </div>
         );
       })()}
+
+      {/* JUDGE NOTIFICATION MANAGEMENT TAB */}
+      {judgeDashboardTab === "notifications" && (
+        <div className="animate-in fade-in duration-200 flex flex-col gap-6 text-left">
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-r from-indigo-600 via-indigo-700 to-purple-800 p-6 sm:p-8 rounded-3xl text-white shadow-lg relative overflow-hidden">
+            <div className="relative z-10">
+              <span className="text-[10px] text-indigo-200 font-extrabold uppercase tracking-widest block mb-1">
+                Communication Portal
+              </span>
+              <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
+                Notification Management
+              </h1>
+              <p className="text-xs text-indigo-100 mt-1 max-w-xl">
+                Send broadcast announcements or direct messages to competition participants and system administrators.
+              </p>
+            </div>
+            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white shrink-0">
+              <Bell size={28} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Form Card: Send Notification */}
+            <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                    <Send size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
+                      Dispatch Notification
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Compose message to send to target audience
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSendBroadcast} className="flex flex-col gap-4 text-xs">
+                  {/* Select Event Scope */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-600 dark:text-slate-300">
+                      Scope / Event Selection
+                    </label>
+                    <select
+                      value={broadcastEventId}
+                      onChange={(e) => setBroadcastEventId(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="">All Events (Overall System)</option>
+                      {events.map(ev => (
+                        <option key={ev._id} value={ev._id}>{ev.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Target Audience */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-600 dark:text-slate-300">
+                      Target Audience
+                    </label>
+                    <select
+                      value={broadcastRecipient}
+                      onChange={(e) => setBroadcastRecipient(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="Participant">All Event Participants</option>
+                      <option value="Admin">System Administrator</option>
+                      <option value="Both">Both Participants & Admin</option>
+                      <option value="Specific">Specific Participant</option>
+                    </select>
+                  </div>
+
+                  {/* Specific Participant Selection */}
+                  {broadcastRecipient === 'Specific' && (
+                    <div className="flex flex-col gap-1.5 animate-in fade-in duration-150">
+                      <label className="font-bold text-slate-600 dark:text-slate-300">
+                        Select Participant
+                      </label>
+                      <select
+                        value={broadcastParticipantId}
+                        onChange={(e) => setBroadcastParticipantId(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                      >
+                        <option value="">-- Choose Participant --</option>
+                        {participants.map(p => (
+                          <option key={p.userId || p.submissionId} value={p.userId || p.submissionId}>
+                            {p.name} ({p.submissionId ? `Sub: ${p.submissionId.slice(-5)}` : 'Enrolled'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Notification Message Text Area */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="font-bold text-slate-600 dark:text-slate-300">
+                        Notification Message
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {broadcastMessage.length}/500
+                      </span>
+                    </div>
+                    <textarea
+                      rows={4}
+                      maxLength={500}
+                      value={broadcastMessage}
+                      onChange={(e) => setBroadcastMessage(e.target.value)}
+                      placeholder="Type your notification message here (e.g. Evaluation feedback update, contest instructions, or direct inquiry)..."
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={broadcastSubmitting}
+                    className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-indigo-500/25 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Send size={15} />
+                    <span>{broadcastSubmitting ? 'Dispatching Message...' : 'Send Notification'}</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* History Table Card */}
+            <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl">
+                      <History size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
+                        Sent Notifications History
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        History of messages dispatched by your judge account
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800">
+                    {broadcasts.length} Dispatched
+                  </span>
+                </div>
+
+                {broadcasts.length === 0 ? (
+                  <div className="py-16 text-center text-slate-400 flex flex-col items-center gap-3">
+                    <Bell size={36} className="text-slate-300 dark:text-slate-700 stroke-[1.5]" />
+                    <p className="text-xs font-semibold">No notifications dispatched yet.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3.5 max-h-[480px] overflow-y-auto pr-1">
+                    {broadcasts.map((b) => (
+                      <div
+                        key={b._id}
+                        className="bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 p-4 rounded-2xl flex items-start justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-600 transition-all"
+                      >
+                        <div className="flex flex-col gap-2 grow text-left">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
+                              b.recipientType === 'Admin'
+                                ? 'bg-purple-500/10 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 border border-purple-500/20'
+                                : b.recipientType === 'Both'
+                                ? 'bg-amber-500/10 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-500/20'
+                                : 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-500/20'
+                            }`}>
+                              Target: {b.recipientType}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {new Date(b.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                            {b.message}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteBroadcast(b._id)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all cursor-pointer shrink-0"
+                          title="Delete Record"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

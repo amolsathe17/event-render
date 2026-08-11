@@ -12,12 +12,15 @@ export default function WaterRippleBackground({ imageUrl = '/hero-bg.jpg', class
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     let animFrameId = null;
     let width = 0;
     let height = 0;
     let simWidth = 0;
     let simHeight = 0;
-    const scale = 0.35; // Resolution scale factor for 60FPS fluid physics
+    const scale = 0.75; // Higher resolution scale factor for razor-sharp visuals
 
     let currentBuffer = null;
     let previousBuffer = null;
@@ -32,6 +35,10 @@ export default function WaterRippleBackground({ imageUrl = '/hero-bg.jpg', class
 
     const sourceCanvas = document.createElement('canvas');
     const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    if (sourceCtx) {
+      sourceCtx.imageSmoothingEnabled = true;
+      sourceCtx.imageSmoothingQuality = 'high';
+    }
 
     const initBuffers = () => {
       width = container.clientWidth || window.innerWidth;
@@ -236,9 +243,31 @@ export default function WaterRippleBackground({ imageUrl = '/hero-bg.jpg', class
 
   return (
     <div ref={containerRef} className={`absolute inset-0 z-0 overflow-hidden ${className}`}>
+      {/* High-resolution sharp background image matching Landing.jsx */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `url('${imageUrl}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      {/* Dark overlay matching Landing.jsx */}
+      <div className="absolute inset-0 z-0 bg-black/50 pointer-events-none" />
+
+      {/* Dot grid texture matching Landing.jsx */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none opacity-10"
+        style={{
+          backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+          backgroundSize: "30px 30px",
+        }}
+      />
+
       <canvas
         ref={canvasRef}
-        className="w-full h-full object-cover block"
+        className="absolute inset-0 z-10 w-full h-full object-cover block opacity-40 mix-blend-overlay pointer-events-none"
       />
     </div>
   );

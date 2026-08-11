@@ -335,6 +335,7 @@ export default function AdminDashboard() {
   // Broadcast states
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastRecipient, setBroadcastRecipient] = useState('Participant');
+  const [broadcastEventId, setBroadcastEventId] = useState('');
   const [broadcasts, setBroadcasts] = useState([]);
   const [broadcastFilter, setBroadcastFilter] = useState('all');
   const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
@@ -380,7 +381,8 @@ export default function AdminDashboard() {
         method: 'POST',
         body: JSON.stringify({
           message: broadcastMessage.trim(),
-          recipientType: broadcastRecipient
+          recipientType: broadcastRecipient,
+          eventId: broadcastEventId
         })
       });
       if (data.success) {
@@ -1803,7 +1805,7 @@ export default function AdminDashboard() {
           {[
             { id: 'overview', label: 'Overview', icon: BarChart },
             { id: 'participants', label: 'Participants', icon: Users },
-            { id: 'photographs', label: 'Photographs', icon: Camera },
+            { id: 'photographs', label: 'Photographs / Videos', icon: Camera },
             { id: 'judges', label: 'Judges & Results', icon: Award },
             { id: 'events', label: 'Contests & Configuration', icon: Calendar },
             { id: 'categories_config', label: 'Categories', icon: Layers },
@@ -1861,14 +1863,24 @@ export default function AdminDashboard() {
               <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Locked submission folders</span>
             </div>
 
-            {/* Card 4: Total Photographs */}
-            <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">Total Photographs</span>
-              <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
-                {stats.totalPhotos}
-              </p>
-              <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">High-res image assets</span>
-            </div>
+            {/* Card 4: Total Photographs / Total Videos */}
+            {(() => {
+              const activeEventObj = events.find(e => e._id === selectedEventId) || selectedEvent || events.find(e => e.status === 'Active') || events[0];
+              const isVid = activeEventObj && (activeEventObj.mediaType === 'video' || String(activeEventObj.eventType).toLowerCase().includes('video') || String(activeEventObj.eventType).toLowerCase().includes('reel'));
+              return (
+                <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+                  <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                    {isVid ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
+                  </span>
+                  <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
+                    {stats.totalPhotos}
+                  </p>
+                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
+                    {isVid ? 'Short video / reel assets' : 'High-res image assets'}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Recharts Analytics Panel */}
@@ -2141,17 +2153,13 @@ export default function AdminDashboard() {
           </div>
 
           {(() => {
-            const activeEvent = events.find(e => e.status === 'Active') || events[0];
+            const activeEvent = events.find(e => e._id === selectedEventId) || selectedEvent || events.find(e => e.status === 'Active') || events[0];
             const filteredPhotos = photographs.filter(p => {
-              if (selectedParticipantFilter && p.participantName !== selectedParticipantFilter) {
+              if (selectedEventId && p.eventId !== selectedEventId) {
                 return false;
               }
-              if (activeEvent?.eventType) {
-                const event = events.find(e => e._id === p.eventId);
-                const photoContestType = event ? event.eventType : 'Photography';
-                if (photoContestType !== activeEvent.eventType) {
-                  return false;
-                }
+              if (selectedParticipantFilter && p.participantName !== selectedParticipantFilter) {
+                return false;
               }
               return true;
             });
@@ -2195,16 +2203,16 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* TOTAL PHOTOGRAPHS Card (matching image 2) */}
+                  {/* TOTAL PHOTOGRAPHS / VIDEOS Card (matching image 2) */}
                   <div className="flex items-start flex-col justify-between bg-purple-50/80 dark:bg-purple-950/25 border-2 border-purple-400/80 dark:border-purple-600/60 rounded-2xl p-4 sm:p-5 shadow-2xs">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">
-                      TOTAL PHOTOGRAPHS
+                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
                     </span>
                     <p className="font-display font-black text-4xl text-purple-600 dark:text-purple-400 my-1">
                       {filteredPhotos.length}
                     </p>
                     <span className="text-[11px] font-medium text-purple-600/90 dark:text-purple-300/80 block">
-                      High-res image assets
+                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'Short video / reel assets' : 'High-res image assets'}
                     </span>
                   </div>
                 </div>
@@ -2229,13 +2237,27 @@ export default function AdminDashboard() {
                             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-zoom-in flex flex-col justify-between group"
                           >
                             <div className="w-full aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                              <img 
-                                src={getBackendUrl(photo.fileUrl)} 
-                                alt={photo.title} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                crossOrigin="anonymous"
-                                referrerPolicy="no-referrer"
-                              />
+                              {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                                <video 
+                                  src={getBackendUrl(photo.fileUrl)} 
+                                  autoPlay 
+                                  loop 
+                                  muted 
+                                  playsInline 
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  preload="metadata"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                                />
+                              ) : (
+                                <img 
+                                  src={getBackendUrl(photo.fileUrl)} 
+                                  alt={photo.title} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
                               <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
                                 <Star size={8} fill="white" /> {avgScore}/10
                               </span>
@@ -2256,7 +2278,7 @@ export default function AdminDashboard() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-center text-slate-400 py-6 text-xs italic">No approved photographs yet.</div>
+                    <div className="text-center text-slate-400 py-6 text-xs italic">No approved entries yet.</div>
                   )}
                 </div>
 
@@ -2280,13 +2302,27 @@ export default function AdminDashboard() {
                             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-zoom-in flex flex-col justify-between group"
                           >
                             <div className="w-full aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                              <img 
-                                src={getBackendUrl(photo.fileUrl)} 
-                                alt={photo.title} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                crossOrigin="anonymous"
-                                referrerPolicy="no-referrer"
-                              />
+                              {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                                <video 
+                                  src={getBackendUrl(photo.fileUrl)} 
+                                  autoPlay 
+                                  loop 
+                                  muted 
+                                  playsInline 
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  preload="metadata"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                                />
+                              ) : (
+                                <img 
+                                  src={getBackendUrl(photo.fileUrl)} 
+                                  alt={photo.title} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
                               <span className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
                                 Disapproved
                               </span>
@@ -2325,13 +2361,27 @@ export default function AdminDashboard() {
                           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-zoom-in flex flex-col justify-between group"
                         >
                           <div className="w-full aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                            <img 
-                              src={getBackendUrl(photo.fileUrl)} 
-                              alt={photo.title} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              crossOrigin="anonymous"
-                              referrerPolicy="no-referrer"
-                            />
+                            {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                              <video 
+                                src={getBackendUrl(photo.fileUrl)} 
+                                autoPlay 
+                                loop 
+                                muted 
+                                playsInline 
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer"
+                                preload="metadata"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                              />
+                            ) : (
+                              <img 
+                                src={getBackendUrl(photo.fileUrl)} 
+                                alt={photo.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer"
+                              />
+                            )}
                             <span className="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
                               Pending
                             </span>
@@ -2706,15 +2756,15 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">Event Image (Login & Register Background)</label>
+                  <label className="text-xs text-slate-500 font-semibold">Event Background (Image or Video for Login & Register)</label>
                   <div className="flex items-center gap-2">
                     <label className="flex-1 flex items-center justify-center px-3 py-2 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl text-xs cursor-pointer hover:border-indigo-600 transition-colors">
                       <span className="text-[11px] text-slate-500 truncate">
-                        {uploadingBg ? 'Uploading...' : loginBgUrl ? 'Event Image Uploaded ✓' : 'Upload Event Image (PNG/JPG)'}
+                        {uploadingBg ? 'Uploading Media...' : loginBgUrl ? `Event Background Uploaded (${loginBgUrl.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ? 'Video 🎥' : 'Image 📷'}) ✓` : 'Upload Event Background (Image or Short Video)'}
                       </span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/*,.mp4,.webm,.mov,.m4v"
                         onChange={handleLoginBgUpload}
                         className="hidden"
                         disabled={uploadingBg}
@@ -3202,8 +3252,25 @@ export default function AdminDashboard() {
 
       {/* TAB 6: CATEGORIES CONFIGURATION */}
       {activeTab === 'categories_config' && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-2xl">
+                <Layers size={22} className="shrink-0" />
+              </div>
+              <div>
+                <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">
+                  Contest Types, Categories & Details Configuration
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Create and manage Contest Types, Categories, and Custom Details / Field Configurations for participant entries.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Contest Type and Category setup */}
           <div className="lg:col-span-4 flex flex-col gap-6">
@@ -3857,14 +3924,23 @@ export default function AdminDashboard() {
                 <div className="flex flex-wrap gap-2 max-h-87.5 overflow-y-auto">
                   {(() => {
                     const PREDEFINED_LABELS = [
+                      "Camera Brand",
+                      "Camera Model",
+                      "Lens Used",
+                      "Capture Location",
+                      "Video Resolution (1080p, 4K)",
+                      "Frame Rate / FPS",
+                      "Editing Software",
+                      "Audio / Music Source",
+                      "Medium / Paint Type",
+                      "Surface / Canvas Material",
+                      "Artwork Dimensions",
+                      "Craft Materials Used",
+                      "Theme / Concept Description",
                       "Designer / Brand",
                       "Garment Type",
                       "Fabric / Material",
-                      "Color Palette",
-                      "Accessories Used",
-                      "Footwear",
-                      "Theme / Collection",
-                      "Runway / Venue"
+                      "Color Palette"
                     ];
                     const existingLabels = categories.flatMap(c => c.customLabels || []);
                     const pool = [...new Set([...PREDEFINED_LABELS, ...existingLabels])];
@@ -3899,7 +3975,7 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-      </>
+      </div>
     )}
       {/* TAB: EVENT HISTORY */}
       {activeTab === 'event_history' && (
@@ -4317,157 +4393,210 @@ export default function AdminDashboard() {
 
       {/* TAB 8: NOTIFICATIONS */}
       {activeTab === 'notifications' && (
-        <div className="max-w-7xl mx-auto animate-in fade-in duration-200 text-left flex flex-col gap-8">
-          {/* CARD 1: Notification Management */}
-          <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 bg-white dark:bg-slate-900">
-            <div>
-              <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                <Bell size={20} className="text-indigo-600" />
+        <div className="max-w-7xl mx-auto animate-in fade-in duration-200 text-left flex flex-col gap-6">
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-r from-sky-600 via-cyan-600 to-blue-700 p-6 sm:p-8 rounded-3xl text-white shadow-lg relative overflow-hidden">
+            <div className="relative z-10">
+              <span className="text-[10px] text-sky-200 font-extrabold uppercase tracking-widest block mb-1">
+                System Broadcast Center
+              </span>
+              <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
                 Notification Management
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">Compose announcements and broadcast them to contestants, judges, or both groups.</p>
+              </h1>
+              <p className="text-xs text-sky-100 mt-1 max-w-xl">
+                Compose announcements, contest rule updates, or direct messages and dispatch them to contestants, judges, or specific users.
+              </p>
             </div>
-
-            <form onSubmit={handleSendBroadcast} className="flex flex-col gap-5 text-xs">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-slate-500">Recipient Audience</label>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700 dark:text-slate-300 select-none">
-                    <input
-                      type="radio"
-                      name="broadcastRecipient"
-                      value="Participant"
-                      checked={broadcastRecipient === 'Participant'}
-                      onChange={() => setBroadcastRecipient('Participant')}
-                      className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                    />
-                    Contestants Only
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700 dark:text-slate-300 select-none">
-                    <input
-                      type="radio"
-                      name="broadcastRecipient"
-                      value="Judge"
-                      checked={broadcastRecipient === 'Judge'}
-                      onChange={() => setBroadcastRecipient('Judge')}
-                      className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                    />
-                    Judges Only
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700 dark:text-slate-300 select-none">
-                    <input
-                      type="radio"
-                      name="broadcastRecipient"
-                      value="Both"
-                      checked={broadcastRecipient === 'Both'}
-                      onChange={() => setBroadcastRecipient('Both')}
-                      className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                    />
-                    Both (Announce Globally)
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-slate-500">Notification Message</label>
-                <textarea
-                  value={broadcastMessage}
-                  onChange={(e) => setBroadcastMessage(e.target.value)}
-                  placeholder="Enter details about results, schedules, rules updates, or deadline changes..."
-                  className="w-full min-h-24 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none resize-none"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={broadcastSubmitting || !broadcastMessage.trim()}
-                className="w-fit px-8 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                <Send size={13} />
-                {broadcastSubmitting ? 'Dispatching Message...' : 'Send Broadcast Notification'}
-              </button>
-            </form>
+            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white shrink-0">
+              <Bell size={28} />
+            </div>
           </div>
 
-          {/* CARD 2: Announcements History */}
-          <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 bg-white dark:bg-slate-900">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Form Card: Dispatch Notification */}
+            <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">Announcements History</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Review and manage past broadcast announcements and sent notifications.</p>
+                <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="p-2.5 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 rounded-xl">
+                    <Send size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
+                      Dispatch Notification
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Compose message to send to target audience
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSendBroadcast} className="flex flex-col gap-4 text-xs">
+                  {/* Select Event Scope */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-600 dark:text-slate-300">
+                      Scope / Event Selection
+                    </label>
+                    <select
+                      value={broadcastEventId}
+                      onChange={(e) => setBroadcastEventId(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                    >
+                      <option value="">All Events (Overall System)</option>
+                      {events.map(ev => (
+                        <option key={ev._id} value={ev._id}>{ev.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Target Audience */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-600 dark:text-slate-300">
+                      Target Audience
+                    </label>
+                    <select
+                      value={broadcastRecipient}
+                      onChange={(e) => setBroadcastRecipient(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                    >
+                      <option value="Participant">Contestants Only (Participants)</option>
+                      <option value="Judge">Judges Only</option>
+                      <option value="Both">Both (Announce Globally)</option>
+                    </select>
+                  </div>
+
+                  {/* Notification Message Text Area */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="font-bold text-slate-600 dark:text-slate-300">
+                        Notification Message
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {broadcastMessage.length}/500
+                      </span>
+                    </div>
+                    <textarea
+                      rows={4}
+                      maxLength={500}
+                      value={broadcastMessage}
+                      onChange={(e) => setBroadcastMessage(e.target.value)}
+                      placeholder="Type details about results, schedules, rule updates, or deadline changes..."
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none leading-relaxed"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={broadcastSubmitting || !broadcastMessage.trim()}
+                    className="mt-2 w-full bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-sky-500/25 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Send size={15} />
+                    <span>{broadcastSubmitting ? 'Dispatching Message...' : 'Send Broadcast Notification'}</span>
+                  </button>
+                </form>
               </div>
-              
-              <select
-                value={broadcastFilter}
-                onChange={(e) => setBroadcastFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer focus:outline-none"
-              >
-                <option value="all">All Recipients</option>
-                <option value="Participant">Contestants Only</option>
-                <option value="Judge">Judges Only</option>
-                <option value="Both">Both Audience</option>
-              </select>
             </div>
 
-            {(() => {
-              const filtered = broadcasts.filter(b => broadcastFilter === 'all' || b.recipientType === broadcastFilter);
-              if (filtered.length === 0) {
-                return (
-                  <div className="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 p-6 rounded-2xl text-center text-slate-400 italic text-[11px]">
-                    No previous notifications match this selection.
-                  </div>
-                );
-              }
-
-              return (
-                <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
-                  {filtered.map((b) => (
-                    <div key={b._id} className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-850 flex justify-between gap-4 items-start text-[11px] text-left">
-                      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                        <p className="font-semibold text-slate-700 dark:text-slate-300 leading-relaxed wrap-break-word">{b.message}</p>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-400 font-semibold">
-                          <span className="flex items-center gap-1">
-                            <Users size={11} className="text-slate-400" />
-                            Recipient: <strong className="text-indigo-500">{b.recipientType === 'Both' ? 'Contestants & Judges' : b.recipientType === 'Participant' ? 'Contestants' : 'Judges'}</strong>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} className="text-slate-400" />
-                            {new Date(b.createdAt).toLocaleString()}
-                          </span>
-                          {b.isArchived && (
-                            <span className="px-1.5 py-0.5 rounded text-[8px] bg-slate-200 text-slate-600 uppercase font-black">
-                              Archived
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-1 shrink-0">
-                        <button
-                          onClick={() => handleToggleArchiveBroadcast(b._id)}
-                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                            b.isArchived 
-                              ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-600 dark:bg-indigo-950/20' 
-                              : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-605 dark:bg-slate-900'
-                          }`}
-                          title={b.isArchived ? 'Activate Notification' : 'Archive Notification'}
-                        >
-                          <Archive size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBroadcast(b._id)}
-                          className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-250 text-red-650 dark:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
-                          title="Delete Record"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+            {/* History Table Card */}
+            <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded-xl">
+                      <History size={20} />
                     </div>
-                  ))}
+                    <div>
+                      <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
+                        Announcements History
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Review and manage past broadcast announcements
+                      </p>
+                    </div>
+                  </div>
+
+                  <select
+                    value={broadcastFilter}
+                    onChange={(e) => setBroadcastFilter(e.target.value)}
+                    className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Recipients</option>
+                    <option value="Participant">Contestants Only</option>
+                    <option value="Judge">Judges Only</option>
+                    <option value="Both">Both Audience</option>
+                  </select>
                 </div>
-              );
-            })()}
+
+                {(() => {
+                  const filtered = broadcasts.filter(b => broadcastFilter === 'all' || b.recipientType === broadcastFilter);
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-16 text-center text-slate-400 flex flex-col items-center gap-3">
+                        <Bell size={36} className="text-slate-300 dark:text-slate-700 stroke-[1.5]" />
+                        <p className="text-xs font-semibold">No notifications match this selection.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-3.5 max-h-[480px] overflow-y-auto pr-1">
+                      {filtered.map((b) => (
+                        <div
+                          key={b._id}
+                          className="bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 p-4 rounded-2xl flex items-start justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-600 transition-all"
+                        >
+                          <div className="flex flex-col gap-2 grow text-left">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
+                                b.recipientType === 'Participant'
+                                  ? 'bg-sky-500/10 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400 border border-sky-500/20'
+                                  : b.recipientType === 'Judge'
+                                  ? 'bg-teal-500/10 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 border border-teal-500/20'
+                                  : 'bg-amber-500/10 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-500/20'
+                              }`}>
+                                Target: {b.recipientType === 'Both' ? 'Contestants & Judges' : b.recipientType === 'Participant' ? 'Contestants' : 'Judges'}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium">
+                                {new Date(b.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {b.isArchived && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase font-black">
+                                  Archived
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                              {b.message}
+                            </p>
+                          </div>
+
+                          <div className="flex gap-1.5 shrink-0">
+                            <button
+                              onClick={() => handleToggleArchiveBroadcast(b._id)}
+                              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                                b.isArchived 
+                                  ? 'bg-sky-50 hover:bg-sky-100 border-sky-200 text-sky-600 dark:bg-sky-950/30' 
+                                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                              }`}
+                              title={b.isArchived ? 'Activate Notification' : 'Archive Notification'}
+                            >
+                              <Archive size={15} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBroadcast(b._id)}
+                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all cursor-pointer"
+                              title="Delete Record"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -4607,15 +4736,26 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="relative w-full max-w-[80vw] h-[80vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left">
             
-            {/* Left Column: Image Viewport */}
+            {/* Left Column: Image/Video Viewport */}
             <div className="grow bg-slate-950 flex items-center justify-center p-6 relative h-full">
-              <img 
-                src={getBackendUrl(selectedPhoto.fileUrl)} 
-                alt={selectedPhoto.title}
-                className="w-full h-full object-contain rounded-2xl shadow-lg border border-slate-800"
-                crossOrigin="anonymous"
-                referrerPolicy="no-referrer"
-              />
+              {selectedPhoto.mediaType === 'video' || selectedPhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
+                <video 
+                  src={getBackendUrl(selectedPhoto.fileUrl)} 
+                  controls
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  preload="metadata"
+                  className="w-full h-full object-contain rounded-2xl shadow-lg border border-slate-800"
+                />
+              ) : (
+                <img 
+                  src={getBackendUrl(selectedPhoto.fileUrl)} 
+                  alt={selectedPhoto.title}
+                  className="w-full h-full object-contain rounded-2xl shadow-lg border border-slate-800"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                />
+              )}
             </div>
 
             {/* Right Column: Information Panel */}

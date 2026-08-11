@@ -197,23 +197,39 @@ export default function Register() {
       </div>
     );
   }
+  const [videoError, setVideoError] = useState(false);
   const isFromEventEnroll = location.state?.fromEventEnroll === true;
   const enrolledEvent = isFromEventEnroll ? (event || location.state?.event) : null;
   const assignedEventBg = enrolledEvent ? (enrolledEvent.loginBgUrl || enrolledEvent.imageUrl || enrolledEvent.image || enrolledEvent.coverImage) : null;
+  const isVideoBg = isFromEventEnroll && assignedEventBg && (assignedEventBg.includes('/video/upload/') || assignedEventBg.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i)) && !videoError;
 
   return (
     <div 
       className="min-h-[calc(100vh-4rem)] w-full flex items-center bg-cover bg-center relative overflow-hidden login-bg-responsive"
       style={{
-        '--login-bg': isFromEventEnroll && assignedEventBg ? `url('${getBackendUrl(assignedEventBg)}')` : 'none'
+        '--login-bg': isFromEventEnroll && assignedEventBg && !isVideoBg ? `url('${getBackendUrl(assignedEventBg)}')` : 'none'
       }}
     >
       {!isFromEventEnroll && (
         <WaterRippleBackground imageUrl="/hero-bg.jpg" />
       )}
+      {isFromEventEnroll && isVideoBg && (
+        <video
+          src={getBackendUrl(assignedEventBg)}
+          autoPlay
+          loop
+          muted
+          playsInline
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+          preload="metadata"
+          onError={() => setVideoError(true)}
+          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-90"
+        />
+      )}
       <style>{`
         .login-bg-responsive {
-          ${isFromEventEnroll && assignedEventBg ? 'background-image: var(--login-bg) !important;' : ''}
+          ${isFromEventEnroll && assignedEventBg && !isVideoBg ? 'background-image: var(--login-bg) !important;' : ''}
           background-size: cover;
           background-position: center;
         }
@@ -467,14 +483,14 @@ export default function Register() {
                 /* OTP verification form */
                 <form onSubmit={handleOtpVerify} className="flex flex-col gap-5 animate-in fade-in duration-200">
                   <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col gap-1">
-                    <span className="text-[10px] font-extrabold uppercase text-slate-400">Test OTP Code (Development Only)</span>
+                    <span className="text-[10px] font-extrabold uppercase text-white">Test OTP Code (Development Only)</span>
                     <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">
                       {devOtp}
                     </span>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-500 text-center">
+                    <label className="text-xs font-semibold text-white text-center">
                       We've sent a 6-digit OTP verification code. Please input it below:
                     </label>
                     <input

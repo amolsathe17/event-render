@@ -20,6 +20,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // If event.target was unmounted during click (e.g. notification item deleted), ignore
+      if (event.target && !document.body.contains(event.target)) {
+        return;
+      }
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
@@ -52,20 +56,26 @@ export default function Navbar() {
   const unreadCount = unreadNotifs.length;
 
   const markAsRead = async (notifId, e) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     try {
-      await apiFetch(`/api/auth/notifications/${notifId}/read`, { method: 'POST' });
+      const idParam = typeof notifId === 'object' ? (notifId._id || notifId.toString()) : notifId;
+      await apiFetch(`/api/auth/notifications/${idParam}/read`, { method: 'POST' });
       if (refreshUser) await refreshUser();
     } catch (err) {
       console.error("Failed to mark notification as read:", err.message);
     }
   };
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     try {
-      for (const notif of unreadNotifs) {
-        await apiFetch(`/api/auth/notifications/${notif._id || unreadNotifs.indexOf(notif)}/read`, { method: 'POST' });
-      }
+      await apiFetch('/api/auth/notifications/read-all', { method: 'POST' });
       if (refreshUser) await refreshUser();
     } catch (err) {
       console.error("Failed to mark all as read:", err.message);
@@ -73,9 +83,13 @@ export default function Navbar() {
   };
 
   const deleteNotif = async (notifId, e) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     try {
-      await apiFetch(`/api/auth/notifications/${notifId}`, { method: 'DELETE' });
+      const idParam = typeof notifId === 'object' ? (notifId._id || notifId.toString()) : notifId;
+      await apiFetch(`/api/auth/notifications/${idParam}`, { method: 'DELETE' });
       if (refreshUser) await refreshUser();
     } catch (err) {
       console.error("Failed to delete notification:", err.message);
@@ -83,7 +97,10 @@ export default function Navbar() {
   };
 
   const deleteAllNotifs = async (e) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     try {
       await apiFetch('/api/auth/notifications/all', { method: 'DELETE' });
       if (refreshUser) await refreshUser();
@@ -98,11 +115,8 @@ export default function Navbar() {
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => {
-            if (user?.role === 'Participant') {
-              setShowParticipantModal(true);
-            } else {
-              setShowNotifications(!showNotifications);
-            }
+            setShowNotifications(!showNotifications);
+            setShowProfileDropdown(false);
           }}
           className="relative p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
@@ -115,12 +129,17 @@ export default function Navbar() {
         </button>
 
         {showNotifications && (
-          <div className="absolute right-0 mt-2 w-[280px] sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div 
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-0 mt-2 w-[280px] sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+          >
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
               <h4 className="font-display font-extrabold text-slate-900 dark:text-white text-xs">Notifications</h4>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={markAllAsRead}
                     className="text-[10px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
                   >
@@ -130,6 +149,7 @@ export default function Navbar() {
                 )}
                 {user?.notifications && user.notifications.length > 0 && (
                   <button
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={deleteAllNotifs}
                     className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                     title="delete all"
@@ -144,10 +164,12 @@ export default function Navbar() {
               {user.notifications && user.notifications.length > 0 ? (
                 [...user.notifications].reverse().map((notif, idx) => {
                   const realIdx = user.notifications.length - 1 - idx;
+                  const targetId = notif._id ? (typeof notif._id === 'object' ? (notif._id._id || notif._id.toString()) : notif._id) : realIdx;
                   return (
                     <div
-                      key={notif._id || idx}
-                      onClick={(e) => !notif.isRead && markAsRead(notif._id || realIdx, e)}
+                      key={targetId || idx}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => !notif.isRead && markAsRead(targetId, e)}
                       className={`p-4 text-left transition-colors cursor-pointer flex gap-3 ${
                         notif.isRead
                           ? 'bg-transparent text-slate-500 dark:text-slate-400'
@@ -163,7 +185,8 @@ export default function Navbar() {
                       <div className="flex gap-1 items-center shrink-0 self-start">
                         {!notif.isRead && (
                           <button
-                            onClick={(e) => markAsRead(notif._id || realIdx, e)}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => markAsRead(targetId, e)}
                             className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer rounded hover:bg-slate-100 dark:hover:bg-slate-850"
                             title="Dismiss (Mark read)"
                           >
@@ -171,7 +194,8 @@ export default function Navbar() {
                           </button>
                         )}
                         <button
-                          onClick={(e) => deleteNotif(notif._id || realIdx, e)}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => deleteNotif(targetId, e)}
                           className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer rounded hover:bg-slate-100 dark:hover:bg-slate-855"
                           title="Delete Notification"
                         >
@@ -344,6 +368,8 @@ export default function Navbar() {
                               setShowProfileDropdown(false);
                               if (user.role === 'Admin') {
                                 navigate('/admin', { state: { tab: 'profile_settings' } });
+                              } else if (user.role === 'Judge') {
+                                navigate('/judge', { state: { tab: 'profile_settings' } });
                               } else {
                                 navigate('/profile');
                               }
@@ -354,11 +380,15 @@ export default function Navbar() {
                             <span>Profile Settings</span>
                           </button>
 
-                          {user.role === 'Admin' && (
+                          {(user.role === 'Admin' || user.role === 'Judge') && (
                             <button
                               onClick={() => {
                                 setShowProfileDropdown(false);
-                                navigate('/admin', { state: { tab: 'notifications' } });
+                                if (user.role === 'Admin') {
+                                  navigate('/admin', { state: { tab: 'notifications' } });
+                                } else {
+                                  navigate('/judge', { state: { tab: 'notifications' } });
+                                }
                               }}
                               className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
                             >

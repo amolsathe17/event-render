@@ -236,8 +236,14 @@ export default function Gallery() {
                       key={photo.photoId}
                       className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col group"
                     >
-                      <div className="relative overflow-hidden aspect-video">
-                        {photo.fileUrl ? (
+                      <div className="relative overflow-hidden aspect-video bg-black">
+                        {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
+                          <video
+                            src={getBackendUrl(photo.fileUrl)}
+                            controls
+                            className="w-full h-full object-contain"
+                          />
+                        ) : photo.fileUrl ? (
                           <img
                             src={getBackendUrl(photo.fileUrl)}
                             alt={photo.title}
@@ -596,11 +602,25 @@ export default function Gallery() {
               <X size={20} />
             </button>
             <div className="grid grid-cols-1 lg:grid-cols-12">
-              <div className="lg:col-span-8 bg-slate-950 flex items-center justify-center min-h-75 max-h-125">
-                {/* Custom Watermarked Preview component */}
-                <WatermarkPreview src={getBackendUrl(selectedPhoto.fileUrl)} className="w-full h-full" />
+              <div className="lg:col-span-8 bg-slate-950 flex items-center justify-center relative p-3 min-h-[320px] lg:min-h-[480px]">
+                {selectedPhoto.mediaType === 'video' || selectedPhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) || selectedPhoto.fileUrl?.includes('/video/upload/') ? (
+                  <video 
+                    src={getBackendUrl(selectedPhoto.fileUrl)} 
+                    controls 
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
+                    preload="metadata"
+                    className="w-full h-full max-h-[70vh] object-contain rounded-xl" 
+                  />
+                ) : (
+                  <WatermarkPreview 
+                    src={getBackendUrl(selectedPhoto.fileUrl)} 
+                    enableZoom={true}
+                    className="w-full h-full max-h-[70vh] object-contain rounded-xl" 
+                  />
+                )}
               </div>
-              <div className="lg:col-span-4 p-6 flex flex-col justify-between text-xs max-h-125 overflow-y-auto">
+              <div className="lg:col-span-4 p-6 flex flex-col justify-between text-xs max-h-[70vh] overflow-y-auto">
                 <div className="flex flex-col gap-4">
                   <div>
                     <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">{selectedPhoto.title}</h3>

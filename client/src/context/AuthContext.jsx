@@ -78,13 +78,16 @@ export const AuthProvider = ({ children }) => {
             }
           }
 
-          // If server returns 502, 503, 504, or transient 404 while backend initializes and we have retries left, retry seamlessly
-          if ((response.status === 502 || response.status === 503 || response.status === 504 || response.status === 404) && attempt < retries) {
+          // If server returns 502, 503, 504, or unhandled HTML 404 while backend initializes and we have retries left, retry seamlessly
+          const isHtml404 = response.status === 404 && typeof data === 'string';
+          if ((response.status === 502 || response.status === 503 || response.status === 504 || isHtml404) && attempt < retries) {
             console.warn(`API returned status ${response.status}. Retrying attempt ${attempt + 1}/${retries}...`);
             continue;
           }
 
-          throw new Error(msg);
+          const apiErr = new Error(msg);
+          apiErr.status = response.status;
+          throw apiErr;
         }
 
         return data;
@@ -105,7 +108,9 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    console.error("API Error:", lastErr);
+    if (!lastErr?.status || lastErr.status >= 500) {
+      console.error("API Error:", lastErr);
+    }
     throw lastErr;
   };
 

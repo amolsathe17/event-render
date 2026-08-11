@@ -204,4 +204,101 @@ router.post('/score', protect, authorize('Judge'), async (req, res) => {
   }
 });
 
+const mongoose = require('mongoose');
+
+// @desc    Send broadcast notification (Judge)
+// @route   POST /api/judges/broadcasts
+// @access  Private/Judge
+router.post('/broadcasts', protect, authorize('Judge', 'Admin'), async (req, res) => {
+  try {
+    const { message, recipientType, eventId, participantId } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Notification message is required' });
+    }
+
+    const Broadcast = require('../models/Broadcast');
+    const User = require('../models/User');
+    const Event = require('../models/Event');
+    const Submission = require('../models/Submission');
+
+    const broadcast = await Broadcast.create({
+      message: message.trim(),
+      recipientType: recipientType === 'Specific' ? 'Participant' : recipientType,
+      sentBy: req.user.name || 'Judge',
+      ...(eventId ? { eventId } : {})
+    });
+
+    let targetUsers = [];
+    if (recipientType === 'Specific' && participantId) {
+      targetUsers = await User.find({ _id: participantId });
+    } else if (recipientType === 'Admin') {
+      targetUsers = await User.find({ role: 'Admin' });
+    } else if (recipientType === 'Participant') {
+      if (eventId) {
+        const subs = await Submission.find({ eventId });
+        const pIds = [...new Set(subs.map(s => s.userId))];
+        targetUsers = await User.find({ _id: { $in: pIds }, role: 'Participant' });
+      } else {
+        targetUsers = await User.find({ role: 'Participant' });
+      }
+    } else if (recipientType === 'Both') {
+      let pUsers = [];
+      if (eventId) {
+        const subs = await Submission.find({ eventId });
+        const pIds = [...new Set(subs.map(s => s.userId))];
+        pUsers = await User.find({ _id: { $in: pIds }, role: 'Participant' });
+      } else {
+        pUsers = await User.find({ role: 'Participant' });
+      }
+      const admins = await User.find({ role: 'Admin' });
+      targetUsers = [...pUsers, ...admins];
+    }
+
+    for (const u of targetUsers) {
+      if (!u.notifications) u.notifications = [];
+      u.notifications.push({
+        _id: new mongoose.Types.ObjectId(),
+        message: message.trim(),
+        type: 'info',
+        isRead: false,
+        createdAt: new Date()
+      });
+      await u.save();
+    }
+
+    res.status(201).json({ success: true, message: 'Notification sent successfully', broadcast });
+  } catch (error) {
+    console.error('Judge Broadcast Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send notification' });
+  }
+});
+
+// @desc    Get broadcasts sent by Judge
+// @route   GET /api/judges/broadcasts
+// @access  Private/Judge
+router.get('/broadcasts', protect, authorize('Judge', 'Admin'), async (req, res) => {
+  try {
+    const Broadcast = require('../models/Broadcast');
+    const broadcasts = await Broadcast.find({ sentBy: req.user.name }).sort({ createdAt: -1 });
+    res.json({ success: true, broadcasts });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @desc    Delete Judge broadcast
+// @route   DELETE /api/judges/broadcasts/:id
+// @access  Private/Judge
+router.delete('/broadcasts/:id', protect, authorize('Judge', 'Admin'), async (req, res) => {
+  try {
+    const Broadcast = require('../models/Broadcast');
+    await Broadcast.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Broadcast deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

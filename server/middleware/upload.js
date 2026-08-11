@@ -19,21 +19,21 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.pdf', '.tiff', '.tif', '.cr2', '.nef', '.arw', '.dng', '.raf', '.orf'];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.pdf', '.tiff', '.tif', '.cr2', '.nef', '.arw', '.dng', '.raf', '.orf', '.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.3gp'];
   const ext = path.extname(file.originalname).toLowerCase();
   
   if (allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Only JPG, PNG, WEBP, SVG, PDF, TIFF and RAW files are allowed!'), false);
+    cb(new Error('Only image (JPG, PNG, WEBP, TIFF, RAW) and video (MP4, MOV, WEBM, AVI) files are allowed!'), false);
   }
 };
 
-// Default limit 50MB for high-resolution DSLR photos & RAW files (can be checked in routes based on admin settings)
+// Default limit 100MB for high-res DSLR photos & short video event entries
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }
+  limits: { fileSize: 100 * 1024 * 1024 }
 });
 
 module.exports = upload;

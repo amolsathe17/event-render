@@ -203,10 +203,24 @@ router.post('/upload', protect, upload.fields([
     const photoFile = req.files.photoFile[0];
     const rawFile = req.files.rawFile ? req.files.rawFile[0] : null;
 
-    if (photoFile.size > 800 * 1024) {
-      fs.unlinkSync(photoFile.path);
-      if (rawFile) fs.unlinkSync(rawFile.path);
-      return res.status(400).json({ success: false, message: 'Photograph file size must be below 800 KB.' });
+    const ext = path.extname(photoFile.originalname).toLowerCase();
+    const isVideoFile = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.3gp'].includes(ext);
+
+    let mediaType = isVideoFile ? 'video' : 'photo';
+    if (event && (event.mediaType === 'video' || String(event.eventType).toLowerCase().includes('video') || String(event.eventType).toLowerCase().includes('reel'))) {
+      mediaType = 'video';
+    }
+
+    if (mediaType === 'video' && photoFile.size > 25 * 1024 * 1024) {
+      if (fs.existsSync(photoFile.path)) fs.unlinkSync(photoFile.path);
+      if (rawFile && fs.existsSync(rawFile.path)) fs.unlinkSync(rawFile.path);
+      return res.status(400).json({ success: false, message: 'Video file size must be below 25 MB.' });
+    }
+
+    if (mediaType === 'photo' && photoFile.size > 50 * 1024 * 1024) {
+      if (fs.existsSync(photoFile.path)) fs.unlinkSync(photoFile.path);
+      if (rawFile && fs.existsSync(rawFile.path)) fs.unlinkSync(rawFile.path);
+      return res.status(400).json({ success: false, message: 'Photograph file size must be below 50 MB.' });
     }
 
     const submission = await Submission.findOne({ userId: req.user._id.toString(), eventId });
@@ -222,12 +236,14 @@ router.post('/upload', protect, upload.fields([
       return res.status(400).json({ success: false, message: 'Entry has already been finalized' });
     }
 
+    const mediaNoun = mediaType === 'video' ? (submission.photoLimit > 1 ? 'videos' : 'video') : (submission.photoLimit > 1 ? 'photographs' : 'photograph');
+
     if (submission.photographs.length >= submission.photoLimit) {
       fs.unlinkSync(photoFile.path);
-      if (rawFile) fs.unlinkSync(rawFile.path);
+      if (rawFile && fs.existsSync(rawFile.path)) fs.unlinkSync(rawFile.path);
       return res.status(400).json({
         success: false,
-        message: `Upload limit reached. Your plan allows a maximum of ${submission.photoLimit} photographs.`
+        message: `Upload limit reached. Your plan allows a maximum of ${submission.photoLimit} ${mediaNoun}.`
       });
     }
 
@@ -240,40 +256,44 @@ router.post('/upload', protect, upload.fields([
 
     if (duplicateSubmission) {
       fs.unlinkSync(photoFile.path);
-      if (rawFile) fs.unlinkSync(rawFile.path);
+      if (rawFile && fs.existsSync(rawFile.path)) fs.unlinkSync(rawFile.path);
       return res.status(400).json({
         success: false,
-        message: 'Duplicate Image detected! This photograph has already been uploaded.'
+        message: mediaType === 'video' 
+          ? 'Duplicate Video detected! This video asset has already been uploaded.'
+          : 'Duplicate Image detected! This photograph has already been uploaded.'
       });
     }
 
-    // Backend EXIF Validation Check via exifr
+    // Backend EXIF Validation Check via exifr (for photo files)
     let exif = null;
     let width = null;
     let height = null;
-    let format = path.extname(photoFile.originalname).substring(1).toUpperCase();
-    let cameraMake = 'Unknown';
-    let cameraModel = 'Unknown';
+    let format = ext.substring(1).toUpperCase();
+    let cameraMake = isVideoFile ? 'Short Video' : 'Unknown';
+    let cameraModel = isVideoFile ? 'Digital / Social Video' : 'Unknown';
     let lensModel = '';
     let originalCaptureDate = null;
 
-    try {
-      exif = await exifr.parse(photoFile.path, {
-        tiff: true,
-        xmp: true,
-        exif: true
-      });
+    if (mediaType === 'photo') {
+      try {
+        exif = await exifr.parse(photoFile.path, {
+          tiff: true,
+          xmp: true,
+          exif: true
+        });
 
-      if (exif) {
-        cameraMake = exif.Make || 'Unknown';
-        cameraModel = exif.Model || 'Unknown';
-        lensModel = exif.LensModel || exif.LensUsed || '';
-        originalCaptureDate = exif.DateTimeOriginal ? new Date(exif.DateTimeOriginal) : null;
-        width = exif.ExifImageWidth || exif.ImageWidth || null;
-        height = exif.ExifImageHeight || exif.ImageHeight || null;
+        if (exif) {
+          cameraMake = exif.Make || 'Unknown';
+          cameraModel = exif.Model || 'Unknown';
+          lensModel = exif.LensModel || exif.LensUsed || '';
+          originalCaptureDate = exif.DateTimeOriginal ? new Date(exif.DateTimeOriginal) : null;
+          width = exif.ExifImageWidth || exif.ImageWidth || null;
+          height = exif.ExifImageHeight || exif.ImageHeight || null;
+        }
+      } catch (exifErr) {
+        console.warn('EXIF validation skipped:', exifErr.message);
       }
-    } catch (exifErr) {
-      console.warn('EXIF validation skipped:', exifErr.message);
     }
 
     // Override or fallback with user-supplied details from request body if provided
@@ -290,27 +310,30 @@ router.post('/upload', protect, upload.fields([
       originalCaptureDate = new Date(req.body.dateCaptured);
     }
 
-    const dslrCheck = validateDSLR(exif);
-
-    if (dslrCheck.status === 'REJECTED') {
-      fs.unlinkSync(photoFile.path);
-      if (rawFile) fs.unlinkSync(rawFile.path);
-      return res.status(400).json({
-        success: false,
-        message: dslrCheck.reason
-      });
+    let dslrCheck = { status: 'VERIFIED', reason: 'Video entry submitted successfully' };
+    if (mediaType === 'photo') {
+      dslrCheck = validateDSLR(exif);
+      if (dslrCheck.status === 'REJECTED') {
+        fs.unlinkSync(photoFile.path);
+        if (rawFile) fs.unlinkSync(rawFile.path);
+        return res.status(400).json({
+          success: false,
+          message: dslrCheck.reason
+        });
+      }
     }
 
     // Cloudinary Upload
     let cloudinaryResult;
     try {
       const folderPath = `photography-event/2026/${submission.entryNumber}/${req.user._id.toString()}`;
-      const publicId = `photo_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const prefix = mediaType === 'video' ? 'video' : 'photo';
+      const publicId = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
       cloudinaryResult = await cloudinary.uploader.upload(photoFile.path, {
         folder: folderPath,
         public_id: publicId,
-        resource_type: 'image'
+        resource_type: mediaType === 'video' ? 'video' : 'auto'
       });
     } catch (cldErr) {
       console.error('Cloudinary Error:', cldErr.message);
@@ -318,7 +341,7 @@ router.post('/upload', protect, upload.fields([
       if (rawFile) fs.unlinkSync(rawFile.path);
       return res.status(500).json({
         success: false,
-        message: 'Could not upload photograph online to Cloudinary.',
+        message: 'Could not upload media online to Cloudinary.',
         error: cldErr.message
       });
     }
@@ -329,14 +352,14 @@ router.post('/upload', protect, upload.fields([
     let rawFileUrl = '';
     if (rawFile) {
       try {
-        const folderPath = `photography-event/2026/${submission.entryNumber}/${req.user._id.toString()}`;
+        const rawFolderPath = `photography-event/2026/${submission.entryNumber}/${req.user._id.toString()}/raw`;
         const rawPublicId = `raw_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-        const rawCloudinaryResult = await cloudinary.uploader.upload(rawFile.path, {
-          folder: folderPath,
+        const rawCld = await cloudinary.uploader.upload(rawFile.path, {
+          folder: rawFolderPath,
           public_id: rawPublicId,
           resource_type: 'raw'
         });
-        rawFileUrl = rawCloudinaryResult.secure_url;
+        rawFileUrl = rawCld.secure_url;
       } catch (rawErr) {
         console.warn('RAW file upload warning:', rawErr.message);
       }
@@ -351,6 +374,8 @@ router.post('/upload', protect, upload.fields([
       entryId: submission._id.toString(),
       title: title || photoFile.originalname || 'Untitled',
       category: category || 'General',
+      mediaType,
+      videoDuration: req.body.videoDuration ? Number(req.body.videoDuration) : (cloudinaryResult.duration || 0),
       description: description || '',
       originalFilename: photoFile.originalname,
       cloudinaryPublicId: cloudinaryResult.public_id,
@@ -364,8 +389,8 @@ router.post('/upload', protect, upload.fields([
       lensModel,
       originalCaptureDate,
       exifData: exif,
-      dslrValidationStatus: dslrCheck.status,
-      validationReason: dslrCheck.reason,
+      dslrValidationStatus: mediaType === 'video' ? 'VERIFIED' : dslrCheck.status,
+      validationReason: mediaType === 'video' ? 'Short Video Submitted' : dslrCheck.reason,
       uploadTimestamp: new Date(),
       deletionStatus: false,
       customFields
@@ -375,6 +400,8 @@ router.post('/upload', protect, upload.fields([
       id: photoId,
       title: title || photoFile.originalname || 'Untitled',
       category: category || 'General',
+      mediaType,
+      videoDuration: req.body.videoDuration ? Number(req.body.videoDuration) : (cloudinaryResult.duration || 0),
       cameraBrand: cameraMake,
       cameraModel,
       lensUsed: lensModel,
@@ -392,8 +419,8 @@ router.post('/upload', protect, upload.fields([
       width: width || cloudinaryResult.width,
       height: height || cloudinaryResult.height,
       format: format || cloudinaryResult.format,
-      dslrValidationStatus: dslrCheck.status,
-      validationReason: dslrCheck.reason,
+      dslrValidationStatus: mediaType === 'video' ? 'VERIFIED' : dslrCheck.status,
+      validationReason: mediaType === 'video' ? 'Short Video Submitted' : dslrCheck.reason,
       originalFilename: photoFile.originalname,
       uploadTimestamp: new Date(),
       deletionStatus: false,

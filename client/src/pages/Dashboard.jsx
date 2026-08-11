@@ -397,12 +397,8 @@ export default function Dashboard() {
   };
 
   const handleUploadPhoto = async (photoFile, rawFile) => {
-    if (photoFile && photoFile.size > 800 * 1024) {
-      setError("Photograph file size must be below 800 KB.");
-      return;
-    }
     if (!title || !title.trim()) {
-      setError("Photo Title is mandatory. Please enter a title for your photograph.");
+      setError("Photo / Video Title is mandatory. Please enter a title for your submission.");
       return;
     }
 
@@ -1740,7 +1736,7 @@ export default function Dashboard() {
                                       <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-5 shadow-sm">
                                         <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
                                           <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">
-                                            Upload {e.eventType} Entry Photo
+                                            Upload {e.eventType} Entry {(e?.mediaType === 'video' || String(e?.eventType).toLowerCase().includes('video') || String(e?.eventType).toLowerCase().includes('reel')) ? 'Video' : 'Photo'}
                                           </h3>
                                           <p className="text-[11px] text-slate-400 mt-0.5">
                                             {e.eventType === 'Photography' 
@@ -1752,14 +1748,14 @@ export default function Dashboard() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           <div className="flex flex-col gap-4">
                                             <div className="flex flex-col gap-1 text-[11px]">
-                                              <label htmlFor="photoTitle" className="font-semibold text-slate-400">Photo Title *</label>
+                                              <label htmlFor="photoTitle" className="font-semibold text-slate-400">Photo / Video Title *</label>
                                               <input
                                                 id="photoTitle"
                                                 type="text"
                                                 required
                                                 value={title}
                                                 onChange={(e) => setTitle(e.target.value)}
-                                                placeholder="Enter photo title"
+                                                placeholder="Enter photo / video title"
                                                 className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-indigo-600 text-xs font-semibold text-slate-800 dark:text-slate-100"
                                               />
                                             </div>
@@ -1814,12 +1810,20 @@ export default function Dashboard() {
                                               />
                                             </div>
 
-                                            {/* Photo Upload Zone */}
+                                            {/* Media Upload Zone */}
                                             <div className="flex flex-col gap-1 text-[11px]">
                                               <label className="font-semibold text-slate-400">
-                                                DSLR Photograph File (Max 800 KB) *
+                                                {(e?.mediaType === 'video' || e?.eventType?.toLowerCase().includes('video') || e?.eventType?.toLowerCase().includes('reel'))
+                                                  ? 'Short Video / Reel File (MP4, MOV, WEBM - Max 25 MB) *'
+                                                  : 'DSLR Photograph File (Max 50 MB) *'
+                                                }
                                               </label>
                                               <DragDropUpload
+                                                mediaType={
+                                                  (e?.mediaType === 'video' || e?.eventType?.toLowerCase().includes('video') || e?.eventType?.toLowerCase().includes('reel'))
+                                                    ? 'video'
+                                                    : 'photo'
+                                                }
                                                 onUpload={async (photo, raw) => {
                                                   if (!category) {
                                                     setConfirmModal({
@@ -1849,17 +1853,23 @@ export default function Dashboard() {
                                       <div className="glass-panel border border-slate-100 dark:border-slate-800 rounded-3xl p-8 text-center flex flex-col items-center justify-center gap-3 bg-slate-50/50 dark:bg-slate-900/10">
                                         <ImageIcon size={32} className="text-slate-300" />
                                         <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">
-                                          No photos uploaded in this entry folder yet.
+                                          No entries uploaded in this folder yet.
                                         </p>
                                         <p className="text-xs max-w-xs text-slate-500">
-                                          Use the entry form above to upload photographs corresponding to your selected package tier.
+                                          Use the entry form above to upload files corresponding to your selected package tier.
                                         </p>
                                       </div>
                                     ) : (
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {submission.photographs.map((photo) => (
                                           <div key={photo.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                                            <WatermarkPreview src={getBackendUrl(photo.fileUrl)} className="aspect-video w-full" />
+                                            {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
+                                              <div className="aspect-video w-full bg-black flex items-center justify-center relative overflow-hidden rounded-t-2xl">
+                                                <video src={getBackendUrl(photo.fileUrl)} controls className="w-full h-full object-contain" />
+                                              </div>
+                                            ) : (
+                                              <WatermarkPreview src={getBackendUrl(photo.fileUrl)} className="aspect-video w-full" />
+                                            )}
                                             <div className="p-4 flex flex-col gap-3 grow justify-between">
                                               <div>
                                                 <div className="flex justify-between items-start gap-2">
@@ -1951,7 +1961,9 @@ export default function Dashboard() {
                                     <div className="flex flex-col gap-2.5 text-xs text-left">
                                       <div className="flex justify-between">
                                         <span className="text-slate-400">Contest Limit:</span>
-                                        <strong className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedPackage?.maxPhotos} photo frames</strong>
+                                        <strong className="text-slate-800 dark:text-slate-200 font-extrabold">
+                                          {selectedPackage?.maxPhotos} {(e?.mediaType === 'video' || String(e?.eventType).toLowerCase().includes('video') || String(e?.eventType).toLowerCase().includes('reel')) ? (selectedPackage?.maxPhotos > 1 ? 'videos' : 'video entry') : 'photo frames'}
+                                        </strong>
                                       </div>
                                       <div className="flex justify-between">
                                         <span className="text-slate-400">Total Uploads:</span>
@@ -1990,18 +2002,18 @@ export default function Dashboard() {
                                         {isFinalized ? (
                                           <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 p-4 rounded-2xl flex items-start gap-2.5 text-[11px] text-emerald-700 dark:text-emerald-500 leading-relaxed font-semibold">
                                             <ShieldCheck size={18} className="text-emerald-500 shrink-0 mt-0.5" />
-                                            <p>This folder is sealed and submitted. Your DSLR EXIF specs are locked for jury panel grading. Best of luck!</p>
+                                            <p>This folder is sealed and submitted. Your {(e?.mediaType === 'video' || String(e?.eventType).toLowerCase().includes('video') || String(e?.eventType).toLowerCase().includes('reel')) ? 'video details' : 'DSLR EXIF specs'} are locked for jury panel grading. Best of luck!</p>
                                           </div>
                                         ) : (
                                           <>
                                             <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/40 p-4 rounded-2xl flex items-start gap-2.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
                                               <Clock size={18} className="text-indigo-500 shrink-0 mt-0.5" />
-                                              <p>Provide all photo attachments. When complete, click the Lock folder button to submit to the panel.</p>
+                                              <p>Provide all {(e?.mediaType === 'video' || String(e?.eventType).toLowerCase().includes('video') || String(e?.eventType).toLowerCase().includes('reel')) ? 'video' : 'photo'} attachments. When complete, click the Lock folder button to submit to the panel.</p>
                                             </div>
                                             {submission.photographs.length < selectedPackage?.maxPhotos && (
                                               <div className="bg-amber-50 dark:bg-amber-955/20 border border-amber-200/50 p-3.5 rounded-2xl flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-400 font-semibold leading-relaxed">
                                                 <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                                <span>You must upload exactly {selectedPackage?.maxPhotos} photo{selectedPackage?.maxPhotos > 1 ? 's' : ''} for your selected package tier before you can finalize and lock your entry folder. (Currently {submission.photographs.length} uploaded)</span>
+                                                <span>You must upload exactly {selectedPackage?.maxPhotos} {(e?.mediaType === 'video' || String(e?.eventType).toLowerCase().includes('video') || String(e?.eventType).toLowerCase().includes('reel')) ? (selectedPackage?.maxPhotos > 1 ? 'videos' : 'video') : (selectedPackage?.maxPhotos > 1 ? 'photos' : 'photo')} for your selected package tier before you can finalize and lock your entry folder. (Currently {submission.photographs.length} uploaded)</span>
                                               </div>
                                             )}
                                             <div className="flex justify-center">
@@ -2213,7 +2225,7 @@ export default function Dashboard() {
                 {/* Edit Title */}
                 <div className="flex flex-col gap-1.5 md:col-span-2">
                   <label htmlFor="editPhotoTitle" className="font-extrabold text-slate-400 dark:text-slate-500 uppercase text-[9px] tracking-wider">
-                    Photo Title *
+                    Photo / Video Title *
                   </label>
                   <input
                     type="text"
@@ -2221,7 +2233,7 @@ export default function Dashboard() {
                     required
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="Enter photo title (Required)"
+                    placeholder="Enter photo / video title (Required)"
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 font-semibold text-slate-800 dark:text-slate-100 text-xs"
                   />
                 </div>

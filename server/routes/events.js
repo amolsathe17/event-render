@@ -830,13 +830,16 @@ router.post('/upload-bg', protect, authorize('Admin'), (req, res, next) => {
     const fs = require('fs');
     let fileUrl = `/uploads/${req.file.filename}`;
 
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const isVideo = ['.mp4', '.mov', '.webm', '.avi', '.m4v', '.3gp'].includes(ext);
+
     // Try Cloudinary if configured
     try {
       const cloudinary = require('../config/cloudinary');
       if (cloudinary && process.env.CLOUDINARY_CLOUD_NAME) {
         const result = await cloudinary.uploader.upload(req.file.path, {
           folder: 'dslr_contest/assets',
-          resource_type: 'image'
+          resource_type: isVideo ? 'video' : 'auto'
         });
         fileUrl = result.secure_url;
         
