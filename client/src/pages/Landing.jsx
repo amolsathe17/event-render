@@ -37,14 +37,14 @@ export default function Landing() {
         <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center gap-8">
           {/* Headline */}
           <div className="flex flex-col gap-4">
-            <h1 className="font-display font-black text-5xl sm:text-5xl lg:text-7xl lg:mt-30 sm:mt-40 leading-[1.1] tracking-tight drop-shadow-lg pt-28">
-              Compete, Create &amp;
-              <span className="block bg-linear-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">
+            <h1 className="font-display font-black text-5xl sm:text-5xl lg:text-7xl lg:mt-0 sm:mt-0 leading-[1.1] tracking-tight drop-shadow-lg pt-0">
+              Compete,  Create,&nbsp;
+              <span className="bg-linear-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">
                 Conquer
               </span>
             </h1>
-            <p className="text-base sm:text-lg text-white/80 leading-relaxed max-w-2xl mx-auto drop-shadow">
-              A unified platform for Photography, Painting, Drawing, Paper Craft &amp; more.
+            <p className="text-base sm:text-lg text-white/80 leading-relaxed max-w-2xl mx-auto drop-shadow pt-70">
+              A unified platform for Photography, Painting, Drawing,  more.
               Discover active events, submit your work, and win recognition.
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap mt-3">
