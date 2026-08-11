@@ -2033,18 +2033,18 @@ export default function AdminDashboard() {
                       {p.lastLogin ? new Date(p.lastLogin).toLocaleString() : 'Never'}
                     </td>
                     <td className="py-3.5 pl-4 pr-6 text-right">
-                      <div className="flex justify-end items-center gap-2">
+                      <div className="flex justify-end items-center gap-2 shrink-0">
                         <button
                           onClick={() => setSelectedParticipant(p)}
-                          className="p-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300 rounded-xl cursor-pointer transition-colors shadow-2xs"
+                          className="min-w-9 min-h-9 p-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300 rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center justify-center shrink-0"
                           data-tooltip="Audit Profile Details"
                           title="Audit Profile Details"
                         >
-                          <FileCheck size={16} />
+                          <FileCheck size={18} className="shrink-0" />
                         </button>
                         <button
                           onClick={() => handleSuspendParticipant(p._id, !p.isSuspended, p.name)}
-                          className={`p-2 rounded-xl border cursor-pointer transition-colors shadow-2xs ${
+                          className={`min-w-9 min-h-9 p-2 rounded-xl border cursor-pointer transition-colors shadow-2xs flex items-center justify-center shrink-0 ${
                             p.isSuspended 
                               ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300' 
                               : 'bg-amber-50 border-amber-200 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300'
@@ -2052,16 +2052,16 @@ export default function AdminDashboard() {
                           data-tooltip={p.isSuspended ? 'Activate User' : 'Suspend User'}
                           title={p.isSuspended ? 'Activate User' : 'Suspend User'}
                         >
-                          <Ban size={16} />
+                          <Ban size={18} className="shrink-0" />
                         </button>
                         {(p.paymentStatus === 'Paid' || p.paymentStatus === 'Withdrawn') && (
                           <button
                             onClick={() => handleRefundParticipant(p._id, p.name)}
-                            className="p-2 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-xl cursor-pointer transition-colors shadow-2xs"
+                            className="min-w-9 min-h-9 p-2 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center justify-center shrink-0"
                             data-tooltip="Refund & Credit Payment"
                             title="Refund & Credit Payment"
                           >
-                            <RotateCcw size={16} />
+                            <RotateCcw size={18} className="shrink-0" />
                           </button>
                         )}
                         <button
@@ -2070,11 +2070,11 @@ export default function AdminDashboard() {
                             setParticipantToDeleteName(p.name);
                             setShowDeleteParticipantModal(true);
                           }}
-                          className="p-2 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300 rounded-xl cursor-pointer transition-colors shadow-2xs"
+                          className="min-w-9 min-h-9 p-2 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300 rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center justify-center shrink-0"
                           data-tooltip="Delete User & Submissions"
                           title="Delete User & Submissions"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} className="shrink-0" />
                         </button>
                       </div>
                     </td>
@@ -2164,8 +2164,8 @@ export default function AdminDashboard() {
             return (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl px-5 py-4 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl px-5 py-4 shadow-2xs">
                     <div className="p-2.5 bg-emerald-500/10 rounded-xl">
                       <ThumbsUp size={20} className="text-emerald-500 shrink-0" />
                     </div>
@@ -2175,7 +2175,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-2xl px-5 py-4 shadow-sm">
+                  <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-2xl px-5 py-4 shadow-2xs">
                     <div className="p-2.5 bg-red-500/10 rounded-xl">
                       <ThumbsDown size={20} className="text-red-500 shrink-0" />
                     </div>
@@ -2185,7 +2185,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 shadow-sm">
+                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 shadow-2xs">
                     <div className="p-2.5 bg-slate-500/10 rounded-xl">
                       <Camera size={20} className="text-slate-500 shrink-0" />
                     </div>
@@ -2193,6 +2193,19 @@ export default function AdminDashboard() {
                       <p className="font-display font-black text-2xl text-slate-700 dark:text-slate-200">{judgedPhotos.length}</p>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Evaluated</span>
                     </div>
+                  </div>
+
+                  {/* TOTAL PHOTOGRAPHS Card (matching image 2) */}
+                  <div className="flex items-start flex-col justify-between bg-purple-50/80 dark:bg-purple-950/25 border-2 border-purple-400/80 dark:border-purple-600/60 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">
+                      TOTAL PHOTOGRAPHS
+                    </span>
+                    <p className="font-display font-black text-4xl text-purple-600 dark:text-purple-400 my-1">
+                      {filteredPhotos.length}
+                    </p>
+                    <span className="text-[11px] font-medium text-purple-600/90 dark:text-purple-300/80 block">
+                      High-res image assets
+                    </span>
                   </div>
                 </div>
 
@@ -2383,10 +2396,10 @@ export default function AdminDashboard() {
                         setJudgeToDeleteName(j.name);
                         setShowDeleteJudgeModal(true);
                       }}
-                      className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg cursor-pointer transition-colors"
+                      className="min-w-8 min-h-8 p-1.5 bg-red-50 hover:bg-red-100 text-red-500 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 rounded-xl cursor-pointer transition-colors border border-red-100 dark:border-red-900/30 flex items-center justify-center shrink-0"
                       data-tooltip="Delete Judge permanently"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} className="shrink-0" />
                     </button>
                   </div>
                 ))}
@@ -3570,10 +3583,10 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                 <button
                                   onClick={() => handleEditCategoryClick(c)}
-                                  className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/80 dark:text-indigo-400 rounded-lg cursor-pointer transition-colors shadow-2xs border border-indigo-100 dark:border-indigo-900/30"
+                                  className="min-w-8 min-h-8 p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/80 dark:text-indigo-400 rounded-lg cursor-pointer transition-colors shadow-2xs border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-center shrink-0"
                                   data-tooltip="Edit Category"
                                 >
-                                  <Edit2 size={12} />
+                                  <Edit2 size={16} className="shrink-0" />
                                 </button>
                                 <button
                                   onClick={() => {
@@ -3581,10 +3594,10 @@ export default function AdminDashboard() {
                                     setCatToDeleteName(c.name);
                                     setShowDeleteCatModal(true);
                                   }}
-                                  className="p-1.5 bg-red-50 hover:bg-red-100 text-red-550 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 rounded-lg cursor-pointer transition-colors shadow-2xs border border-red-100/50 dark:border-red-950/30"
+                                  className="min-w-8 min-h-8 p-1.5 bg-red-50 hover:bg-red-100 text-red-550 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 rounded-lg cursor-pointer transition-colors shadow-2xs border border-red-100/50 dark:border-red-950/30 flex items-center justify-center shrink-0"
                                   data-tooltip="Delete Category"
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={16} className="shrink-0" />
                                 </button>
                               </div>
                             </div>
