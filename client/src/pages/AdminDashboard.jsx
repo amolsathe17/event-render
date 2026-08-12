@@ -1809,10 +1809,11 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
               <Calendar size={15} className="text-amber-500 shrink-0" />
               <select
-                value={selectedEventId}
+                value={selectedEventId || ''}
                 onChange={e => setSelectedEventId(e.target.value)}
                 className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
               >
+                <option value="">-- Select Event --</option>
                 {allEvents.map(ev => (
                   <option key={ev._id} value={ev._id}>
                     {ev.title} ({ev.status})
@@ -1839,6 +1840,9 @@ export default function AdminDashboard() {
               key={t.id}
               onClick={() => {
                 setActiveTab(t.id);
+                if (t.id === 'overview') {
+                  setSelectedEventId('');
+                }
                 if (t.id === 'event_history') fetchEventHistory();
               }}
               className={`flex items-center gap-1.5 py-2 px-4 sm:px-5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
@@ -1853,6 +1857,23 @@ export default function AdminDashboard() {
           ))}
         </div>
       </div>
+
+      {/* Alert Banner when no event is selected */}
+      {!selectedEventId && activeTab !== 'overview' && activeTab !== 'profile_settings' && activeTab !== 'notifications' && (
+        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
+          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
+            <AlertTriangle size={32} />
+          </div>
+          <div>
+            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
+              Please Select an Event
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
+              Please select an event from the top right dropdown menu to manage participants, photographs/videos, judges & results, categories, or event configuration.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
@@ -1948,7 +1969,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 2: PARTICIPANTS */}
-      {activeTab === 'participants' && (
+      {activeTab === 'participants' && selectedEventId && (
         <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-in fade-in duration-200 h-125 overflow-y-auto">
           
           {/* Filters row */}
@@ -2127,7 +2148,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 3: PHOTOGRAPHS APPROVAL & ASSIGNMENT */}
-      {activeTab === 'photographs' && (
+      {activeTab === 'photographs' && selectedEventId && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
           {/* Filters row */}
@@ -2462,7 +2483,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 4: JUDGES AND COMPETITION RESULTS */}
-      {activeTab === 'judges' && (
+      {activeTab === 'judges' && selectedEventId && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-200">
           
           {/* Left Column: Judges account creator & list */}
@@ -2776,7 +2797,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 5: CONTESTS AND CONFIGURATIONS - 6 CARDS STRUCTURE */}
-      {activeTab === 'events' && (
+      {activeTab === 'events' && selectedEventId && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
           <form onSubmit={handleCreateEvent} className="flex flex-col gap-6">
@@ -3299,7 +3320,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 6: CATEGORIES CONFIGURATION */}
-      {activeTab === 'categories_config' && (
+      {activeTab === 'categories_config' && selectedEventId && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -4026,7 +4047,7 @@ export default function AdminDashboard() {
       </div>
     )}
       {/* TAB: EVENT HISTORY */}
-      {activeTab === 'event_history' && (
+      {activeTab === 'event_history' && selectedEventId && (
         <div className="animate-in fade-in duration-200 flex flex-col gap-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-2xl">

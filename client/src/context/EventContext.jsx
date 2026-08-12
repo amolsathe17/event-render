@@ -42,10 +42,14 @@ export const EventProvider = ({ children }) => {
         if (savedValid) {
           setSelectedEventIdState(saved);
         } else if (events.length > 0) {
-          const active = events.find(e => e.status === 'Active');
-          const autoSelect = active || events[0];
-          setSelectedEventIdState(autoSelect._id);
-          localStorage.setItem(key, autoSelect._id);
+          if (currentUser.role === 'Admin') {
+            setSelectedEventIdState('');
+          } else {
+            const active = events.find(e => e.status === 'Active');
+            const autoSelect = active || events[0];
+            setSelectedEventIdState(autoSelect._id);
+            localStorage.setItem(key, autoSelect._id);
+          }
         }
       }
     } catch (err) {
