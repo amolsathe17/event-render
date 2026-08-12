@@ -134,9 +134,10 @@ export default function JudgeDashboard() {
     try {
       const eventData = await apiFetch('/api/events');
       if (eventData.success && eventData.events.length > 0) {
+        const userIdStr = (user?.id || user?._id || '').toString();
         const assigned = user?.role === 'Admin' 
           ? eventData.events 
-          : eventData.events.filter(e => e.assignedJudges && e.assignedJudges.includes(user?.id));
+          : eventData.events.filter(e => Array.isArray(e.assignedJudges) && e.assignedJudges.some(j => (typeof j === 'object' ? (j._id || j.id || j).toString() : j.toString()) === userIdStr));
         setEvents(assigned);
         
         if (assigned.length > 0) {
@@ -1978,7 +1979,7 @@ export default function JudgeDashboard() {
       )}
 
       {judgeDashboardTab === "event_history" && (() => {
-        const selectedHistoryEvent = events.find(e => e._id === (historySelectedEventId || events[0]?._id)) || events[0];
+        const selectedHistoryEvent = events.find(e => e._id === (historySelectedEventId || event?._id || events[0]?._id)) || event || events[0];
         const historyPhotos = selectedHistoryEvent ? (allPhotographsByEvent[selectedHistoryEvent._id] || []) : [];
         const totalHistoryPhotos = historyPhotos.length;
         const gradedHistoryPhotos = historyPhotos.filter(p => p.graded).length;
@@ -2006,24 +2007,6 @@ export default function JudgeDashboard() {
                 </div>
               </div>
 
-              {events.length > 0 && (
-                <div className="w-full sm:w-auto shrink-0 text-left sm:text-right">
-                  <label className="text-[10px] font-extrabold text-emerald-900/70 dark:text-emerald-300 uppercase tracking-wider block mb-1">
-                    Select Assigned Event ({events.length})
-                  </label>
-                  <select
-                    value={historySelectedEventId || selectedHistoryEvent?._id || ''}
-                    onChange={(e) => setHistorySelectedEventId(e.target.value)}
-                    className="w-full sm:w-72 md:w-80 px-4 py-2.5 bg-white dark:bg-slate-950 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
-                  >
-                    {events.map(ev => (
-                      <option key={ev._id} value={ev._id}>
-                        {ev.title} ({ev.eventType || 'Contest'}) - {ev.status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
 
             {/* Empty State: No Assigned Events */}
