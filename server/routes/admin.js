@@ -813,6 +813,81 @@ router.post('/broadcasts', protect, authorize('Admin'), async (req, res) => {
   }
 });
 
+// @desc    Send evaluation reminder to assigned judges
+// @route   POST /api/admin/send-evaluation-reminder
+// @access  Private/Admin
+router.post('/send-evaluation-reminder', protect, authorize('Admin'), async (req, res) => {
+  try {
+    const { eventId, pendingCount } = req.body;
+    const Event = require('../models/Event');
+    const User = require('../models/User');
+    const Submission = require('../models/Submission');
+    const Broadcast = require('../models/Broadcast');
+
+    let targetJudges = [];
+    let eventTitle = '';
+
+    if (eventId) {
+      const eventDoc = await Event.findById(eventId);
+      if (eventDoc) {
+        eventTitle = eventDoc.title;
+        const judgeIds = eventDoc.assignedJudges || [];
+        if (judgeIds.length > 0) {
+          targetJudges = await User.find({ _id: { $in: judgeIds }, role: 'Judge' });
+        }
+      }
+    }
+
+    // Fallback: If no event specified or event has no assignedJudges, get all Judges in system
+    if (!targetJudges || targetJudges.length === 0) {
+      targetJudges = await User.find({ role: 'Judge' });
+    }
+
+    if (targetJudges.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No assigned judges found to send reminder.'
+      });
+    }
+
+    const countText = pendingCount ? `${pendingCount} photograph(s)/video(s)` : 'photographs/videos';
+    const reminderMsg = `Evaluation Reminder: ${countText} are currently pending for evaluation${eventTitle ? ` in event "${eventTitle}"` : ''}. Please log in to your Judge Portal to complete evaluation.`;
+
+    // 1. Record broadcast announcement
+    await Broadcast.create({
+      message: reminderMsg,
+      recipientType: 'Judge',
+      sentBy: req.user?.name || 'Admin',
+      ...(eventId ? { eventId } : {})
+    });
+
+    // 2. Dispatch in-app notification to each judge's inbox
+    const notifiedNames = [];
+    for (const judge of targetJudges) {
+      if (!judge.notifications) judge.notifications = [];
+      judge.notifications.push({
+        _id: new mongoose.Types.ObjectId(),
+        message: reminderMsg,
+        type: 'warning',
+        isRead: false,
+        createdAt: new Date()
+      });
+      await judge.save();
+      notifiedNames.push(judge.name || judge.email);
+    }
+
+    res.json({
+      success: true,
+      message: `Reminder sent successfully to assigned judge(s): ${notifiedNames.join(', ')}.`,
+      notifiedCount: targetJudges.length,
+      notifiedJudges: notifiedNames
+    });
+  } catch (error) {
+    console.error('Send evaluation reminder error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error while sending reminder' });
+  }
+});
+
 // @desc    Get sent broadcasts list
 // @route   GET /api/admin/broadcasts
 // @access  Private/Admin

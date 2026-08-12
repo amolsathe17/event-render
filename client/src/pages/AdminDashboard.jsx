@@ -34,6 +34,7 @@ import {
   Star,
   MessageSquare,
   Bell,
+  BellRing,
   Send,
   Archive,
   Clock,
@@ -339,6 +340,29 @@ export default function AdminDashboard() {
   const [broadcasts, setBroadcasts] = useState([]);
   const [broadcastFilter, setBroadcastFilter] = useState('all');
   const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
+
+  const handleSendJudgeReminder = async (pendingCount) => {
+    setSendingReminder(true);
+    try {
+      const data = await apiFetch('/api/admin/send-evaluation-reminder', {
+        method: 'POST',
+        body: JSON.stringify({
+          eventId: selectedEventId,
+          pendingCount: pendingCount || 0
+        })
+      });
+      if (data.success) {
+        triggerSuccessModal('Reminder Sent', data.message || 'Reminder sent successfully to assigned judge(s).');
+      } else {
+        alert(data.message || 'Failed to send reminder');
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to send reminder to judges');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
 
   const fetchBroadcasts = async () => {
     try {
@@ -2348,9 +2372,22 @@ export default function AdminDashboard() {
                 {/* Pending Evaluation section */}
                 {pendingPhotos.length > 0 && (
                   <div className="glass-panel border border-slate-250 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-sm">
-                    <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-                      <Camera size={16} className="text-amber-500" />
-                      <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Pending Evaluation ({pendingPhotos.length})</h3>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 flex-wrap gap-3">
+                      <div className="flex items-center gap-2">
+                        <Camera size={16} className="text-amber-500" />
+                        <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Pending Evaluation ({pendingPhotos.length})</h3>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSendJudgeReminder(pendingPhotos.length)}
+                        disabled={sendingReminder || pendingPhotos.length === 0}
+                        className="px-4 py-2 rounded-xl bg-linear-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 active:scale-[0.98] text-white font-extrabold text-xs shadow-sm hover:shadow-amber-500/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                        title="Send evaluation reminder notification to assigned judge(s)"
+                      >
+                        <BellRing size={14} className={sendingReminder ? 'animate-bounce' : ''} />
+                        <span>{sendingReminder ? 'Sending Reminder...' : 'Send Reminder'}</span>
+                      </button>
                     </div>
 
                     <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
