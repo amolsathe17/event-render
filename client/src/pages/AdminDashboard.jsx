@@ -2196,8 +2196,8 @@ export default function AdminDashboard() {
             return (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl px-5 py-4 shadow-2xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-emerald-500/10 rounded-xl">
                       <ThumbsUp size={20} className="text-emerald-500 shrink-0" />
                     </div>
@@ -2207,7 +2207,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-2xl px-5 py-4 shadow-2xs">
+                  <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-red-500/10 rounded-xl">
                       <ThumbsDown size={20} className="text-red-500 shrink-0" />
                     </div>
@@ -2217,7 +2217,18 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 shadow-2xs">
+                  {/* Pending Evaluation Card (Right side of Disapproved by Judges) */}
+                  <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl px-4 py-4 shadow-2xs">
+                    <div className="p-2.5 bg-amber-500/10 rounded-xl">
+                      <Clock size={20} className="text-amber-500 shrink-0" />
+                    </div>
+                    <div>
+                      <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-400">{pendingPhotos.length}</p>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600/80 dark:text-amber-400/80">Pending Evaluation</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-slate-500/10 rounded-xl">
                       <Camera size={20} className="text-slate-500 shrink-0" />
                     </div>
@@ -2227,16 +2238,16 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* TOTAL PHOTOGRAPHS / VIDEOS Card (matching image 2) */}
-                  <div className="flex items-start flex-col justify-between bg-purple-50/80 dark:bg-purple-950/25 border-2 border-purple-400/80 dark:border-purple-600/60 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                  {/* TOTAL PHOTOGRAPHS / VIDEOS Card */}
+                  <div className="flex items-start flex-col justify-between bg-purple-50/80 dark:bg-purple-950/25 border-2 border-purple-400/80 dark:border-purple-600/60 rounded-2xl p-4 shadow-2xs">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">
                       {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
                     </span>
-                    <p className="font-display font-black text-4xl text-purple-600 dark:text-purple-400 my-1">
+                    <p className="font-display font-black text-3xl sm:text-4xl text-purple-600 dark:text-purple-400 my-0.5">
                       {filteredPhotos.length}
                     </p>
-                    <span className="text-[11px] font-medium text-purple-600/90 dark:text-purple-300/80 block">
-                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'Short video / reel assets' : 'High-res image assets'}
+                    <span className="text-[10px] font-medium text-purple-600/90 dark:text-purple-300/80 block truncate w-full">
+                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'Short video assets' : 'High-res image assets'}
                     </span>
                   </div>
                 </div>
