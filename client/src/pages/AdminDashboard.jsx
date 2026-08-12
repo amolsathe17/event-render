@@ -4731,8 +4731,8 @@ export default function AdminDashboard() {
 
       {/* DETAIL / ZOOM VIEW MODAL */}
       {selectedPhoto && !showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-5xl max-h-[92vh] md:h-[85vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left my-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-5xl max-h-[92vh] md:h-[85vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left my-auto overflow-y-auto md:overflow-hidden">
             
             {/* Left Column: Image/Video Viewport */}
             <div className="w-full md:flex-1 bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative h-64 sm:h-80 md:h-full shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
@@ -4757,7 +4757,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Right Column: Information Panel */}
-            <div className="w-full md:w-96 bg-slate-50 dark:bg-slate-900 flex flex-col justify-between shrink-0 md:h-full overflow-y-auto">
+            <div className="w-full md:w-96 bg-slate-50 dark:bg-slate-900 flex flex-col justify-between shrink-0 md:h-full overflow-visible md:overflow-y-auto">
               {/* Sidebar Header */}
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0 bg-white dark:bg-slate-950 sticky top-0 z-10">
                 <div>
@@ -4876,17 +4876,28 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* ALWAYS VISIBLE JUDGE EVALUATIONS SECTION */}
-                <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-                  <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">
-                    Judge Evaluations {selectedPhoto.scores?.length ? `(${selectedPhoto.scores.length})` : ''}
-                  </span>
+                <div className="flex flex-col gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">
+                      Judge Evaluations {selectedPhoto.scores?.length ? `(${selectedPhoto.scores.length})` : ''}
+                    </span>
+                    {selectedPhoto.scores && selectedPhoto.scores.length > 0 && (
+                      <span className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
+                        {selectedPhoto.scores.length} Evaluated
+                      </span>
+                    )}
+                  </div>
+
                   {selectedPhoto.scores && selectedPhoto.scores.length > 0 ? (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2.5">
                       {selectedPhoto.scores.map((score, sIdx) => (
-                        <div key={sIdx} className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5 text-[10px] text-left">
+                        <div key={sIdx} className="bg-white dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col gap-2 text-[10px] text-left">
                           <div className="flex justify-between items-center w-full">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{score.judgeName || 'Judge'}</span>
-                            <span className={`font-black px-2 py-0.5 rounded-full text-[9px] ${
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200">{score.judgeName || `Judge #${sIdx + 1}`}</span>
+                            </div>
+                            <span className={`font-black px-2.5 py-0.5 rounded-full text-[9px] ${
                               (score.approvalStatus || 'Approved') === 'Approved' 
                                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
                                 : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
@@ -4894,20 +4905,21 @@ export default function AdminDashboard() {
                               {score.approvalStatus || 'Approved'} ({score.averageScore || 0}/10)
                             </span>
                           </div>
-                          {score.remarks ? (
-                            <div className="bg-white dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-300 italic">
-                              "{score.remarks}"
-                            </div>
-                          ) : (
-                            <div className="text-[9px] text-slate-400 italic px-1">
-                              No remarks shared.
-                            </div>
-                          )}
+
+                          {/* Remarks Box */}
+                          <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-300">
+                            <span className="block text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Evaluation Remarks:</span>
+                            {score.remarks ? (
+                              <p className="italic font-medium leading-relaxed">"{score.remarks}"</p>
+                            ) : (
+                              <p className="italic text-slate-400 text-[9px]">No remarks submitted by judge.</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-slate-100/70 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800 text-center text-slate-400 italic text-[10px]">
+                    <div className="bg-slate-100/70 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 text-center text-slate-400 italic text-[10px]">
                       No judge evaluations recorded yet.
                     </div>
                   )}
