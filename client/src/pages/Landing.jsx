@@ -102,9 +102,19 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
             
             {/* Card 1: Core Mission */}
-            <div className="group relative glass-panel border border-slate-200/65 dark:border-slate-800/65 p-8 rounded-3xl shadow-xl flex flex-col gap-5 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 transition-all duration-300 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-br from-indigo-500/10 to-transparent rounded-tr-3xl rounded-bl-full -z-10" />
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-2xl w-max">
+            <div className="group relative overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md flex flex-col gap-5">
+              {/* Top Vibrant Accent Line */}
+              <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
+              
+              {/* Top-Right Index Pill Badge */}
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 font-mono font-extrabold text-xs flex items-center justify-center shadow-2xs">
+                01
+              </div>
+
+              {/* Ambient Glow */}
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl w-max shadow-2xs group-hover:scale-110 transition-transform duration-300">
                 <Compass size={24} />
               </div>
               <h3 className="font-display font-extrabold text-xl text-slate-900 dark:text-white leading-snug">
@@ -116,9 +126,19 @@ export default function Landing() {
             </div>
 
             {/* Card 2: Inspiration & Legacy */}
-            <div className="group relative glass-panel border border-slate-200/65 dark:border-slate-800/65 p-8 rounded-3xl shadow-xl flex flex-col gap-5 hover:border-pink-500/40 dark:hover:border-pink-400/40 transition-all duration-300 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-br from-pink-500/10 to-transparent rounded-tr-3xl rounded-bl-full -z-10" />
-              <div className="p-3 bg-pink-50 dark:bg-pink-950/30 text-pink-500 dark:text-pink-400 rounded-2xl w-max">
+            <div className="group relative overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md flex flex-col gap-5">
+              {/* Top Vibrant Accent Line */}
+              <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-full" />
+
+              {/* Top-Right Index Pill Badge */}
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-pink-50 dark:bg-pink-950/60 border border-pink-200/60 dark:border-pink-800/60 text-pink-600 dark:text-pink-400 font-mono font-extrabold text-xs flex items-center justify-center shadow-2xs">
+                02
+              </div>
+
+              {/* Ambient Glow */}
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-pink-500/10 dark:bg-pink-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+
+              <div className="p-3 bg-pink-50 dark:bg-pink-950/40 text-pink-500 dark:text-pink-400 border border-pink-200/60 dark:border-pink-800/60 rounded-2xl w-max shadow-2xs group-hover:scale-110 transition-transform duration-300">
                 <Feather size={24} />
               </div>
               <h3 className="font-display font-extrabold text-xl text-slate-900 dark:text-white leading-snug">
@@ -132,19 +152,30 @@ export default function Landing() {
           </div>
 
           {/* The Legacy Tribute Spotlight */}
-          <div className="relative glass-panel border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-12 rounded-3xl shadow-2xl bg-white/80 dark:bg-slate-900/50 backdrop-blur-lg flex flex-col md:flex-row gap-8 items-center overflow-hidden">
-            <div className="absolute -left-16 -bottom-16 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl -z-10" />
+          <div className="relative group overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-12 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-lg flex flex-col md:flex-row gap-8 items-center">
+            {/* Top Accent Bar */}
+            <div className="absolute top-0 left-12 right-12 h-[3px] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
+            
+            {/* Ambient Background Glow */}
+            <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -z-10 pointer-events-none group-hover:scale-125 transition-transform duration-500" />
             
             <div className="flex-1 flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                <Palette size={20} />
-                <span className="font-display font-bold text-xs uppercase tracking-widest">Legacy Tribute</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60">
+                    <Palette size={20} />
+                  </div>
+                  <span className="font-display font-bold text-xs uppercase tracking-widest">Legacy Tribute</span>
+                </div>
+                <span className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 text-purple-600 dark:text-purple-400 font-mono font-extrabold text-xs flex items-center justify-center shadow-2xs">
+                  03
+                </span>
               </div>
               <h3 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
                 Late Prof. Raosaheb Gurav
               </h3>
-              <div className="flex gap-2">
-                <Quote className="text-slate-300 dark:text-slate-700 shrink-0" size={32} />
+              <div className="flex gap-3 items-start">
+                <Quote className="text-indigo-400/60 dark:text-indigo-500/50 shrink-0 mt-1" size={32} />
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic font-medium">
                   Sumba was created in memory of Late Prof. Raosaheb Gurav, whose life was shaped by art, mentorship, and an unbreakable bond with tradition. His work, especially the Dhangar series, carried the landscapes of his childhood and the honesty of rural life, and his guidance helped generations of young artists find their path. He believed that art should stay rooted in its people and that every artist deserves a stage.
                 </p>
