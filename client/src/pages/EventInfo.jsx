@@ -1281,9 +1281,8 @@ export default function EventInfo() {
                 key={title}
                 className="relative overflow-hidden bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group border-r-4 border-r-indigo-300/80 dark:border-r-indigo-600/60"
               >
-                {/* Modern Folded Corner & Right Stripe Accent (Matching reference image) */}
+                {/* Modern Folded Corner & Right Stripe Accent */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100/90 dark:bg-slate-800/80 rounded-bl-[42px] border-b border-l border-slate-200/80 dark:border-slate-700/80 pointer-events-none transition-all duration-300 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/40" />
-                <div className="absolute top-3 right-3 w-12 h-12 bg-white/90 dark:bg-slate-900/90 rounded-bl-2xl border-b border-l border-slate-200/50 dark:border-slate-800 shadow-2xs pointer-events-none" />
 
                 <div className="flex items-center gap-3.5 mb-5 relative z-10">
                   <div
@@ -1348,9 +1347,8 @@ export default function EventInfo() {
                 key={step}
                 className="relative overflow-hidden flex flex-col gap-4 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group border-r-4 border-r-cyan-400/80 dark:border-r-cyan-600/60"
               >
-                {/* Modern Folded Corner & Right Stripe Accent (Matching reference image) */}
+                {/* Modern Folded Corner & Right Stripe Accent */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100/90 dark:bg-slate-800/80 rounded-bl-[42px] border-b border-l border-slate-200/80 dark:border-slate-700/80 pointer-events-none transition-all duration-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/40" />
-                <div className="absolute top-3 right-3 w-12 h-12 bg-white/90 dark:bg-slate-900/90 rounded-bl-2xl border-b border-l border-slate-200/50 dark:border-slate-800 shadow-2xs pointer-events-none" />
 
                 <div className="flex items-center justify-between gap-3 relative z-10">
                   <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all shadow-2xs">
