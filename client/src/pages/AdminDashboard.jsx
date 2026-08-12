@@ -1750,10 +1750,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleExportCSV = (reportType, eventId = '') => {
+  const handleExportCSV = (reportType, overrideEventId = '') => {
+    const targetEventId = overrideEventId || selectedEventId || '';
     const token = localStorage.getItem('token');
     const baseUrl = getApiBaseUrl();
-    const path = `${baseUrl}/api/reports/${reportType}${eventId ? '/' + eventId : ''}`;
+    const query = targetEventId ? `?eventId=${targetEventId}` : '';
+    const path = `${baseUrl}/api/reports/${reportType}${query}`;
     
     // Trigger download with headers
     fetch(path, {
@@ -1771,14 +1773,15 @@ export default function AdminDashboard() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${reportType}-report.csv`;
+        const prefix = targetEventId ? 'event' : 'all-events';
+        a.download = `${prefix}-${reportType}-ledger.csv`;
         document.body.appendChild(a);
         a.click();
         a.remove();
       })
       .catch(e => {
         console.error(e);
-        alert(`Failed to export CSV: ${e.message}`);
+        alert(`Failed to export Excel / CSV: ${e.message}`);
       });
   };
 
@@ -1930,9 +1933,18 @@ export default function AdminDashboard() {
 
           {/* Downloadable Reports Panel - 3 distinct light background export buttons */}
           <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-xs">
-            <div>
-              <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Financial & Operational Exports</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Download formatted CSV ledger books directly to local disk</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Financial & Operational Exports</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {selectedEventId
+                    ? `Exporting excel/csv ledger books for selected event: "${selectedEvent?.title || 'Selected Event'}"`
+                    : `Exporting excel/csv ledger books for ALL events combined`}
+                </p>
+              </div>
+              <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl text-[11px] font-bold self-start sm:self-auto">
+                {selectedEventId ? 'Selected Event Data' : 'All Events Combined Data'}
+              </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
@@ -1940,21 +1952,21 @@ export default function AdminDashboard() {
                 className="flex items-center justify-center gap-2 bg-indigo-50/80 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700 p-3.5 rounded-2xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
               >
                 <Download size={15} className="text-indigo-600 dark:text-indigo-400" />
-                Export Participants CSV
+                Export Participants Excel/CSV
               </button>
               <button
                 onClick={() => handleExportCSV('revenue')}
                 className="flex items-center justify-center gap-2 bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-300 dark:border-emerald-700 p-3.5 rounded-2xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
               >
                 <Download size={15} className="text-emerald-600 dark:text-emerald-400" />
-                Export Revenue Ledger CSV
+                Export Revenue Ledger Excel/CSV
               </button>
               <button
                 onClick={() => handleExportCSV('submissions')}
                 className="flex items-center justify-center gap-2 bg-purple-50/80 hover:bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-2 border-purple-300 dark:border-purple-700 p-3.5 rounded-2xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
               >
                 <Download size={15} className="text-purple-600 dark:text-purple-400" />
-                Export Photos Metadata CSV
+                Export Photos Metadata Excel/CSV
               </button>
             </div>
           </div>

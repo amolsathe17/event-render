@@ -16,21 +16,36 @@ const escapeCSV = (str) => {
   return stringVal;
 };
 
-// @desc    Export Participant list to CSV
+// @desc    Export Participant list to CSV / Excel
 // @route   GET /api/reports/participants
 // @access  Private/Admin
 router.get('/participants', protect, authorize('Admin'), async (req, res) => {
   try {
-    const participants = await User.find({ role: 'Participant' }).sort({ name: 1 });
+    const { eventId } = req.query;
+    const eventsMap = (await Event.find()).reduce((acc, e) => {
+      acc[String(e._id)] = e.title;
+      return acc;
+    }, {});
+
+    let participants;
+    if (eventId) {
+      const eventSubmissions = await Submission.find({ eventId });
+      const userIds = [...new Set(eventSubmissions.map(s => String(s.userId)))];
+      participants = await User.find({ _id: { $in: userIds }, role: 'Participant' }).sort({ name: 1 });
+    } else {
+      participants = await User.find({ role: 'Participant' }).sort({ name: 1 });
+    }
     
-    let csv = 'ID,Name,Email,Mobile,City,Verified,Suspended,RegistrationDate\n';
+    let csv = 'ID,Name,Email,Mobile,City,AssignedEvent,Verified,Suspended,RegistrationDate\n';
     
     participants.forEach(p => {
-      csv += `${escapeCSV(p._id)},${escapeCSV(p.name)},${escapeCSV(p.email)},${escapeCSV(p.mobile)},${escapeCSV(p.city)},${p.isVerified},${p.isSuspended},${p.createdAt.toISOString()}\n`;
+      const assignedTitle = eventId ? (eventsMap[eventId] || 'Selected Event') : 'All Events Combined';
+      csv += `${escapeCSV(p._id)},${escapeCSV(p.name)},${escapeCSV(p.email)},${escapeCSV(p.mobile)},${escapeCSV(p.city)},${escapeCSV(assignedTitle)},${p.isVerified},${p.isSuspended},${p.createdAt.toISOString()}\n`;
     });
 
+    const filename = eventId ? `event-participants-report.csv` : `all-events-participants-report.csv`;
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=participants-report.csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.status(200).send(csv);
   } catch (error) {
     console.error(error);
@@ -38,21 +53,34 @@ router.get('/participants', protect, authorize('Admin'), async (req, res) => {
   }
 });
 
-// @desc    Export Revenue report to CSV
+// @desc    Export Revenue report to CSV / Excel
 // @route   GET /api/reports/revenue
 // @access  Private/Admin
 router.get('/revenue', protect, authorize('Admin'), async (req, res) => {
   try {
-    const payments = await Payment.find({ status: 'Success' }).sort({ paymentDate: -1 });
+    const { eventId } = req.query;
+    const filter = { status: 'Success' };
+    if (eventId) {
+      filter.eventId = eventId;
+    }
+
+    const eventsMap = (await Event.find()).reduce((acc, e) => {
+      acc[String(e._id)] = e.title;
+      return acc;
+    }, {});
+
+    const payments = await Payment.find(filter).sort({ paymentDate: -1 });
     
-    let csv = 'TransactionID,InvoiceNumber,Name,Email,PackageName,Amount(INR),PaymentMethod,PaymentDate\n';
+    let csv = 'TransactionID,InvoiceNumber,EventTitle,Name,Email,PackageName,Amount(INR),PaymentMethod,PaymentDate\n';
     
     payments.forEach(p => {
-      csv += `${escapeCSV(p.transactionId)},${escapeCSV(p.invoiceNumber)},${escapeCSV(p.userName)},${escapeCSV(p.userEmail)},${escapeCSV(p.packageName)},${p.amount},${escapeCSV(p.paymentMethod)},${p.paymentDate.toISOString()}\n`;
+      const evTitle = (p.eventId && eventsMap[String(p.eventId)]) || (eventId && eventsMap[eventId]) || 'All Events Combined';
+      csv += `${escapeCSV(p.transactionId)},${escapeCSV(p.invoiceNumber)},${escapeCSV(evTitle)},${escapeCSV(p.userName)},${escapeCSV(p.userEmail)},${escapeCSV(p.packageName)},${p.amount},${escapeCSV(p.paymentMethod)},${p.paymentDate.toISOString()}\n`;
     });
 
+    const filename = eventId ? `event-revenue-report.csv` : `all-events-revenue-report.csv`;
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=revenue-report.csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.status(200).send(csv);
   } catch (error) {
     console.error(error);
@@ -60,16 +88,28 @@ router.get('/revenue', protect, authorize('Admin'), async (req, res) => {
   }
 });
 
-// @desc    Export Submission report to CSV
+// @desc    Export Submission report to CSV / Excel
 // @route   GET /api/reports/submissions
 // @access  Private/Admin
 router.get('/submissions', protect, authorize('Admin'), async (req, res) => {
   try {
-    const submissions = await Submission.find({ isFinalSubmitted: true });
+    const { eventId } = req.query;
+    const filter = { isFinalSubmitted: true };
+    if (eventId) {
+      filter.eventId = eventId;
+    }
+
+    const eventsMap = (await Event.find()).reduce((acc, e) => {
+      acc[String(e._id)] = e.title;
+      return acc;
+    }, {});
+
+    const submissions = await Submission.find(filter);
     
-    let csv = 'SubmissionID,ParticipantName,ParticipantEmail,PhotoID,PhotoTitle,Category,CameraBrandOrMedium,CameraModelOrDimensions,LensOrMaterials,UploadStatus,AverageScore\n';
+    let csv = 'SubmissionID,EventTitle,ParticipantName,ParticipantEmail,PhotoID,PhotoTitle,Category,CameraBrandOrMedium,CameraModelOrDimensions,LensOrMaterials,UploadStatus,AverageScore\n';
     
     submissions.forEach(sub => {
+      const evTitle = (sub.eventId && eventsMap[String(sub.eventId)]) || (eventId && eventsMap[eventId]) || 'All Events Combined';
       sub.photographs.forEach(photo => {
         const scoresList = photo.scores || [];
         const isDisapprovedByAny = scoresList.some(s => s.approvalStatus === 'Disapproved');
@@ -77,12 +117,13 @@ router.get('/submissions', protect, authorize('Admin'), async (req, res) => {
           ? scoresList.reduce((acc, s) => acc + s.averageScore, 0) / scoresList.length
           : 0;
         
-        csv += `${escapeCSV(sub._id)},${escapeCSV(sub.userName)},${escapeCSV(sub.userEmail)},${escapeCSV(photo.id)},${escapeCSV(photo.title)},${escapeCSV(photo.category)},${escapeCSV(photo.cameraBrand)},${escapeCSV(photo.cameraModel)},${escapeCSV(photo.lensUsed)},${escapeCSV(photo.status)},${avgScore.toFixed(2)}\n`;
+        csv += `${escapeCSV(sub._id)},${escapeCSV(evTitle)},${escapeCSV(sub.userName)},${escapeCSV(sub.userEmail)},${escapeCSV(photo.id)},${escapeCSV(photo.title)},${escapeCSV(photo.category)},${escapeCSV(photo.cameraBrand)},${escapeCSV(photo.cameraModel)},${escapeCSV(photo.lensUsed)},${escapeCSV(photo.status)},${avgScore.toFixed(2)}\n`;
       });
     });
 
+    const filename = eventId ? `event-photos-metadata-report.csv` : `all-events-photos-metadata-report.csv`;
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=submissions-report.csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.status(200).send(csv);
   } catch (error) {
     console.error(error);
