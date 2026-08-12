@@ -10,7 +10,18 @@ export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [isFlipped, setIsFlipped] = useState(false);
+  const isFromEnroll = location.state?.fromEventEnroll === true || location.state?.fromEnroll === true;
+  const [isFlipped, setIsFlipped] = useState(isFromEnroll);
+
+  // 2-second automatic flip ONLY when participant clicks "Enroll in This Event" button
+  useEffect(() => {
+    if (isFromEnroll) {
+      const timer = setTimeout(() => {
+        setIsFlipped(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isFromEnroll]);
 
   useEffect(() => {
     if (user) {
