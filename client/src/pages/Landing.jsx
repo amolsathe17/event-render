@@ -103,8 +103,8 @@ export default function Landing() {
             
             {/* Card 1: Core Mission */}
             <div className="group relative overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md flex flex-col gap-5">
-              {/* Top Vibrant Accent Line */}
-              <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
+              {/* Top Subtle Hover Accent Bar (Matching Rules & Regulations) */}
+              <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               {/* Ambient Glow */}
               <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
@@ -122,8 +122,8 @@ export default function Landing() {
 
             {/* Card 2: Inspiration & Legacy */}
             <div className="group relative overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md flex flex-col gap-5">
-              {/* Top Vibrant Accent Line */}
-              <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-full" />
+              {/* Top Subtle Hover Accent Bar (Matching Rules & Regulations) */}
+              <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-transparent via-purple-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               {/* Ambient Glow */}
               <div className="absolute -top-12 -right-12 w-32 h-32 bg-pink-500/10 dark:bg-pink-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
@@ -143,8 +143,8 @@ export default function Landing() {
 
           {/* The Legacy Tribute Spotlight */}
           <div className="relative group overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-12 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-lg flex flex-col md:flex-row gap-8 items-center">
-            {/* Top Accent Bar */}
-            <div className="absolute top-0 left-12 right-12 h-[3px] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
+            {/* Top Subtle Hover Accent Bar (Matching Rules & Regulations) */}
+            <div className="absolute top-0 left-12 right-12 h-[3px] bg-linear-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
             {/* Ambient Background Glow */}
             <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -z-10 pointer-events-none group-hover:scale-125 transition-transform duration-500" />
