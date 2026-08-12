@@ -1859,7 +1859,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Alert Banner when no event is selected */}
-      {!selectedEventId && activeTab !== 'overview' && activeTab !== 'profile_settings' && activeTab !== 'notifications' && (
+      {!selectedEventId && (activeTab === 'participants' || activeTab === 'photographs' || activeTab === 'judges') && (
         <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
           <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
             <AlertTriangle size={32} />
@@ -1869,7 +1869,7 @@ export default function AdminDashboard() {
               Please Select an Event
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
-              Please select an event from the top right dropdown menu to manage participants, photographs/videos, judges & results, categories, or event configuration.
+              Please select an event from the top right dropdown menu to manage participants, photographs/videos, or judges & results.
             </p>
           </div>
         </div>
@@ -2797,7 +2797,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 5: CONTESTS AND CONFIGURATIONS - 6 CARDS STRUCTURE */}
-      {activeTab === 'events' && selectedEventId && (
+      {activeTab === 'events' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
           <form onSubmit={handleCreateEvent} className="flex flex-col gap-6">
@@ -3320,7 +3320,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 6: CATEGORIES CONFIGURATION */}
-      {activeTab === 'categories_config' && selectedEventId && (
+      {activeTab === 'categories_config' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -4047,7 +4047,7 @@ export default function AdminDashboard() {
       </div>
     )}
       {/* TAB: EVENT HISTORY */}
-      {activeTab === 'event_history' && selectedEventId && (
+      {activeTab === 'event_history' && (
         <div className="animate-in fade-in duration-200 flex flex-col gap-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-2xl">
