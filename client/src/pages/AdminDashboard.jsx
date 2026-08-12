@@ -4539,7 +4539,7 @@ export default function AdminDashboard() {
                   }
 
                   return (
-                    <div className="flex flex-col gap-3.5 max-h-[480px] overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-3.5 max-h-120 overflow-y-auto pr-1">
                       {filtered.map((b) => (
                         <div
                           key={b._id}
@@ -4776,7 +4776,7 @@ export default function AdminDashboard() {
               <div className="p-5 sm:p-6 flex flex-col gap-4 text-xs grow overflow-x-hidden">
                 <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Title & Category</span>
-                  <h3 className="font-display font-black text-base text-slate-900 dark:text-white mt-0.5 break-words">{selectedPhoto.title}</h3>
+                  <h3 className="font-display font-black text-base text-slate-900 dark:text-white mt-0.5 wrap-break-word">{selectedPhoto.title}</h3>
                   <span className="bg-slate-100 dark:bg-slate-850 text-slate-650 dark:text-slate-350 px-2 py-0.5 rounded font-bold text-[9px] inline-block mt-1">
                     {selectedPhoto.category}
                   </span>
@@ -4797,13 +4797,13 @@ export default function AdminDashboard() {
                 
                 <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Owner / Photographer</span>
-                  <p className="font-semibold text-slate-800 dark:text-slate-250 mt-0.5 break-words">{selectedPhoto.participantName}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-250 mt-0.5 wrap-break-word">{selectedPhoto.participantName}</p>
                   <p className="text-[10px] text-slate-400 break-all">{selectedPhoto.participantEmail}</p>
                 </div>
 
                 <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Story Details</span>
-                  <p className="text-slate-500 leading-relaxed mt-0.5 break-words">{selectedPhoto.description || 'No description shared.'}</p>
+                  <p className="text-slate-500 leading-relaxed mt-0.5 wrap-break-word">{selectedPhoto.description || 'No description shared.'}</p>
                 </div>
 
                 {selectedPhoto.customFields && selectedPhoto.customFields.length > 0 ? (
@@ -4813,7 +4813,7 @@ export default function AdminDashboard() {
                       {selectedPhoto.customFields.map((cf, idx) => (
                         <div key={idx} className="min-w-0">
                           <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold truncate">{cf.label}:</span>
-                          <p className="font-bold text-slate-700 dark:text-slate-250 mt-0.5 break-words">{cf.value || 'N/A'}</p>
+                          <p className="font-bold text-slate-700 dark:text-slate-250 mt-0.5 wrap-break-word">{cf.value || 'N/A'}</p>
                         </div>
                       ))}
                     </div>
@@ -4871,7 +4871,7 @@ export default function AdminDashboard() {
                     </span>
                   </p>
                   {selectedPhoto.validationReason && (
-                    <p className="italic text-slate-400 mt-0.5 break-words">"{selectedPhoto.validationReason}"</p>
+                    <p className="italic text-slate-400 mt-0.5 wrap-break-word">"{selectedPhoto.validationReason}"</p>
                   )}
                 </div>
 
@@ -4910,7 +4910,7 @@ export default function AdminDashboard() {
                           <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-300 min-w-0">
                             <span className="block text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Evaluation Remarks:</span>
                             {score.remarks ? (
-                              <p className="italic font-medium leading-relaxed break-words">"{score.remarks}"</p>
+                              <p className="italic font-medium leading-relaxed wrap-break-word">"{score.remarks}"</p>
                             ) : (
                               <p className="italic text-slate-400 text-[9px]">No remarks submitted by judge.</p>
                             )}

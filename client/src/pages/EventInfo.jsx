@@ -1279,25 +1279,29 @@ export default function EventInfo() {
             {RULES.map(({ icon: Icon, color, title, items }) => (
               <div
                 key={title}
-                className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all"
+                className="relative overflow-hidden bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group"
               >
-                <div className="flex items-center gap-3 mb-4">
+                {/* Custom Top-Right Corner Fold Effect (Matching reference image) */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-slate-200/80 via-indigo-100/40 to-transparent rounded-bl-[45px] pointer-events-none transition-all duration-300 group-hover:w-28 group-hover:h-28 group-hover:from-indigo-200/70" />
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/60 backdrop-blur-xs rounded-bl-2xl border-b border-l border-slate-200/50 pointer-events-none" />
+
+                <div className="flex items-center gap-3.5 mb-5 relative z-10">
                   <div
-                    className={`w-10 h-10 rounded-2xl flex items-center justify-center ${color.split(" ")[1]}`}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-2xs ${color.split(" ")[1]}`}
                   >
-                    <Icon size={18} className={color.split(" ")[0]} />
+                    <Icon size={20} className={color.split(" ")[0]} />
                   </div>
-                  <h3 className="font-display font-bold text-sm text-slate-900">
+                  <h3 className="font-display font-bold text-base text-slate-900">
                     {title}
                   </h3>
                 </div>
-                <ul className="flex flex-col gap-2">
+                <ul className="flex flex-col gap-2.5 relative z-10">
                   {items.map((item, i) => (
                     <li
                       key={i}
                       className="flex items-start gap-2.5 text-xs text-slate-600 leading-relaxed"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1.5 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
                       {item}
                     </li>
                   ))}
@@ -1329,7 +1333,7 @@ export default function EventInfo() {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 border border-violet-200/60 text-violet-700 text-[10px] font-black uppercase tracking-widest mb-3">
               <BookOpen size={11} /> Step-by-Step Guide
             </div>
-            <h2 className="font-display font-black text-3xl sm:text-4xl bg-linear-to-r from-cyan-300 to-blue-900 bg-clip-text text-transparent">
+            <h2 className="font-display font-black text-3xl sm:text-4xl bg-linear-to-r from-cyan-400 via-blue-600 to-indigo-800 bg-clip-text text-transparent">
               How to Participate
             </h2>
             <p className="text-sm text-slate-500 mt-2 max-w-xl mx-auto">
@@ -1342,24 +1346,28 @@ export default function EventInfo() {
             {GUIDELINES.map(({ step, icon: Icon, title, desc }, i) => (
               <div
                 key={step}
-                className="relative flex flex-col gap-4 bg-linear-to-r from-cyan-300 to-blue-300 border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-all group"
+                className="relative overflow-hidden flex flex-col gap-4 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all">
+                {/* Custom Top-Right Corner Fold Effect (Matching reference image) */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-slate-200/80 via-cyan-100/40 to-transparent rounded-bl-[45px] pointer-events-none transition-all duration-300 group-hover:w-28 group-hover:h-28 group-hover:from-cyan-200/70" />
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/60 backdrop-blur-xs rounded-bl-2xl border-b border-l border-slate-200/50 pointer-events-none" />
+
+                <div className="flex items-center justify-between gap-3 relative z-10">
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all shadow-2xs">
                     <Icon
-                      size={18}
+                      size={20}
                       className="text-indigo-600 group-hover:text-white transition-colors"
                     />
                   </div>
-                  <span className="font-display font-black text-3xl text-slate-500 group-hover:text-indigo-100 transition-colors">
+                  <span className="font-display font-black text-3xl text-slate-300 group-hover:text-indigo-500/40 transition-colors">
                     {step}
                   </span>
                 </div>
-                <div>
-                  <h3 className="font-display font-bold text-sm text-slate-900 mb-1.5">
+                <div className="relative z-10">
+                  <h3 className="font-display font-bold text-base text-slate-900 mb-2">
                     {title}
                   </h3>
-                  <p className="text-sm text-black leading-relaxed">
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     {desc}
                   </p>
                 </div>
