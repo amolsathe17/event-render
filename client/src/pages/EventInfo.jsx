@@ -1276,31 +1276,42 @@ export default function EventInfo() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {RULES.map(({ icon: Icon, color, title, items }) => (
+            {RULES.map(({ icon: Icon, color, title, items }, idx) => (
               <div
                 key={title}
-                className="relative overflow-hidden bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group border-r-4 border-r-indigo-300/80 dark:border-r-indigo-600/60"
+                className="relative overflow-hidden bg-linear-to-b from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xs hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 group"
               >
-                {/* Modern Folded Corner & Right Stripe Accent */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100/90 dark:bg-slate-800/80 rounded-bl-[42px] border-b border-l border-slate-200/80 dark:border-slate-700/80 pointer-events-none transition-all duration-300 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/40" />
+                {/* Top Subtle Hover Accent Bar */}
+                <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Soft Ambient Radial Glow */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
-                <div className="flex items-center gap-3.5 mb-5 relative z-10">
-                  <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-2xs ${color.split(" ")[1]}`}
-                  >
-                    <Icon size={20} className={color.split(" ")[0]} />
+                {/* Top Header with Icon and Rule Badge */}
+                <div className="flex items-center justify-between mb-5 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-xs transition-transform duration-300 group-hover:scale-110 ${color.split(" ")[1]}`}
+                    >
+                      <Icon size={20} className={color.split(" ")[0]} />
+                    </div>
+                    <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
+                      {title}
+                    </h3>
                   </div>
-                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
-                    {title}
-                  </h3>
+                  <span className="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 font-mono font-extrabold text-[10px] tracking-wider">
+                    0{idx + 1}
+                  </span>
                 </div>
-                <ul className="flex flex-col gap-2.5 relative z-10">
+
+                {/* Itemized Rules list with sleek bullet styling */}
+                <ul className="flex flex-col gap-3 relative z-10">
                   {items.map((item, i) => (
                     <li
                       key={i}
                       className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0 shadow-xs shadow-indigo-500/50" />
                       {item}
                     </li>
                   ))}
