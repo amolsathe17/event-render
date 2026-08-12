@@ -179,8 +179,8 @@ function PrizeRow({ prize, idx, faded }) {
 
   return (
     <div
-      className={`flex items-center justify-between p-2.5 rounded-xl border border-slate-100 text-xs font-semibold ${
-        faded ? 'bg-slate-50 opacity-60' : 'bg-slate-50'
+      className={`flex items-center justify-between p-2.5 rounded-xl border border-sky-200/80 text-xs font-semibold shadow-2xs ${
+        faded ? 'bg-sky-50/70 opacity-60 dark:bg-sky-950/20' : 'bg-sky-50 dark:bg-sky-950/40'
       }`}
     >
       <div className="flex items-center gap-2 shrink-0">
@@ -189,9 +189,9 @@ function PrizeRow({ prize, idx, faded }) {
         >
           {b.rank}
         </span>
-        <span className="text-slate-700 font-bold">{title}</span>
+        <span className="text-slate-800 dark:text-slate-200 font-bold">{title}</span>
       </div>
-      <span className="font-extrabold text-slate-900 text-right ml-2">{displayAmount}</span>
+      <span className="font-extrabold text-slate-900 dark:text-white text-right ml-2">{displayAmount}</span>
     </div>
   );
 }
