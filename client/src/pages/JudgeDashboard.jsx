@@ -677,12 +677,14 @@ export default function JudgeDashboard() {
           {/* Stats Widgets - 5 Cards in a single row matching Participant Dashboard */}
           {(() => {
             const totalEvents = events.length;
-            const activeEv = event || (events && events[0]) || null;
-            const isVidEv = activeEv && (activeEv.mediaType === 'video' || String(activeEv.eventType).toLowerCase().includes('video') || String(activeEv.eventType).toLowerCase().includes('reel'));
-            const allPhotos = Object.values(allPhotographsByEvent).reduce((acc, arr) => [...acc, ...(arr || [])], []);
-            const totalPhotos = allPhotos.length;
-            const unpaidCount = allPhotos.filter(p => p.paymentStatus === 'Unpaid').length;
-            const paidPhotos = allPhotos.filter(p => p.paymentStatus !== 'Unpaid');
+            const targetEvents = userSelectedEventId && event ? [event] : events;
+            const targetPhotos = userSelectedEventId && event
+              ? (allPhotographsByEvent[userSelectedEventId] || photographs || [])
+              : Object.values(allPhotographsByEvent).reduce((acc, arr) => [...acc, ...(arr || [])], []);
+
+            const totalPhotos = targetPhotos.length;
+            const unpaidCount = targetPhotos.filter(p => p.paymentStatus === 'Unpaid').length;
+            const paidPhotos = targetPhotos.filter(p => p.paymentStatus !== 'Unpaid');
             const gradedCount = paidPhotos.filter(p => p.graded).length;
             const pendingCount = paidPhotos.filter(p => !p.graded).length;
 
@@ -691,33 +693,39 @@ export default function JudgeDashboard() {
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   {/* Card 1: Assigned Contests */}
                   <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">Assigned Contests</span>
-                    <h3 className="font-display font-extrabold text-2xl text-indigo-600 dark:text-indigo-400">{totalEvents}</h3>
-                    <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Total events panel seat</span>
+                    <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
+                      {userSelectedEventId ? 'SELECTED CONTEST' : 'ASSIGNED CONTESTS'}
+                    </span>
+                    <h3 className="font-display font-extrabold text-2xl text-indigo-600 dark:text-indigo-400">
+                      {userSelectedEventId ? 1 : totalEvents}
+                    </h3>
+                    <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium truncate">
+                      {userSelectedEventId ? (event?.title || 'Active Event') : 'Total events panel seat'}
+                    </span>
                   </div>
 
-                  {/* Card 2: Graded Photos / Videos */}
+                  {/* Card 2: Graded Photographs / Videos */}
                   <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
                     <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                      {isVidEv ? 'GRADED VIDEOS' : 'GRADED PHOTOS'}
+                      GRADED PHOTOGRAPHS / VIDEOS
                     </span>
                     <h3 className="font-display font-extrabold text-2xl text-emerald-600 dark:text-emerald-400">{gradedCount}</h3>
                     <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Completed assessments</span>
                   </div>
 
-                  {/* Card 3: Ungraded Photos / Videos */}
+                  {/* Card 3: Ungraded Photographs / Videos */}
                   <div className="bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
                     <span className="text-[10px] text-red-900/80 dark:text-red-300 font-extrabold uppercase tracking-wider">
-                      {isVidEv ? 'UNGRADED VIDEOS' : 'UNGRADED PHOTOS'}
+                      UNGRADED PHOTOGRAPHS / VIDEOS
                     </span>
                     <h3 className="font-display font-extrabold text-2xl text-red-600 dark:text-red-400">{pendingCount}</h3>
                     <span className="text-[10px] text-red-600/70 dark:text-red-400/70 font-medium">Assessments remaining</span>
                   </div>
 
-                  {/* Card 4: Unpaid Photos / Videos */}
+                  {/* Card 4: Unpaid Photographs / Videos */}
                   <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
                     <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                      {isVidEv ? 'UNPAID VIDEOS' : 'UNPAID PHOTOS'}
+                      UNPAID PHOTOGRAPHS / VIDEOS
                     </span>
                     <h3 className="font-display font-extrabold text-2xl text-rose-600 dark:text-rose-400">{unpaidCount}</h3>
                     <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Payment pending entries</span>
@@ -726,11 +734,11 @@ export default function JudgeDashboard() {
                   {/* Card 5: Total Photographs / Videos */}
                   <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
                     <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                      {isVidEv ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
+                      TOTAL PHOTOGRAPHS / VIDEOS
                     </span>
                     <h3 className="font-display font-extrabold text-2xl text-purple-600 dark:text-purple-400">{totalPhotos}</h3>
                     <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
-                      {isVidEv ? 'Total assigned video assets' : 'Total assigned photo frames'}
+                      Total assigned assets
                     </span>
                   </div>
                 </div>
@@ -797,7 +805,7 @@ export default function JudgeDashboard() {
                     {/* Category Distribution Pie/Donut Chart */}
                     {(() => {
                       const categoriesMap = {};
-                      allPhotos.forEach(p => {
+                      targetPhotos.forEach(p => {
                         const cat = p.category || 'Other';
                         categoriesMap[cat] = (categoriesMap[cat] || 0) + 1;
                       });
@@ -886,8 +894,8 @@ export default function JudgeDashboard() {
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-5 shadow-sm text-left">
                       <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white">Events Breakdown Tracking</h3>
                       <div className="flex flex-col gap-4 max-h-42.5 overflow-y-auto pr-1">
-                        {events.map((e, idx) => {
-                          const eventPhotos = allPhotographsByEvent[e._id] || [];
+                        {targetEvents.map((e, idx) => {
+                          const eventPhotos = allPhotographsByEvent[e._id] || (e._id === event?._id ? photographs : []);
                           const total = eventPhotos.length;
                           const approved = eventPhotos.filter(p => p.score && p.score.approvalStatus === 'Approved').length;
                           const disapproved = eventPhotos.filter(p => p.score && p.score.approvalStatus === 'Disapproved').length;
@@ -949,8 +957,8 @@ export default function JudgeDashboard() {
                   
                   {(() => {
                     const historyList = [];
-                    events.forEach(e => {
-                      const eventPhotos = allPhotographsByEvent[e._id] || [];
+                    targetEvents.forEach(e => {
+                      const eventPhotos = allPhotographsByEvent[e._id] || (e._id === event?._id ? photographs : []);
                       eventPhotos.forEach(p => {
                         if (p.graded && p.score) {
                           historyList.push({
