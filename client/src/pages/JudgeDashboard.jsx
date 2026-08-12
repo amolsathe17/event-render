@@ -42,6 +42,7 @@ export default function JudgeDashboard() {
   const [judgeDashboardTab, setJudgeDashboardTab] = useState('overview');
   const [allPhotographsByEvent, setAllPhotographsByEvent] = useState({});
   const [historySelectedEventId, setHistorySelectedEventId] = useState('');
+  const [userSelectedEventId, setUserSelectedEventId] = useState('');
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successTitle, setSuccessTitle] = useState('');
@@ -572,10 +573,17 @@ export default function JudgeDashboard() {
           <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
             <Calendar size={15} className="text-amber-500 shrink-0" />
             <select
-              value={event?._id || ''}
-              onChange={(e) => handleEventChange(e.target.value)}
+              value={userSelectedEventId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setUserSelectedEventId(val);
+                if (val) {
+                  handleEventChange(val);
+                }
+              }}
               className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
             >
+              <option value="">-- Select Event --</option>
               {events.map((ev) => (
                 <option key={ev._id} value={ev._id}>
                   {ev.title} ({ev.status})
@@ -1041,7 +1049,23 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "portal" && (() => {
+      {judgeDashboardTab === "portal" && !userSelectedEventId && (
+        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
+          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
+            <AlertTriangle size={32} />
+          </div>
+          <div>
+            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
+              Please Select an Event
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
+              Please select an assigned event from the top right dropdown menu to view the evaluation workspace and grade submissions.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {judgeDashboardTab === "portal" && userSelectedEventId && (() => {
         const isVidEv = event && (event.mediaType === 'video' || String(event.eventType).toLowerCase().includes('video') || String(event.eventType).toLowerCase().includes('reel'));
         return (
         <>
@@ -1978,7 +2002,23 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "event_history" && (() => {
+      {judgeDashboardTab === "event_history" && !userSelectedEventId && (
+        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
+          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
+            <AlertTriangle size={32} />
+          </div>
+          <div>
+            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
+              Please Select an Event
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
+              Please select an assigned event from the top right dropdown menu to view event history and statistics.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {judgeDashboardTab === "event_history" && userSelectedEventId && (() => {
         const selectedHistoryEvent = events.find(e => e._id === (historySelectedEventId || event?._id || events[0]?._id)) || event || events[0];
         const historyPhotos = selectedHistoryEvent ? (allPhotographsByEvent[selectedHistoryEvent._id] || []) : [];
         const totalHistoryPhotos = historyPhotos.length;
