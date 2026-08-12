@@ -1834,7 +1834,7 @@ export default function AdminDashboard() {
             { id: 'judges', label: 'Judges & Results', icon: Award },
             { id: 'events', label: 'Contests & Configuration', icon: Calendar },
             { id: 'categories_config', label: 'Categories', icon: Layers },
-            { id: 'event_history', label: 'Event History', icon: History }
+            { id: 'event_history', label: 'All Events History', icon: History }
           ].map(t => (
             <button
               key={t.id}
@@ -1908,24 +1908,18 @@ export default function AdminDashboard() {
               <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Locked submission folders</span>
             </div>
 
-            {/* Card 4: Total Photographs / Total Videos */}
-            {(() => {
-              const activeEventObj = events.find(e => e._id === selectedEventId) || selectedEvent || events.find(e => e.status === 'Active') || events[0];
-              const isVid = activeEventObj && (activeEventObj.mediaType === 'video' || String(activeEventObj.eventType).toLowerCase().includes('video') || String(activeEventObj.eventType).toLowerCase().includes('reel'));
-              return (
-                <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                  <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                    {isVid ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
-                  </span>
-                  <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
-                    {stats.totalPhotos}
-                  </p>
-                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
-                    {isVid ? 'Short video / reel assets' : 'High-res image assets'}
-                  </span>
-                </div>
-              );
-            })()}
+            {/* Card 4: Total Photographs / Videos */}
+            <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                TOTAL PHOTOGRAPHS / VIDEOS
+              </span>
+              <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
+                {stats.totalPhotos}
+              </p>
+              <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
+                High-res image & video assets
+              </span>
+            </div>
           </div>
 
           {/* Recharts Analytics Panel */}

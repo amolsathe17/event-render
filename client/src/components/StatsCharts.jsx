@@ -58,7 +58,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [] }) {
             Registration & Revenue Trends
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Daily overview of participants signups and transaction volume over the last 7 days
+            Daily overview of participant signups and total transaction revenue volume across all events over the last 7 days
           </p>
         </div>
         
