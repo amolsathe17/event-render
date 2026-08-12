@@ -612,7 +612,10 @@ export default function JudgeDashboard() {
       <div className="w-full overflow-x-auto mb-3">
         <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
           <button
-            onClick={() => setJudgeDashboardTab("overview")}
+            onClick={() => {
+              setJudgeDashboardTab("overview");
+              setUserSelectedEventId("");
+            }}
             className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
               judgeDashboardTab === "overview"
                 ? "bg-indigo-600 text-white shadow-md"
