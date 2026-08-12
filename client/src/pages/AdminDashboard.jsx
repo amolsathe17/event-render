@@ -796,10 +796,10 @@ export default function AdminDashboard() {
     refreshAll();
   }, []);
 
-  // Re-fetch event-scoped data when selectedEventId changes
+  // Re-fetch event-scoped or overall data when selectedEventId changes
   useEffect(() => {
+    fetchStats();
     if (selectedEventId) {
-      fetchStats();
       fetchParticipants();
       fetchPhotographs();
     }
