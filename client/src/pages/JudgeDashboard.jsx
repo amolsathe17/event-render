@@ -141,17 +141,22 @@ export default function JudgeDashboard() {
         setEvents(assigned);
         
         if (assigned.length > 0) {
-          setEvent(null);
-          setHistorySelectedEventId('');
+          const active = assigned.find(e => e.status === 'Active') || assigned[0];
+          setEvent(active);
+          setHistorySelectedEventId(active._id);
           
           // Fetch assigned photos for ALL assigned events to populate overview statistics
           const photoByEventData = {};
+          let activePhotos = [];
           
           for (const ev of assigned) {
             try {
               const res = await apiFetch(`/api/judges/assigned-photos/${ev._id}`);
               if (res.success) {
                 photoByEventData[ev._id] = res.photographs;
+                if (ev._id === active._id) {
+                  activePhotos = res.photographs;
+                }
               }
             } catch (err) {
               console.warn(`Could not load photos for event ${ev.title}:`, err.message);
@@ -159,7 +164,7 @@ export default function JudgeDashboard() {
           }
           
           setAllPhotographsByEvent(photoByEventData);
-          setPhotographs([]);
+          setPhotographs(activePhotos);
           setSelectedSubmissionId('all');
         }
       }
@@ -172,12 +177,6 @@ export default function JudgeDashboard() {
   };
 
   const handleEventChange = async (eId) => {
-    if (!eId) {
-      setEvent(null);
-      setPhotographs([]);
-      setHistorySelectedEventId('');
-      return;
-    }
     const selected = events.find(e => e._id === eId);
     if (!selected) return;
     setEvent(selected);
@@ -577,7 +576,6 @@ export default function JudgeDashboard() {
               onChange={(e) => handleEventChange(e.target.value)}
               className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
             >
-              <option value="">-- Select Event --</option>
               {events.map((ev) => (
                 <option key={ev._id} value={ev._id}>
                   {ev.title} ({ev.status})
@@ -638,24 +636,7 @@ export default function JudgeDashboard() {
         </div>
       </div>
 
-      {/* Alert Banner when no event is selected */}
-      {!event && judgeDashboardTab !== 'notifications' && (
-        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
-          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
-            <AlertTriangle size={32} />
-          </div>
-          <div>
-            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
-              Please Select an Event
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
-              Please select an assigned event from the top right dropdown menu to view the evaluation workspace, submissions, and event history.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {judgeDashboardTab === "overview" && event && (
+      {judgeDashboardTab === "overview" && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           {/* Welcome header */}
           {user?.role !== 'Admin' && (
@@ -1060,7 +1041,7 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "portal" && event && (() => {
+      {judgeDashboardTab === "portal" && (() => {
         const isVidEv = event && (event.mediaType === 'video' || String(event.eventType).toLowerCase().includes('video') || String(event.eventType).toLowerCase().includes('reel'));
         return (
         <>
@@ -1997,7 +1978,7 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "event_history" && event && (() => {
+      {judgeDashboardTab === "event_history" && (() => {
         const selectedHistoryEvent = events.find(e => e._id === (historySelectedEventId || event?._id || events[0]?._id)) || event || events[0];
         const historyPhotos = selectedHistoryEvent ? (allPhotographsByEvent[selectedHistoryEvent._id] || []) : [];
         const totalHistoryPhotos = historyPhotos.length;
