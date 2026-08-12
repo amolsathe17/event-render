@@ -184,7 +184,8 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       value: categoryStatsMap[name]
     }));
 
-    // 3. Daily Registrations & Revenue charts data (last 7 days) — payments scoped to event
+    // 3. Daily Registrations & Revenue charts data (last 7 days) — with per-event breakdown
+    const allEventsList = await Event.find({});
     const dailyStats = [];
     for (let i = 6; i >= 0; i--) {
       const day = new Date();
@@ -205,12 +206,36 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       });
       const revSum = dayPayments.reduce((acc, curr) => acc + curr.amount, 0);
 
+      // Per-event revenue breakdown
+      const eventBreakdown = {};
+      allEventsList.forEach(ev => {
+        const evPayments = dayPayments.filter(p => String(p.eventId) === String(ev._id));
+        eventBreakdown[ev.title] = evPayments.reduce((acc, curr) => acc + curr.amount, 0);
+      });
+
       dailyStats.push({
         date: dayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         registrations: regCount,
-        revenue: revSum
+        revenue: revSum,
+        ...eventBreakdown
       });
     }
+
+    // 4. Per-event revenue and submissions comparison ledger
+    const eventStats = await Promise.all(allEventsList.map(async (ev) => {
+      const evPayments = await Payment.find({ eventId: ev._id, status: 'Success' });
+      const evSubs = await Submission.find({ eventId: ev._id, isFinalSubmitted: true });
+      let evPhotos = 0;
+      evSubs.forEach(s => { evPhotos += s.photographs.length; });
+      return {
+        eventId: String(ev._id),
+        title: ev.title,
+        status: ev.status,
+        revenue: evPayments.reduce((acc, curr) => acc + curr.amount, 0),
+        submissions: evSubs.length,
+        photos: evPhotos
+      };
+    }));
 
     res.json({
       success: true,
@@ -226,7 +251,9 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       },
       charts: {
         dailyStats,
-        categoryStats
+        categoryStats,
+        eventStats,
+        eventsList: allEventsList.map(e => ({ id: String(e._id), title: e.title }))
       }
     });
   } catch (error) {

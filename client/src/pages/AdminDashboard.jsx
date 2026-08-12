@@ -1929,6 +1929,8 @@ export default function AdminDashboard() {
           <StatsCharts 
             dailyStats={charts.dailyStats} 
             categoryStats={charts.categoryStats} 
+            eventStats={charts.eventStats}
+            eventsList={charts.eventsList}
           />
 
           {/* Downloadable Reports Panel - 3 distinct light background export buttons */}
