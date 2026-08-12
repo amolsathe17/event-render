@@ -1931,6 +1931,8 @@ export default function AdminDashboard() {
             categoryStats={charts.categoryStats} 
             eventStats={charts.eventStats}
             eventsList={charts.eventsList}
+            selectedEventId={selectedEventId}
+            selectedEventTitle={selectedEvent?.title}
           />
 
           {/* Downloadable Reports Panel - 3 distinct light background export buttons */}

@@ -194,10 +194,18 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const regCount = await User.countDocuments({
-        role: 'Participant',
-        createdAt: { $gte: dayStart, $lt: dayEnd }
-      });
+      let regCount;
+      if (eventId) {
+        regCount = await Submission.countDocuments({
+          eventId,
+          createdAt: { $gte: dayStart, $lt: dayEnd }
+        });
+      } else {
+        regCount = await User.countDocuments({
+          role: 'Participant',
+          createdAt: { $gte: dayStart, $lt: dayEnd }
+        });
+      }
 
       const dayPayments = await Payment.find({
         ...paymentFilter,

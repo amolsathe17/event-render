@@ -26,7 +26,7 @@ const EVENT_COLORS = [
   '#3b82f6'  // Blue
 ];
 
-export default function StatsCharts({ dailyStats = [], categoryStats = [], eventStats = [], eventsList = [] }) {
+export default function StatsCharts({ dailyStats = [], categoryStats = [], eventStats = [], eventsList = [], selectedEventId = '', selectedEventTitle = '' }) {
   const [chartMode, setChartMode] = useState('cumulative'); // 'cumulative', 'separate', 'event_comparison'
 
   const events = eventsList.length > 0
@@ -42,14 +42,14 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
           <p className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 border-b border-slate-100 dark:border-slate-800 pb-1">{label}</p>
           <div className="flex flex-col gap-1">
             <p className="text-indigo-600 dark:text-indigo-400 font-extrabold flex justify-between">
-              <span>Cumulative Revenue:</span>
+              <span>{selectedEventId ? 'Event Revenue:' : 'Cumulative Revenue:'}</span>
               <span>₹{(dataItem.revenue || 0).toLocaleString()}</span>
             </p>
             <p className="text-amber-500 dark:text-amber-400 font-bold flex justify-between">
-              <span>Registrations:</span>
+              <span>{selectedEventId ? 'Submissions:' : 'Registrations:'}</span>
               <span>{dataItem.registrations || 0}</span>
             </p>
-            {events.length > 0 && (
+            {!selectedEventId && events.length > 0 && (
               <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-0.5 text-[10px]">
                 <span className="font-semibold text-slate-400 uppercase">Per-Event Breakdown:</span>
                 {events.map((ev, i) => {
@@ -98,55 +98,62 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-left">
             <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">
-              Registration & Revenue Trends
+              Registration & Revenue Trends {selectedEventTitle ? `— ${selectedEventTitle}` : ''}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {chartMode === 'cumulative' && 'Cumulative total revenue volume & participant signups across all events over the last 7 days'}
-              {chartMode === 'separate' && 'Separate event-wise daily revenue breakdown & cumulative participant registrations'}
-              {chartMode === 'event_comparison' && 'Total revenue & submissions comparison across individual assigned contests'}
+              {selectedEventId
+                ? `Daily revenue volume & submission uploads specifically for "${selectedEventTitle || 'Selected Event'}" over the last 7 days`
+                : (chartMode === 'cumulative'
+                    ? 'Cumulative total revenue volume & participant signups across all events over the last 7 days'
+                    : (chartMode === 'separate'
+                        ? 'Separate event-wise daily revenue breakdown & cumulative participant registrations'
+                        : 'Total revenue & submissions comparison across individual assigned contests'))
+              }
             </p>
           </div>
 
           {/* Toggle Control */}
-          <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start sm:self-auto text-xs font-bold gap-1">
-            <button
-              onClick={() => setChartMode('cumulative')}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                chartMode === 'cumulative'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Cumulative Total
-            </button>
-            <button
-              onClick={() => setChartMode('separate')}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                chartMode === 'separate'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Per-Event Breakdown
-            </button>
-            {eventStats.length > 0 && (
+          {!selectedEventId && (
+            <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start sm:self-auto text-xs font-bold gap-1">
               <button
-                onClick={() => setChartMode('event_comparison')}
+                onClick={() => setChartMode('cumulative')}
                 className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  chartMode === 'event_comparison'
+                  chartMode === 'cumulative'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                Event Ledger Comparison
+                Cumulative Total
               </button>
-            )}
-          </div>
+              <button
+                onClick={() => setChartMode('separate')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  chartMode === 'separate'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                Per-Event Breakdown
+              </button>
+              {eventStats.length > 0 && (
+                <button
+                  onClick={() => setChartMode('event_comparison')}
+                  className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                    chartMode === 'event_comparison'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Event Ledger Comparison
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Chart Render Area */}
         <div className="w-full h-80">
-          {chartMode === 'cumulative' && dailyStats.length > 0 && (
+          {(selectedEventId || chartMode === 'cumulative') && dailyStats.length > 0 && (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={dailyStats}
@@ -180,7 +187,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
                 />
                 <Bar 
                   yAxisId="left" 
-                  name="Cumulative Revenue (INR)" 
+                  name={selectedEventId ? "Event Revenue (INR)" : "Cumulative Revenue (INR)"} 
                   dataKey="revenue" 
                   fill="#4f46e5" 
                   radius={[4, 4, 0, 0]}
@@ -189,7 +196,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
                 <Line 
                   yAxisId="right" 
                   type="monotone" 
-                  name="Registrations" 
+                  name={selectedEventId ? "Event Submissions" : "Registrations"} 
                   dataKey="registrations" 
                   stroke="#f59e0b" 
                   strokeWidth={3}
