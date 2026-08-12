@@ -2172,7 +2172,7 @@ export default function AdminDashboard() {
             return (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl px-5 py-4 shadow-2xs">
                     <div className="p-2.5 bg-emerald-500/10 rounded-xl">
                       <ThumbsUp size={20} className="text-emerald-500 shrink-0" />
@@ -4729,15 +4729,13 @@ export default function AdminDashboard() {
         </div>
       )}
 
-
-
       {/* DETAIL / ZOOM VIEW MODAL */}
       {selectedPhoto && !showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-[80vw] h-[80vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-5xl max-h-[92vh] md:h-[85vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left my-auto">
             
             {/* Left Column: Image/Video Viewport */}
-            <div className="grow bg-slate-950 flex items-center justify-center p-6 relative h-full">
+            <div className="w-full md:flex-1 bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative h-64 sm:h-80 md:h-full shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
               {selectedPhoto.mediaType === 'video' || selectedPhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
                 <video 
                   src={getBackendUrl(selectedPhoto.fileUrl)} 
@@ -4759,9 +4757,9 @@ export default function AdminDashboard() {
             </div>
 
             {/* Right Column: Information Panel */}
-            <div className="w-full md:w-95 bg-slate-50 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 h-full overflow-y-auto">
+            <div className="w-full md:w-96 bg-slate-50 dark:bg-slate-900 flex flex-col justify-between shrink-0 md:h-full overflow-y-auto">
               {/* Sidebar Header */}
-              <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0 bg-white dark:bg-slate-950">
+              <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0 bg-white dark:bg-slate-950 sticky top-0 z-10">
                 <div>
                   <h3 className="font-display font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider">Photograph Inspection</h3>
                   <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Admin Read-Only Viewer</span>
@@ -4775,7 +4773,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Sidebar Body */}
-              <div className="p-6 grow flex flex-col gap-4 text-xs overflow-y-auto">
+              <div className="p-5 sm:p-6 flex flex-col gap-4 text-xs grow">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Title & Category</span>
                   <h3 className="font-display font-black text-base text-slate-900 dark:text-white mt-0.5">{selectedPhoto.title}</h3>
@@ -4877,23 +4875,28 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
-                {selectedPhoto.scores && selectedPhoto.scores.length > 0 && (
-                  <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-                    <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">Judge Evaluations ({selectedPhoto.scores.length})</span>
+                {/* ALWAYS VISIBLE JUDGE EVALUATIONS SECTION */}
+                <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">
+                    Judge Evaluations {selectedPhoto.scores?.length ? `(${selectedPhoto.scores.length})` : ''}
+                  </span>
+                  {selectedPhoto.scores && selectedPhoto.scores.length > 0 ? (
                     <div className="flex flex-col gap-2">
                       {selectedPhoto.scores.map((score, sIdx) => (
-                        <div key={sIdx} className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col gap-1.5 text-[10px] text-left">
+                        <div key={sIdx} className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5 text-[10px] text-left">
                           <div className="flex justify-between items-center w-full">
-                            <span className="font-semibold text-slate-700 dark:text-slate-350">{score.judgeName || 'Judge'}</span>
-                            <span className={`font-bold px-1.5 py-0.5 rounded ${
-                              (score.approvalStatus || 'Approved') === 'Approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{score.judgeName || 'Judge'}</span>
+                            <span className={`font-black px-2 py-0.5 rounded-full text-[9px] ${
+                              (score.approvalStatus || 'Approved') === 'Approved' 
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                             }`}>
-                              {score.approvalStatus || 'Approved'} ({score.averageScore}/10)
+                              {score.approvalStatus || 'Approved'} ({score.averageScore || 0}/10)
                             </span>
                           </div>
                           {score.remarks ? (
-                            <div className="bg-white dark:bg-slate-900/50 p-2 rounded-lg border border-slate-200/40 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 italic">
-                              Remarks: "{score.remarks}"
+                            <div className="bg-white dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-300 italic">
+                              "{score.remarks}"
                             </div>
                           ) : (
                             <div className="text-[9px] text-slate-400 italic px-1">
@@ -4903,12 +4906,16 @@ export default function AdminDashboard() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="bg-slate-100/70 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800 text-center text-slate-400 italic text-[10px]">
+                      No judge evaluations recorded yet.
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Sidebar Footer */}
-              <div className="p-5 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-950">
+              <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-950 sticky bottom-0 z-10">
                 <button
                   type="button"
                   onClick={() => setSelectedPhoto(null)}
@@ -4918,7 +4925,6 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}
