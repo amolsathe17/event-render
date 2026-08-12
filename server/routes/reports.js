@@ -72,11 +72,17 @@ router.get('/revenue', protect, authorize('Admin'), async (req, res) => {
     const payments = await Payment.find(filter).sort({ paymentDate: -1 });
     
     let csv = 'TransactionID,InvoiceNumber,EventTitle,Name,Email,PackageName,Amount(INR),PaymentMethod,PaymentDate\n';
+    let totalRevenueSum = 0;
     
     payments.forEach(p => {
+      const amt = Number(p.amount) || 0;
+      totalRevenueSum += amt;
       const evTitle = (p.eventId && eventsMap[String(p.eventId)]) || (eventId && eventsMap[eventId]) || 'All Events Combined';
-      csv += `${escapeCSV(p.transactionId)},${escapeCSV(p.invoiceNumber)},${escapeCSV(evTitle)},${escapeCSV(p.userName)},${escapeCSV(p.userEmail)},${escapeCSV(p.packageName)},${p.amount},${escapeCSV(p.paymentMethod)},${p.paymentDate.toISOString()}\n`;
+      csv += `${escapeCSV(p.transactionId)},${escapeCSV(p.invoiceNumber)},${escapeCSV(evTitle)},${escapeCSV(p.userName)},${escapeCSV(p.userEmail)},${escapeCSV(p.packageName)},${amt},${escapeCSV(p.paymentMethod)},${p.paymentDate ? p.paymentDate.toISOString() : ''}\n`;
     });
+
+    // Summary row at the bottom with Total Sum of Amount(INR)
+    csv += `TOTAL REVENUE SUMMARY,Total Transactions: ${payments.length},,,,"TOTAL AMOUNT (INR)",${totalRevenueSum},,\n`;
 
     const filename = eventId ? `event-revenue-report.csv` : `all-events-revenue-report.csv`;
     res.setHeader('Content-Type', 'text/csv');
