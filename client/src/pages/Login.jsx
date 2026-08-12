@@ -10,17 +10,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [isFlipped, setIsFlipped] = useState(!location.state?.fromRegister);
-
-  // 2-second automatic flip ONLY on initial page load (Information Card -> Login Form Card)
-  useEffect(() => {
-    if (!location.state?.fromRegister) {
-      const timer = setTimeout(() => {
-        setIsFlipped(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [location.state?.fromRegister]);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
     if (user) {
