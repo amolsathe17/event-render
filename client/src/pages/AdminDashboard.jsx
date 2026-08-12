@@ -4731,11 +4731,11 @@ export default function AdminDashboard() {
 
       {/* DETAIL / ZOOM VIEW MODAL */}
       {selectedPhoto && !showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-5xl max-h-[92vh] md:h-[85vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left my-auto overflow-y-auto md:overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
+          <div className="relative w-full max-w-5xl max-h-[92vh] md:h-[85vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left my-auto overflow-y-auto md:overflow-hidden overflow-x-hidden">
             
             {/* Left Column: Image/Video Viewport */}
-            <div className="w-full md:flex-1 bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative h-64 sm:h-80 md:h-full shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
+            <div className="w-full md:flex-1 bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative h-64 sm:h-80 md:h-full shrink-0 border-b md:border-b-0 md:border-r border-slate-800 overflow-hidden">
               {selectedPhoto.mediaType === 'video' || selectedPhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
                 <video 
                   src={getBackendUrl(selectedPhoto.fileUrl)} 
@@ -4757,26 +4757,26 @@ export default function AdminDashboard() {
             </div>
 
             {/* Right Column: Information Panel */}
-            <div className="w-full md:w-96 bg-slate-50 dark:bg-slate-900 flex flex-col justify-between shrink-0 md:h-full overflow-visible md:overflow-y-auto">
+            <div className="w-full md:w-96 max-w-full bg-slate-50 dark:bg-slate-900 flex flex-col justify-between shrink-0 md:h-full overflow-x-hidden overflow-visible md:overflow-y-auto">
               {/* Sidebar Header */}
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0 bg-white dark:bg-slate-950 sticky top-0 z-10">
-                <div>
-                  <h3 className="font-display font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider">Photograph Inspection</h3>
+                <div className="min-w-0 pr-2">
+                  <h3 className="font-display font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider truncate">Photograph Inspection</h3>
                   <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Admin Read-Only Viewer</span>
                 </div>
                 <button
                   onClick={() => setSelectedPhoto(null)}
-                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg cursor-pointer transition-colors"
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg cursor-pointer transition-colors shrink-0"
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {/* Sidebar Body */}
-              <div className="p-5 sm:p-6 flex flex-col gap-4 text-xs grow">
-                <div>
+              <div className="p-5 sm:p-6 flex flex-col gap-4 text-xs grow overflow-x-hidden">
+                <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Title & Category</span>
-                  <h3 className="font-display font-black text-base text-slate-900 dark:text-white mt-0.5">{selectedPhoto.title}</h3>
+                  <h3 className="font-display font-black text-base text-slate-900 dark:text-white mt-0.5 break-words">{selectedPhoto.title}</h3>
                   <span className="bg-slate-100 dark:bg-slate-850 text-slate-650 dark:text-slate-350 px-2 py-0.5 rounded font-bold text-[9px] inline-block mt-1">
                     {selectedPhoto.category}
                   </span>
@@ -4795,70 +4795,70 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 
-                <div>
+                <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Owner / Photographer</span>
-                  <p className="font-semibold text-slate-800 dark:text-slate-250 mt-0.5">{selectedPhoto.participantName}</p>
-                  <p className="text-[10px] text-slate-400">{selectedPhoto.participantEmail}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-250 mt-0.5 break-words">{selectedPhoto.participantName}</p>
+                  <p className="text-[10px] text-slate-400 break-all">{selectedPhoto.participantEmail}</p>
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Story Details</span>
-                  <p className="text-slate-500 leading-relaxed mt-0.5">{selectedPhoto.description || 'No description shared.'}</p>
+                  <p className="text-slate-500 leading-relaxed mt-0.5 break-words">{selectedPhoto.description || 'No description shared.'}</p>
                 </div>
 
                 {selectedPhoto.customFields && selectedPhoto.customFields.length > 0 ? (
-                  <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800 min-w-0">
                     <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">Category Specifications</span>
                     <div className="grid grid-cols-2 gap-3 text-[10px] text-slate-500">
                       {selectedPhoto.customFields.map((cf, idx) => (
                         <div key={idx} className="min-w-0">
-                          <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">{cf.label}:</span>
-                          <p className="font-bold text-slate-700 dark:text-slate-250 mt-0.5 wrap-break-word">{cf.value || 'N/A'}</p>
+                          <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold truncate">{cf.label}:</span>
+                          <p className="font-bold text-slate-700 dark:text-slate-250 mt-0.5 break-words">{cf.value || 'N/A'}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800 min-w-0">
                     <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">EXIF Device Info</span>
                     <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
-                      <div>
+                      <div className="min-w-0">
                         <span>Brand:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.cameraBrand}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 truncate">{selectedPhoto.cameraBrand}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span>Model:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.cameraModel}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 truncate">{selectedPhoto.cameraModel}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
-                      <div>
+                      <div className="min-w-0">
                         <span>Lens:</span>
                         <p className="font-bold text-slate-700 dark:text-slate-250 truncate">{selectedPhoto.lensUsed || 'N/A'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span>Capture Date:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.dateCaptured ? new Date(selectedPhoto.dateCaptured).toLocaleDateString() : 'N/A'}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 truncate">{selectedPhoto.dateCaptured ? new Date(selectedPhoto.dateCaptured).toLocaleDateString() : 'N/A'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
-                      <div>
+                      <div className="min-w-0">
                         <span>Dimensions:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.width && selectedPhoto.height ? `${selectedPhoto.width}x${selectedPhoto.height}` : 'N/A'}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 truncate">{selectedPhoto.width && selectedPhoto.height ? `${selectedPhoto.width}x${selectedPhoto.height}` : 'N/A'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span>Format:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.format || 'N/A'}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 truncate">{selectedPhoto.format || 'N/A'}</p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="flex flex-col gap-1.5 pt-3 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-500">
+                <div className="flex flex-col gap-1.5 pt-3 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 min-w-0">
                   <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">Cloudinary & Security</span>
-                  <p>Cloudinary ID: <span className="font-mono text-slate-700 dark:text-slate-350">{selectedPhoto.cloudinaryPublicId || 'N/A'}</span></p>
-                  <p>Original File: <span className="font-mono text-slate-700 dark:text-slate-350">{selectedPhoto.originalFilename || 'N/A'}</span></p>
-                  <p className="mt-1 flex items-center gap-1">
+                  <p className="break-all">Cloudinary ID: <span className="font-mono text-slate-700 dark:text-slate-350 break-all">{selectedPhoto.cloudinaryPublicId || 'N/A'}</span></p>
+                  <p className="break-all">Original File: <span className="font-mono text-slate-700 dark:text-slate-350 break-all">{selectedPhoto.originalFilename || 'N/A'}</span></p>
+                  <p className="mt-1 flex items-center gap-1 flex-wrap">
                     DSLR Validation: 
                     <span className={`font-bold px-1.5 py-0.5 rounded ${
                       selectedPhoto.dslrValidationStatus === 'VERIFIED'
@@ -4871,13 +4871,13 @@ export default function AdminDashboard() {
                     </span>
                   </p>
                   {selectedPhoto.validationReason && (
-                    <p className="italic text-slate-400 mt-0.5">"{selectedPhoto.validationReason}"</p>
+                    <p className="italic text-slate-400 mt-0.5 break-words">"{selectedPhoto.validationReason}"</p>
                   )}
                 </div>
 
                 {/* ALWAYS VISIBLE JUDGE EVALUATIONS SECTION */}
-                <div className="flex flex-col gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800 min-w-0">
+                  <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">
                       Judge Evaluations {selectedPhoto.scores?.length ? `(${selectedPhoto.scores.length})` : ''}
                     </span>
@@ -4889,15 +4889,15 @@ export default function AdminDashboard() {
                   </div>
 
                   {selectedPhoto.scores && selectedPhoto.scores.length > 0 ? (
-                    <div className="flex flex-col gap-2.5">
+                    <div className="flex flex-col gap-2.5 min-w-0">
                       {selectedPhoto.scores.map((score, sIdx) => (
-                        <div key={sIdx} className="bg-white dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col gap-2 text-[10px] text-left">
-                          <div className="flex justify-between items-center w-full">
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200">{score.judgeName || `Judge #${sIdx + 1}`}</span>
+                        <div key={sIdx} className="bg-white dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col gap-2 text-[10px] text-left min-w-0">
+                          <div className="flex justify-between items-center w-full flex-wrap gap-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{score.judgeName || `Judge #${sIdx + 1}`}</span>
                             </div>
-                            <span className={`font-black px-2.5 py-0.5 rounded-full text-[9px] ${
+                            <span className={`font-black px-2.5 py-0.5 rounded-full text-[9px] shrink-0 ${
                               (score.approvalStatus || 'Approved') === 'Approved' 
                                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
                                 : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
@@ -4907,10 +4907,10 @@ export default function AdminDashboard() {
                           </div>
 
                           {/* Remarks Box */}
-                          <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-300">
+                          <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-300 min-w-0">
                             <span className="block text-[8px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Evaluation Remarks:</span>
                             {score.remarks ? (
-                              <p className="italic font-medium leading-relaxed">"{score.remarks}"</p>
+                              <p className="italic font-medium leading-relaxed break-words">"{score.remarks}"</p>
                             ) : (
                               <p className="italic text-slate-400 text-[9px]">No remarks submitted by judge.</p>
                             )}
