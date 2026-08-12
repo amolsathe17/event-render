@@ -1033,90 +1033,93 @@ export default function EventInfo() {
         ref={activeRef}
         className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
-        {/* 3 Tabs Header */}
+        {/* 3 Tabs Header with Distinct Color Schemes for Each Tab */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm max-w-full overflow-x-auto">
+          <div className="inline-flex p-2 bg-slate-100/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm max-w-full overflow-x-auto gap-2">
+            {/* Tab 1: Active Events (Rose / Red-Orange Flame Theme) */}
             <button
               type="button"
               onClick={() => setActiveTab("active")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "active"
-                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-md border border-slate-200/60 dark:border-slate-700"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-linear-to-r from-rose-500 via-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 border border-rose-400/40 scale-[1.02]"
+                  : "bg-rose-50/80 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40"
               }`}
             >
               <Flame
                 size={16}
                 className={
                   activeTab === "active"
-                    ? "text-indigo-600 dark:text-indigo-400"
-                    : "text-slate-400"
+                    ? "text-white animate-pulse"
+                    : "text-rose-500 dark:text-rose-400"
                 }
               />
               <span>Active Events</span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                   activeTab === "active"
-                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-                    : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    ? "bg-white/30 text-white"
+                    : "bg-rose-200/70 text-rose-900 dark:bg-rose-900/80 dark:text-rose-200"
                 }`}
               >
                 {activeEvents.length}
               </span>
             </button>
 
+            {/* Tab 2: Upcoming Events (Sky / Cyan Blue Theme) */}
             <button
               type="button"
               onClick={() => setActiveTab("upcoming")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "upcoming"
-                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-md border border-slate-200/60 dark:border-slate-700"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-linear-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-md shadow-blue-500/25 border border-cyan-400/40 scale-[1.02]"
+                  : "bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 border border-sky-200/60 dark:border-sky-800/40"
               }`}
             >
               <Clock
                 size={16}
                 className={
                   activeTab === "upcoming"
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-slate-400"
+                    ? "text-white"
+                    : "text-sky-500 dark:text-sky-400"
                 }
               />
               <span>Upcoming Events</span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                   activeTab === "upcoming"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                    : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    ? "bg-white/30 text-white"
+                    : "bg-sky-200/70 text-sky-900 dark:bg-sky-900/80 dark:text-sky-200"
                 }`}
               >
                 {upcomingEvents.length}
               </span>
             </button>
 
+            {/* Tab 3: Past Events (Amber / Golden Orange Theme) */}
             <button
               type="button"
               onClick={() => setActiveTab("past")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "past"
-                  ? "bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-md border border-slate-200/60 dark:border-slate-700"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-linear-to-r from-amber-500 via-amber-600 to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/40 scale-[1.02]"
+                  : "bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200/60 dark:border-amber-800/40"
               }`}
             >
               <Lock
                 size={16}
                 className={
                   activeTab === "past"
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-slate-400"
+                    ? "text-white"
+                    : "text-amber-600 dark:text-amber-400"
                 }
               />
               <span>Past Events</span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                   activeTab === "past"
-                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                    : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    ? "bg-white/30 text-white"
+                    : "bg-amber-200/70 text-amber-950 dark:bg-amber-900/80 dark:text-amber-200"
                 }`}
               >
                 {closedEvents.length}
