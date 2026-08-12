@@ -105,11 +105,6 @@ export default function Landing() {
             <div className="group relative overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md flex flex-col gap-5">
               {/* Top Vibrant Accent Line */}
               <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
-              
-              {/* Top-Right Index Pill Badge */}
-              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 font-mono font-extrabold text-xs flex items-center justify-center shadow-2xs">
-                01
-              </div>
 
               {/* Ambient Glow */}
               <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
@@ -129,11 +124,6 @@ export default function Landing() {
             <div className="group relative overflow-hidden border border-slate-200/80 dark:border-slate-800/80 p-8 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md flex flex-col gap-5">
               {/* Top Vibrant Accent Line */}
               <div className="absolute top-0 left-8 right-8 h-[3px] bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-full" />
-
-              {/* Top-Right Index Pill Badge */}
-              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-pink-50 dark:bg-pink-950/60 border border-pink-200/60 dark:border-pink-800/60 text-pink-600 dark:text-pink-400 font-mono font-extrabold text-xs flex items-center justify-center shadow-2xs">
-                02
-              </div>
 
               {/* Ambient Glow */}
               <div className="absolute -top-12 -right-12 w-32 h-32 bg-pink-500/10 dark:bg-pink-500/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
@@ -160,16 +150,11 @@ export default function Landing() {
             <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -z-10 pointer-events-none group-hover:scale-125 transition-transform duration-500" />
             
             <div className="flex-1 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                  <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60">
-                    <Palette size={20} />
-                  </div>
-                  <span className="font-display font-bold text-xs uppercase tracking-widest">Legacy Tribute</span>
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60">
+                  <Palette size={20} />
                 </div>
-                <span className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 text-purple-600 dark:text-purple-400 font-mono font-extrabold text-xs flex items-center justify-center shadow-2xs">
-                  03
-                </span>
+                <span className="font-display font-bold text-xs uppercase tracking-widest">Legacy Tribute</span>
               </div>
               <h3 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
                 Late Prof. Raosaheb Gurav
