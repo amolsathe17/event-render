@@ -254,12 +254,24 @@ router.post('/broadcasts', protect, authorize('Judge', 'Admin'), async (req, res
       targetUsers = [...pUsers, ...admins];
     }
 
+    // Fetch event details if eventId provided
+    let eventTitle = '';
+    if (eventId) {
+      const Event = require('../models/Event');
+      const eDoc = await Event.findById(eventId);
+      if (eDoc) eventTitle = eDoc.title;
+    }
+
     for (const u of targetUsers) {
       if (!u.notifications) u.notifications = [];
       u.notifications.push({
         _id: new mongoose.Types.ObjectId(),
         message: message.trim(),
-        type: 'info',
+        senderName: req.user?.name || 'Judge',
+        senderRole: 'Judge',
+        eventTitle: eventTitle,
+        eventId: eventId || '',
+        type: 'reminder',
         isRead: false,
         createdAt: new Date()
       });

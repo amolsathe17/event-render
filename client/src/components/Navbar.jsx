@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, CheckCheck, Check, Trash2, ChevronDown } from 'lucide-react';
+import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown } from 'lucide-react';
 import { getBackendUrl } from '../utils/url';
 
 export default function Navbar() {
@@ -12,6 +12,9 @@ export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showParticipantModal, setShowParticipantModal] = useState(false);
+  const [showReminderPopup, setShowReminderPopup] = useState(false);
+  const [currentReminderIdx, setCurrentReminderIdx] = useState(0);
+  const [dismissedRemindersSession, setDismissedRemindersSession] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const notifRef = useRef(null);
   const profileDropdownRef = useRef(null);
@@ -54,6 +57,15 @@ export default function Navbar() {
 
   const unreadNotifs = user?.notifications ? user.notifications.filter(n => !n.isRead) : [];
   const unreadCount = unreadNotifs.length;
+
+  // Automatically trigger Reminder Modal Popup on login when new/unread reminders exist
+  useEffect(() => {
+    if (user && unreadNotifs.length > 0 && !dismissedRemindersSession) {
+      setShowReminderPopup(true);
+    } else if (!user || unreadNotifs.length === 0) {
+      setShowReminderPopup(false);
+    }
+  }, [user?._id, unreadNotifs.length, dismissedRemindersSession]);
 
   const markAsRead = async (notifId, e) => {
     if (e) {
@@ -689,6 +701,157 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═════════════════ AUTOMATIC REMINDER / NOTIFICATION POPUP ON LOGIN ═════════════════ */}
+      {showReminderPopup && unreadNotifs.length > 0 && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-500/40 dark:border-amber-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 relative overflow-hidden text-left">
+            {/* Top Accent Line */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-amber-500 via-orange-500 to-indigo-600" />
+            
+            {/* Ambient Corner Glow */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header: Title + Unread Counter + Close Button */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl">
+                  <BellRing size={20} className="animate-bounce" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-slate-900 dark:text-white text-base">
+                    New Reminder / Notification
+                  </h3>
+                  <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                    {unreadNotifs.length > 1 ? `Reminder ${currentReminderIdx + 1} of ${unreadNotifs.length}` : 'Attention Required'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowReminderPopup(false);
+                  setDismissedRemindersSession(true);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close Reminder Popup"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Notification Card Details */}
+            {(() => {
+              const notif = unreadNotifs[currentReminderIdx] || unreadNotifs[0];
+              if (!notif) return null;
+              const notifId = notif._id || (user.notifications.length - 1 - currentReminderIdx);
+
+              return (
+                <div className="flex flex-col gap-4">
+                  {/* Metadata Row: Sender & Date */}
+                  <div className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-850 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                        {(notif.senderName || 'A').charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white text-xs">
+                          {notif.senderName || 'System Admin'}
+                        </p>
+                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wider">
+                          From: {notif.senderRole || 'Admin'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : new Date().toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* Event Title Badge (if available) */}
+                  {notif.eventTitle && (
+                    <div className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-2">
+                      <Camera size={14} className="text-indigo-500 shrink-0" />
+                      <span className="truncate">Event: {notif.eventTitle}</span>
+                    </div>
+                  )}
+
+                  {/* Reminder Message Box */}
+                  <div className="p-4 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-2xl text-slate-800 dark:text-slate-200 text-xs leading-relaxed font-medium">
+                    {notif.message}
+                  </div>
+
+                  {/* Next / Previous Navigation if multiple unread */}
+                  {unreadNotifs.length > 1 && (
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+                      <button
+                        onClick={() => setCurrentReminderIdx(prev => Math.max(0, prev - 1))}
+                        disabled={currentReminderIdx === 0}
+                        className="text-indigo-600 hover:text-indigo-700 disabled:opacity-30 cursor-pointer font-bold"
+                      >
+                        ← Previous
+                      </button>
+                      <span>{currentReminderIdx + 1} / {unreadNotifs.length}</span>
+                      <button
+                        onClick={() => setCurrentReminderIdx(prev => Math.min(unreadNotifs.length - 1, prev + 1))}
+                        disabled={currentReminderIdx >= unreadNotifs.length - 1}
+                        className="text-indigo-600 hover:text-indigo-700 disabled:opacity-30 cursor-pointer font-bold"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Modal Action Buttons */}
+                  <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => {
+                        setShowReminderPopup(false);
+                        setDismissedRemindersSession(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      Close
+                    </button>
+
+                    <button
+                      onClick={async (e) => {
+                        await markAsRead(notifId, e);
+                        if (unreadNotifs.length <= 1) {
+                          setShowReminderPopup(false);
+                        } else {
+                          setCurrentReminderIdx(0);
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <CheckCheck size={14} />
+                      Mark as Read
+                    </button>
+
+                    <button
+                      onClick={async (e) => {
+                        await markAsRead(notifId, e);
+                        setShowReminderPopup(false);
+                        if (user.role === 'Admin') {
+                          navigate('/admin');
+                        } else if (user.role === 'Judge') {
+                          navigate('/judge');
+                        } else {
+                          navigate('/dashboard');
+                        }
+                      }}
+                      className="px-5 py-2.5 rounded-xl text-xs font-black bg-linear-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>View Workspace</span>
+                      <ChevronDown size={14} className="-rotate-90" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

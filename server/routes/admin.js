@@ -793,13 +793,25 @@ router.post('/broadcasts', protect, authorize('Admin'), async (req, res) => {
       users = await User.find({ role: { $in: targetRoles } });
     }
 
+    // Fetch event details if eventId provided
+    let eventTitle = '';
+    if (eventId) {
+      const Event = require('../models/Event');
+      const eDoc = await Event.findById(eventId);
+      if (eDoc) eventTitle = eDoc.title;
+    }
+
     // 3. Push to each user's notifications array
     for (const u of users) {
       if (!u.notifications) u.notifications = [];
       u.notifications.push({
         _id: new mongoose.Types.ObjectId(),
         message: message.trim(),
-        type: 'info',
+        senderName: req.user?.name || 'Admin',
+        senderRole: 'Admin',
+        eventTitle: eventTitle,
+        eventId: eventId || '',
+        type: 'reminder',
         isRead: false,
         createdAt: new Date()
       });
@@ -868,7 +880,11 @@ router.post('/send-evaluation-reminder', protect, authorize('Admin'), async (req
       judge.notifications.push({
         _id: new mongoose.Types.ObjectId(),
         message: reminderMsg,
-        type: 'warning',
+        senderName: req.user?.name || 'Admin',
+        senderRole: 'Admin',
+        eventTitle: eventTitle,
+        eventId: eventId || '',
+        type: 'reminder',
         isRead: false,
         createdAt: new Date()
       });

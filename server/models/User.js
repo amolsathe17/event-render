@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema({
   lastLogin: { type: Date },
   notifications: [{
     message: { type: String, required: true },
+    senderName: { type: String, default: 'System' },
+    senderRole: { type: String, default: 'Admin' },
+    eventTitle: { type: String, default: '' },
+    eventId: { type: String, default: '' },
     type: { type: String, default: 'info' },
     isRead: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
