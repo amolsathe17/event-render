@@ -1279,11 +1279,11 @@ export default function EventInfo() {
             {RULES.map(({ icon: Icon, color, title, items }) => (
               <div
                 key={title}
-                className="relative overflow-hidden bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group"
+                className="relative overflow-hidden bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group border-r-4 border-r-indigo-300/80 dark:border-r-indigo-600/60"
               >
-                {/* Custom Top-Right Corner Fold Effect (Matching reference image) */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-slate-200/80 via-indigo-100/40 to-transparent rounded-bl-[45px] pointer-events-none transition-all duration-300 group-hover:w-28 group-hover:h-28 group-hover:from-indigo-200/70" />
-                <div className="absolute top-0 right-0 w-12 h-12 bg-white/60 backdrop-blur-xs rounded-bl-2xl border-b border-l border-slate-200/50 pointer-events-none" />
+                {/* Modern Folded Corner & Right Stripe Accent (Matching reference image) */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100/90 dark:bg-slate-800/80 rounded-bl-[42px] border-b border-l border-slate-200/80 dark:border-slate-700/80 pointer-events-none transition-all duration-300 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/40" />
+                <div className="absolute top-3 right-3 w-12 h-12 bg-white/90 dark:bg-slate-900/90 rounded-bl-2xl border-b border-l border-slate-200/50 dark:border-slate-800 shadow-2xs pointer-events-none" />
 
                 <div className="flex items-center gap-3.5 mb-5 relative z-10">
                   <div
@@ -1291,7 +1291,7 @@ export default function EventInfo() {
                   >
                     <Icon size={20} className={color.split(" ")[0]} />
                   </div>
-                  <h3 className="font-display font-bold text-base text-slate-900">
+                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
                     {title}
                   </h3>
                 </div>
@@ -1299,7 +1299,7 @@ export default function EventInfo() {
                   {items.map((item, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2.5 text-xs text-slate-600 leading-relaxed"
+                      className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
                       {item}
@@ -1346,28 +1346,28 @@ export default function EventInfo() {
             {GUIDELINES.map(({ step, icon: Icon, title, desc }, i) => (
               <div
                 key={step}
-                className="relative overflow-hidden flex flex-col gap-4 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group"
+                className="relative overflow-hidden flex flex-col gap-4 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 group border-r-4 border-r-cyan-400/80 dark:border-r-cyan-600/60"
               >
-                {/* Custom Top-Right Corner Fold Effect (Matching reference image) */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-slate-200/80 via-cyan-100/40 to-transparent rounded-bl-[45px] pointer-events-none transition-all duration-300 group-hover:w-28 group-hover:h-28 group-hover:from-cyan-200/70" />
-                <div className="absolute top-0 right-0 w-12 h-12 bg-white/60 backdrop-blur-xs rounded-bl-2xl border-b border-l border-slate-200/50 pointer-events-none" />
+                {/* Modern Folded Corner & Right Stripe Accent (Matching reference image) */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100/90 dark:bg-slate-800/80 rounded-bl-[42px] border-b border-l border-slate-200/80 dark:border-slate-700/80 pointer-events-none transition-all duration-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/40" />
+                <div className="absolute top-3 right-3 w-12 h-12 bg-white/90 dark:bg-slate-900/90 rounded-bl-2xl border-b border-l border-slate-200/50 dark:border-slate-800 shadow-2xs pointer-events-none" />
 
                 <div className="flex items-center justify-between gap-3 relative z-10">
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all shadow-2xs">
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all shadow-2xs">
                     <Icon
                       size={20}
-                      className="text-indigo-600 group-hover:text-white transition-colors"
+                      className="text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors"
                     />
                   </div>
-                  <span className="font-display font-black text-3xl text-slate-300 group-hover:text-indigo-500/40 transition-colors">
+                  <span className="font-display font-black text-3xl text-slate-300 dark:text-slate-700 group-hover:text-indigo-500/40 transition-colors">
                     {step}
                   </span>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="font-display font-bold text-base text-slate-900 mb-2">
+                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-2">
                     {title}
                   </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {desc}
                   </p>
                 </div>
