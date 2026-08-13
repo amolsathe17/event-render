@@ -41,10 +41,14 @@ import {
   Sliders,
   ArrowUp,
   ArrowDown,
-  Upload
+  Upload,
+  Wallet,
+  FileText
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import StatsCharts from '../components/StatsCharts';
+import AdminExpenses from '../components/AdminExpenses';
+import AdminReports from '../components/AdminReports';
 import { getBackendUrl, getApiBaseUrl } from '../utils/url';
 
 export default function AdminDashboard() {
@@ -1804,7 +1808,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-xs text-slate-400">Total operational control and performance ledger analytics</p>
+          <p className="text-sm text-Black">Total operational control and performance ledger analytics</p>
         </div>
         {/* Event Selector - Increased width */}
         <div className="flex items-center gap-3">
@@ -1837,7 +1841,8 @@ export default function AdminDashboard() {
             { id: 'judges', label: 'Judges & Results', icon: Award },
             { id: 'events', label: 'Contests & Configuration', icon: Calendar },
             { id: 'categories_config', label: 'Categories', icon: Layers },
-            { id: 'event_history', label: 'All Events History', icon: History }
+            { id: 'expenses', label: 'Event Expenses', icon: Wallet },
+            { id: 'reports', label: 'Reports', icon: FileText }
           ].map(t => (
             <button
               key={t.id}
@@ -2492,6 +2497,24 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* TAB: EVENT EXPENSES */}
+      {activeTab === 'expenses' && (
+        <AdminExpenses
+          allEvents={allEvents}
+          selectedEventId={selectedEventId}
+          setSelectedEventId={setSelectedEventId}
+        />
+      )}
+
+      {/* TAB: REPORTS */}
+      {activeTab === 'reports' && (
+        <AdminReports
+          allEvents={allEvents}
+          selectedEventId={selectedEventId}
+          setSelectedEventId={setSelectedEventId}
+        />
+      )}
+
       {/* TAB 4: JUDGES AND COMPETITION RESULTS */}
       {activeTab === 'judges' && selectedEventId && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-200">
@@ -2820,7 +2843,7 @@ export default function AdminDashboard() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">Contest Type</label>
+                  <label className="text-sm text-black font-semibold">Contest Type</label>
                   <select
                     value={eventType}
                     onChange={(e) => setEventType(e.target.value)}
@@ -2835,7 +2858,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">Event Background (Image or Video for Login & Register)</label>
+                  <label className="text-sm text-black font-semibold">Event Background (Image or Video for Login & Register)</label>
                   <div className="flex items-center gap-2">
                     <label className="flex-1 flex items-center justify-center px-3 py-2 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl text-xs cursor-pointer hover:border-indigo-600 transition-colors">
                       <span className="text-[11px] text-slate-500 truncate">
@@ -2900,7 +2923,7 @@ export default function AdminDashboard() {
 
               <div className="grid grid-cols-1 gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">Contest Title</label>
+                  <label className="text-sm text-black font-semibold">Contest Title</label>
                   <input
                     type="text"
                     value={newEventTitle}
@@ -2911,7 +2934,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">Theme & Description (Text relevant to the contest/event)</label>
+                  <label className="text-sm text-black font-semibold">Theme & Description (Text relevant to the contest/event)</label>
                   <textarea
                     value={newEventTheme}
                     onChange={(e) => setNewEventTheme(e.target.value)}
@@ -2924,7 +2947,7 @@ export default function AdminDashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">
+                  <label className="text-sm text-black font-semibold">
                     Event Start Date <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -2937,7 +2960,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">
+                  <label className="text-sm text-black font-semibold">
                     Submission Deadline <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -2950,7 +2973,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500 font-semibold">Exhibition Venue</label>
+                  <label className="text-sm text-black font-semibold">Exhibition Venue</label>
                   <input
                     type="text"
                     value={newEventVenue}
@@ -2998,7 +3021,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-500 font-semibold">Detailed Contest Overview</label>
+                <label className="text-sm text-black font-semibold">Detailed Contest Overview</label>
                 <textarea
                   value={newEventDescription}
                   onChange={(e) => setNewEventDescription(e.target.value)}
@@ -5118,9 +5141,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Uploaded Photos Section */}
+              {/* Uploaded Photos / Videos Section */}
               <div>
-                <h4 className="font-bold text-slate-750 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-3">Submitted Photographs ({selectedParticipant.photosCount})</h4>
+                <h4 className="font-bold text-slate-750 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-3">
+                  {selectedParticipant.eventTitle?.match(/video|reel|short|film|movie|clip/i) || selectedParticipant.eventType === 'video' ? 'Submitted Videos' : 'Submitted Photographs'} ({selectedParticipant.photosCount})
+                </h4>
                 
                 {selectedParticipant.photographs && selectedParticipant.photographs.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

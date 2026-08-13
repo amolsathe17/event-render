@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown } from 'lucide-react';
+import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History } from 'lucide-react';
 import { getBackendUrl } from '../utils/url';
 
 export default function Navbar() {
@@ -392,6 +392,19 @@ export default function Navbar() {
                             <span>Profile Settings</span>
                           </button>
 
+                          {user.role === 'Admin' && (
+                            <button
+                              onClick={() => {
+                                setShowProfileDropdown(false);
+                                navigate('/admin', { state: { tab: 'event_history' } });
+                              }}
+                              className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                            >
+                              <History size={15} className="text-indigo-600 dark:text-indigo-400" />
+                              <span>All Events History</span>
+                            </button>
+                          )}
+
                           {(user.role === 'Admin' || user.role === 'Judge') && (
                             <button
                               onClick={() => {
@@ -563,6 +576,19 @@ export default function Navbar() {
                     <User size={18} className="text-indigo-400" />
                     <span>Profile Settings</span>
                   </button>
+
+                  {user.role === 'Admin' && (
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate('/admin', { state: { tab: 'event_history' } });
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-200 hover:bg-white/10 transition-all text-left cursor-pointer"
+                    >
+                      <History size={18} className="text-indigo-400" />
+                      <span>All Events History</span>
+                    </button>
+                  )}
 
                   {user.role === 'Admin' && (
                     <button

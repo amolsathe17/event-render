@@ -28,6 +28,11 @@ export const AuthProvider = ({ children }) => {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
+    let requestBody = options.body;
+    if (!isFormData && requestBody && typeof requestBody === 'object') {
+      requestBody = JSON.stringify(requestBody);
+    }
+
     const apiBase = getApiBaseUrl();
     const fullTargetUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `${apiBase}${url}`;
 
@@ -42,6 +47,7 @@ export const AuthProvider = ({ children }) => {
         const response = await fetch(fullTargetUrl, {
           ...options,
           headers,
+          body: requestBody
         });
 
         let data = {};

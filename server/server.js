@@ -18,6 +18,7 @@ const judgeRoutes = require("./routes/judges");
 const adminRoutes = require("./routes/admin");
 const reportRoutes = require("./routes/reports");
 const contestTypeRoutes = require("./routes/contestTypes");
+const expenseRoutes = require("./routes/expenses");
 
 const app = express();
 
@@ -105,6 +106,9 @@ app.use("/reports", reportRoutes);
 app.use("/api/contest-types", contestTypeRoutes);
 app.use("/contest-types", contestTypeRoutes);
 
+app.use("/api/expenses", expenseRoutes);
+app.use("/expenses", expenseRoutes);
+
 // Image proxy route to eliminate cross-origin third-party Tracking Prevention browser warnings permanently
 app.get("/api/image-proxy", (req, res) => {
   const imageUrl = req.query.url;
@@ -118,50 +122,67 @@ app.get("/api/image-proxy", (req, res) => {
       return res.status(400).send("Invalid protocol");
     }
 
-    const clientModule = parsedUrl.protocol === "https:" ? https : http;
-
-    const proxyReq = clientModule.get(imageUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
-      }
-    }, (proxyRes) => {
-      // Follow HTTP 301/302 redirects if Cloudinary redirects
-      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
-        return res.redirect(proxyRes.headers.location);
+    const fetchImage = (targetUrl, redirectCount = 0) => {
+      if (redirectCount > 5) {
+        return res.status(500).send("Too many redirects");
       }
 
-      // If upstream image server returns 404 (missing/deleted Cloudinary image), redirect to fallback image
-      if (proxyRes.statusCode === 404) {
-        return res.redirect('/wild.jpg');
+      let targetParsed;
+      try {
+        targetParsed = new URL(targetUrl);
+      } catch (e) {
+        return res.status(400).send("Invalid target URL");
       }
 
-      res.status(proxyRes.statusCode || 200);
-      if (proxyRes.headers["content-type"]) {
-        res.setHeader("Content-Type", proxyRes.headers["content-type"]);
-      } else {
-        res.setHeader("Content-Type", "image/jpeg");
-      }
-      
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      res.setHeader("Access-Control-Allow-Origin", "*");
+      const clientMod = targetParsed.protocol === "https:" ? https : http;
 
-      proxyRes.pipe(res);
-    });
+      const pReq = clientMod.get(targetUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        }
+      }, (pRes) => {
+        // Follow HTTP 301/302 redirects internally inside Node.js without redirecting the browser
+        if (pRes.statusCode >= 300 && pRes.statusCode < 400 && pRes.headers.location) {
+          const nextUrl = pRes.headers.location.startsWith('http')
+            ? pRes.headers.location
+            : new URL(pRes.headers.location, targetUrl).toString();
+          return fetchImage(nextUrl, redirectCount + 1);
+        }
 
-    proxyReq.on("error", (err) => {
-      console.error("Image proxy request error:", err.message);
-      if (!res.headersSent) {
-        res.status(500).send("Failed to fetch image");
-      }
-    });
+        if (pRes.statusCode === 404) {
+          return res.redirect('/wild.jpg');
+        }
 
-    proxyReq.setTimeout(12000, () => {
-      proxyReq.destroy();
-      if (!res.headersSent) {
-        res.status(504).send("Image proxy request timeout");
-      }
-    });
+        res.status(pRes.statusCode || 200);
+        if (pRes.headers["content-type"]) {
+          res.setHeader("Content-Type", pRes.headers["content-type"]);
+        } else {
+          res.setHeader("Content-Type", "image/jpeg");
+        }
+        
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+
+        pRes.pipe(res);
+      });
+
+      pReq.on("error", (err) => {
+        console.error("Image proxy request error:", err.message);
+        if (!res.headersSent) {
+          res.status(500).send("Failed to fetch image");
+        }
+      });
+
+      pReq.setTimeout(12000, () => {
+        pReq.destroy();
+        if (!res.headersSent) {
+          res.status(504).send("Image request timeout");
+        }
+      });
+    };
+
+    fetchImage(imageUrl);
   } catch (err) {
     console.error("Invalid proxy URL:", err.message);
     if (!res.headersSent) {

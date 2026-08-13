@@ -566,7 +566,7 @@ export default function JudgeDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Judge Dashboard</h1>
-          <p className="text-xs text-slate-400">Official panel grading workspace & competition ledger</p>
+          <p className="text-sm text-black">Official panel grading workspace & competition ledger</p>
         </div>
         {/* Event Selector Dropdown - matching Admin Dashboard */}
         {events.length > 0 && (
