@@ -1953,7 +1953,7 @@ export default function Dashboard() {
                                 <div className="lg:col-span-4 flex flex-col gap-6">
                                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-sm">
                                     <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
-                                      <span className="text-[10px] text-slate-400 font-extrabold uppercase">Folder Config</span>
+                                      <span className="text-[10px] text-slate-700 font-extrabold uppercase">Folder Config</span>
                                       <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${isPaid ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
                                         {isPaid ? 'Paid' : 'Awaiting Payment'}
                                       </span>
@@ -1961,17 +1961,17 @@ export default function Dashboard() {
 
                                     <div className="flex flex-col gap-2.5 text-xs text-left">
                                       <div className="flex justify-between">
-                                        <span className="text-slate-400">Contest Limit:</span>
+                                        <span className="text-slate-700">Contest Limit:</span>
                                         <strong className="text-slate-800 dark:text-slate-200 font-extrabold">
                                           {selectedPackage?.maxPhotos} {(e?.mediaType === 'video' || String(e?.eventType).toLowerCase().includes('video') || String(e?.eventType).toLowerCase().includes('reel')) ? (selectedPackage?.maxPhotos > 1 ? 'videos' : 'video entry') : 'photo frames'}
                                         </strong>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-slate-400">Total Uploads:</span>
+                                        <span className="text-slate-700">Total Uploads:</span>
                                         <strong className="text-slate-800 dark:text-slate-200 font-extrabold">{submission.photographs.length} uploaded</strong>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-slate-400">Toll Fee (Paid):</span>
+                                        <span className="text-slate-700">Toll Fee (Paid):</span>
                                         <strong className="text-slate-800 dark:text-slate-200 font-extrabold">₹{submission.amount}</strong>
                                       </div>
                                     </div>

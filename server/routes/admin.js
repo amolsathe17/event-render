@@ -146,7 +146,19 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       : await Submission.countDocuments({ isFinalSubmitted: true });
 
     let totalPhotos = 0;
-    submissions.forEach(s => { totalPhotos += s.photographs.length; });
+    let totalVideos = 0;
+    submissions.forEach(s => {
+      if (Array.isArray(s.photographs)) {
+        s.photographs.forEach(p => {
+          const isVid = p.isVideo || (typeof p.fileUrl === 'string' && p.fileUrl.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i));
+          if (isVid) {
+            totalVideos += 1;
+          } else {
+            totalPhotos += 1;
+          }
+        });
+      }
+    });
 
     // Today registrations (global — not event-scoped)
     const todayRegistrations = await User.countDocuments({
@@ -251,6 +263,7 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
         totalParticipants,
         totalEntries,
         totalPhotos,
+        totalVideos,
         todayRegistrations,
         todayPaymentsCount,
         pendingPaymentsCount,

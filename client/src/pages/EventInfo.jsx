@@ -1272,7 +1272,7 @@ export default function EventInfo() {
             <h2 className="font-display font-black text-3xl sm:text-4xl text-slate-900">
               Rules & Regulations
             </h2>
-            <p className="text-sm text-slate-500 mt-2 max-w-xl mx-auto">
+            <p className="text-sm text-black mt-2 max-w-xl mx-auto">
               All participants must read, understand, and agree to the following
               rules before submitting entries.
             </p>
@@ -1349,7 +1349,7 @@ export default function EventInfo() {
             <h2 className="font-display font-black text-3xl sm:text-4xl bg-linear-to-r from-cyan-400 via-blue-600 to-indigo-800 bg-clip-text text-transparent">
               How to Participate
             </h2>
-            <p className="text-sm text-slate-500 mt-2 max-w-xl mx-auto">
+            <p className="text-sm text-black mt-2 max-w-xl mx-auto">
               Follow these six simple steps to register, submit your work, and
               compete for prizes.
             </p>

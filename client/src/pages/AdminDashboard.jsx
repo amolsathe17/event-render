@@ -680,6 +680,25 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [financialSummary, setFinancialSummary] = useState({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    paidExpenses: 0,
+    pendingExpenses: 0,
+    netProfitLoss: 0
+  });
+
+  const fetchFinancialSummary = async () => {
+    try {
+      const query = selectedEventId ? `?eventId=${selectedEventId}` : '';
+      const data = await apiFetch(`/api/expenses/summary${query}`);
+      if (data.success && data.summary) {
+        setFinancialSummary(data.summary);
+      }
+    } catch (err) {
+      console.error('Error fetching financial summary for dashboard:', err);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -689,6 +708,7 @@ export default function AdminDashboard() {
         setStats(data.stats);
         setCharts(data.charts);
       }
+      await fetchFinancialSummary();
     } catch (e) {
       console.error(e);
       setError('Could not load overview statistics');
@@ -1810,9 +1830,9 @@ export default function AdminDashboard() {
           <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Admin Dashboard</h1>
           <p className="text-sm text-Black">Total operational control and performance ledger analytics</p>
         </div>
-        {/* Event Selector - Increased width */}
+        {/* Event Selector - hidden on profile settings & notifications pages */}
         <div className="flex items-center gap-3">
-          {allEvents.length > 0 && (
+          {allEvents.length > 0 && activeTab !== 'profile_settings' && activeTab !== 'notifications' && (
             <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
               <Calendar size={15} className="text-amber-500 shrink-0" />
               <select
@@ -1832,37 +1852,80 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="w-full overflow-x-auto mb-3">
-        <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart },
-            { id: 'participants', label: 'Participants', icon: Users },
-            { id: 'photographs', label: 'Photographs / Videos', icon: Camera },
-            { id: 'judges', label: 'Judges & Results', icon: Award },
-            { id: 'events', label: 'Contests & Configuration', icon: Calendar },
-            { id: 'categories_config', label: 'Categories', icon: Layers },
-            { id: 'expenses', label: 'Event Expenses', icon: Wallet },
-            { id: 'reports', label: 'Reports', icon: FileText }
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setActiveTab(t.id);
-                if (t.id === 'overview') {
+      {/* Navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
+      <div className="w-full mb-3">
+        {/* Mobile Select Dropdown Menu (< sm) */}
+        <div className="block sm:hidden w-full">
+          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
+            Select Admin Tab:
+          </label>
+          <div className="relative w-full">
+            <select
+              value={activeTab}
+              onChange={e => {
+                const newTab = e.target.value;
+                setActiveTab(newTab);
+                if (newTab === 'overview') {
                   setSelectedEventId('');
                 }
-                if (t.id === 'event_history') fetchEventHistory();
+                if (newTab === 'event_history') fetchEventHistory();
               }}
-              className={`flex items-center gap-1.5 py-2 px-4 sm:px-5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
-                activeTab === t.id
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
+              className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-amber-500 appearance-none pr-9"
             >
-              <t.icon size={14} />
-              {t.label}
-            </button>
-          ))}
+              {[
+                { id: 'overview', label: 'Synopsis' },
+                { id: 'participants', label: 'Participants' },
+                { id: 'photographs', label: 'Photographs / Videos' },
+                { id: 'judges', label: 'Judges & Results' },
+                { id: 'events', label: 'Contests & Configuration' },
+                { id: 'categories_config', label: 'Categories' },
+                { id: 'expenses', label: 'Event Expenses' },
+                { id: 'reports', label: 'Reports' }
+              ].map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-amber-600 dark:text-amber-400 font-black text-xs">
+              ▼
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Horizontal Tabs (>= sm) */}
+        <div className="hidden sm:block w-full overflow-x-auto">
+          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
+            {[
+              { id: 'overview', label: 'Synopsis', icon: BarChart },
+              { id: 'participants', label: 'Participants', icon: Users },
+              { id: 'photographs', label: 'Photographs / Videos', icon: Camera },
+              { id: 'judges', label: 'Judges & Results', icon: Award },
+              { id: 'events', label: 'Contests & Configuration', icon: Calendar },
+              { id: 'categories_config', label: 'Categories', icon: Layers },
+              { id: 'expenses', label: 'Event Expenses', icon: Wallet },
+              { id: 'reports', label: 'Reports', icon: FileText }
+            ].map(t => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setActiveTab(t.id);
+                  if (t.id === 'overview') {
+                    setSelectedEventId('');
+                  }
+                  if (t.id === 'event_history') fetchEventHistory();
+                }}
+                className={`flex items-center gap-1.5 py-2 px-4 sm:px-5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === t.id
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                <t.icon size={14} />
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1887,45 +1950,104 @@ export default function AdminDashboard() {
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
-          {/* Key Stats Cards Grid - 4 distinct light backgrounds with 2px borders */}
+          {/* Executive Financial Cards Grid (IMAGE 1) - Over the existing cards */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Total Revenue */}
-            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">Total Revenue</span>
-              <p className="font-display font-extrabold text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
-                ₹{stats.totalRevenue.toLocaleString()}
+            {/* Financial Card 1: Total Revenue */}
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-emerald-900/90 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                TOTAL REVENUE {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+              </span>
+              <p className="font-display font-black text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
+                ₹{(financialSummary.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Overall Volume</span>
+              <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Successful payments volume</span>
             </div>
 
-            {/* Card 2: Total Participants */}
+            {/* Financial Card 2: Total Expenses */}
+            <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-rose-900/90 dark:text-rose-300 font-extrabold uppercase tracking-wider">
+                TOTAL EXPENSES {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+              </span>
+              <p className="font-display font-black text-2xl sm:text-3xl text-rose-600 dark:text-rose-400">
+                ₹{(financialSummary.totalExpenses || 0).toLocaleString('en-IN')}
+              </p>
+              <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Operational line items</span>
+            </div>
+
+            {/* Financial Card 3: Net Profit / Loss */}
+            <div className={`border-2 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm ${
+              (financialSummary.netProfitLoss || 0) >= 0
+                ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700'
+                : 'bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-700'
+            }`}>
+              <span className="text-[10px] text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider">
+                NET PROFIT / LOSS {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+              </span>
+              <p className={`font-display font-black text-2xl sm:text-3xl ${
+                (financialSummary.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                ₹{(financialSummary.netProfitLoss || 0).toLocaleString('en-IN')}
+              </p>
+              <span className="text-[10px] text-slate-500 font-medium">
+                {(financialSummary.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
+              </span>
+            </div>
+
+            {/* Financial Card 4: Paid / Settled */}
+            <div className="bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-teal-900/90 dark:text-teal-300 font-extrabold uppercase tracking-wider">
+                PAID / SETTLED {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+              </span>
+              <p className="font-display font-black text-2xl sm:text-3xl text-teal-600 dark:text-teal-400">
+                ₹{(financialSummary.paidExpenses || 0).toLocaleString('en-IN')}
+              </p>
+              <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
+            </div>
+          </div>
+
+          {/* Key Operational Stats Cards Grid - 4 distinct cards (Participants, Entries, Photographs, Videos) */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Total Participants */}
             <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">Total Participants</span>
+              <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">TOTAL PARTICIPANTS</span>
               <p className="font-display font-extrabold text-2xl sm:text-3xl text-indigo-600 dark:text-indigo-400">
                 {stats.totalParticipants}
               </p>
               <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">{stats.todayRegistrations} added today</span>
             </div>
 
-            {/* Card 3: Active Entries */}
+            {/* Card 2: Active Entries */}
             <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">Active Entries</span>
+              <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">ACTIVE ENTRIES</span>
               <p className="font-display font-extrabold text-2xl sm:text-3xl text-amber-600 dark:text-amber-500">
                 {stats.totalEntries}
               </p>
               <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Locked submission folders</span>
             </div>
 
-            {/* Card 4: Total Photographs / Videos */}
+            {/* Card 3: Total Photographs */}
             <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
               <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                TOTAL PHOTOGRAPHS / VIDEOS
+                TOTAL PHOTOGRAPHS
               </span>
               <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
-                {stats.totalPhotos}
+                {stats.totalPhotos || 0}
               </p>
               <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
-                High-res image & video assets
+                High-res image assets
+              </span>
+            </div>
+
+            {/* Card 4: Total Videos */}
+            <div className="bg-cyan-50/70 dark:bg-cyan-950/30 border-2 border-cyan-300 dark:border-cyan-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-cyan-900/80 dark:text-cyan-300 font-extrabold uppercase tracking-wider">
+                TOTAL VIDEOS
+              </span>
+              <p className="font-display font-extrabold text-2xl sm:text-3xl text-cyan-600 dark:text-cyan-400">
+                {stats.totalVideos || 0}
+              </p>
+              <span className="text-[10px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">
+                Video media assets
               </span>
             </div>
           </div>
@@ -2179,11 +2301,11 @@ export default function AdminDashboard() {
               />
             </div>
 
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
               <select
                 value={selectedParticipantFilter}
                 onChange={(e) => setSelectedParticipantFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none"
+                className="w-full sm:w-auto px-2.5 sm:px-3 py-2 sm:py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] sm:text-xs focus:outline-none cursor-pointer font-semibold truncate"
               >
                 <option value="">All Participants</option>
                 {Array.from(new Set(participants.map(p => p.name).filter(Boolean))).sort().map(name => (
@@ -2197,7 +2319,7 @@ export default function AdminDashboard() {
                   <select
                     value={photoCategory}
                     onChange={(e) => setPhotoCategory(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none cursor-pointer font-semibold"
+                    className="w-full sm:w-auto px-2.5 sm:px-3 py-2 sm:py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] sm:text-xs focus:outline-none cursor-pointer font-semibold truncate"
                   >
                     <option value="">All Categories</option>
                     {categories
@@ -4414,7 +4536,7 @@ export default function AdminDashboard() {
             </div>
 
             <form onSubmit={handleUpdateProfile} className="flex flex-col gap-5 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="font-bold text-slate-500">Administrator Name</label>
                   <input
@@ -4437,18 +4559,17 @@ export default function AdminDashboard() {
                     required
                   />
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-slate-500">Email Address</label>
-                <input
-                  type="email"
-                  value={profileEmail}
-                  onChange={(e) => setProfileEmail(e.target.value)}
-                  placeholder="admin@contest.com"
-                  className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
-                  required
-                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-slate-500">Email Address</label>
+                  <input
+                    type="email"
+                    value={profileEmail}
+                    onChange={(e) => setProfileEmail(e.target.value)}
+                    placeholder="admin@contest.com"
+                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 mt-2">

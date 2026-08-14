@@ -98,8 +98,8 @@ export default function Gallery() {
           <h1 className="font-display font-black text-3xl sm:text-4xl text-slate-900 dark:text-white">
             Gallery & Results
           </h1>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto">
-            Browse through approved DSLR photographs or view the champions' leaderboard.
+          <p className="text-sm text-black max-w-xl mx-auto">
+            Browse through approved Photographs / Videos or view the champions' leaderboard.
           </p>
         </div>
 

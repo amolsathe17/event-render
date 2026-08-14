@@ -441,7 +441,7 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs">
-              {selectedEventId ? 'Event Financial Control' : 'Combined All-Events Ledger'}
+              {selectedEventId ? 'Event Expenses' : 'Combined All-Events Ledger'}
             </span>
           </div>
           <h2 className="font-display font-black text-2xl sm:text-3xl text-white drop-shadow-md">
@@ -597,7 +597,7 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
 
       {/* Category Breakdown & Pie Chart Card */}
       {summary?.categoryBreakdown && summary.categoryBreakdown.length > 0 && (
-        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex flex-col gap-3.5 h-100 overflow-hidden">
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex flex-col gap-3.5 min-h-[420px] lg:h-100 overflow-visible lg:overflow-hidden">
           
           {/* Fixed Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5 shrink-0">
@@ -616,11 +616,11 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
           </div>
 
           {/* Fixed Pie Chart (Left) + Scrollable Breakdown Grid (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch flex-1 min-h-0 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch flex-1 min-h-0">
             
-            {/* Left: Fixed Recharts Interactive Donut Pie Chart */}
-            <div className="lg:col-span-5 flex flex-col items-center justify-center p-3 bg-slate-50/60 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800 rounded-3xl relative h-full shrink-0">
-              <div className="w-full h-full max-h-65">
+            {/* Left: Recharts Interactive Donut Pie Chart (Full Height on Mobile & Desktop) */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-center p-3 bg-slate-50/60 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800 rounded-3xl relative h-64 sm:h-72 lg:h-full shrink-0 min-h-[240px]">
+              <div className="w-full h-full min-h-[220px] max-h-65 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -656,8 +656,8 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
               </div>
             </div>
 
-            {/* Right: Scrollable Itemized Category Cards Grid */}
-            <div className="lg:col-span-7 h-full overflow-y-auto pr-1.5 custom-scrollbar">
+            {/* Right: Itemized Category Cards Grid */}
+            <div className="lg:col-span-7 h-full overflow-y-auto pr-1.5 custom-scrollbar max-h-80 lg:max-h-full">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
                 {summary.categoryBreakdown.map((catItem, idx) => {
                   const pct = summary.totalExpenses ? Math.round((catItem.total / summary.totalExpenses) * 100) : 0;

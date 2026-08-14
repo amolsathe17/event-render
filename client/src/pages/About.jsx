@@ -20,7 +20,7 @@ export default function About() {
           <h1 className="font-display font-black text-4xl sm:text-6xl tracking-tight text-slate-900 dark:text-white leading-tight">
             Honoring Art in its <span className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">Truest Form</span>
           </h1>
-          <p className="text-sm sm:text-base text-slate-500 max-w-xl leading-relaxed">
+          <p className="text-sm sm:text-base text-black max-w-xl leading-relaxed">
             A celebration of heritage, tribal traditions, and decades of creative devotion, keeping fading voices alive.
           </p>
         </div>

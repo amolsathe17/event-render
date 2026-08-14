@@ -31,7 +31,7 @@ import { useAuth } from '../context/AuthContext';
 import { getBackendUrl } from '../utils/url';
 
 export const REPORT_TYPES = [
-  { id: 'overview', label: 'Overview', icon: BarChart },
+  { id: 'overview', label: 'Synopsis', icon: BarChart },
   { id: 'participants', label: 'Participants', icon: Users },
   { id: 'revenue', label: 'Payments & Revenue', icon: CreditCard },
   { id: 'winners', label: 'Results & Winners', icon: Trophy },
@@ -778,51 +778,12 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         </div>
       </div>
 
-      {/* Common Controls Toolbar on Every Report (Prominent Yellow Single-Line Card) */}
+      {/* Common Controls Toolbar on Every Report (Prominent Yellow Card) */}
       <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700/80 rounded-3xl p-3.5 sm:p-4 shadow-sm print:hidden">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 sm:gap-3 w-full">
           
-          {/* 1. Event Dropdown */}
-          <div className="flex items-center shrink-0">
-            <select
-              value={filterEventId}
-              onChange={e => {
-                setFilterEventId(e.target.value);
-                setSelectedEventId(e.target.value);
-              }}
-              className="py-2 px-3.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-2xl text-xs font-black outline-none cursor-pointer text-slate-800 dark:text-slate-200 shadow-xs focus:ring-2 focus:ring-amber-400"
-            >
-              <option value="">Event ▼ (All Events)</option>
-              {allEvents.map(ev => (
-                <option key={ev._id} value={ev._id}>{ev.title}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 2. From Date Picker */}
-          <div className="flex items-center gap-2 shrink-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-3 py-1.5 rounded-2xl shadow-xs">
-            <span className="text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">From Date:</span>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={e => setFromDate(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
-            />
-          </div>
-
-          {/* 3. To Date Picker */}
-          <div className="flex items-center gap-2 shrink-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-3 py-1.5 rounded-2xl shadow-xs">
-            <span className="text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">To Date:</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={e => setToDate(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
-            />
-          </div>
-
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
+          {/* 1. Search Input - FULL WIDTH AT TOP ON MOBILE */}
+          <div className="relative w-full lg:flex-1 lg:min-w-[200px]">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400" />
             <input
               type="text"
@@ -833,31 +794,82 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             />
           </div>
 
+          {/* 2 & 3. Date Pickers (From Date, To Date) */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 shrink-0 w-full lg:w-auto">
+            {/* From Date Picker */}
+            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
+              <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">From:</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={e => setFromDate(e.target.value)}
+                className="w-full bg-transparent text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0"
+              />
+            </div>
+
+            {/* To Date Picker */}
+            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
+              <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">To:</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={e => setToDate(e.target.value)}
+                className="w-full bg-transparent text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* 13 Sub-Reports Navigation Tabs */}
-      <div className="w-full overflow-x-auto print:hidden">
-        <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
-          {REPORT_TYPES.map(rpt => (
-            <button
-              key={rpt.id}
-              onClick={() => setActiveReport(rpt.id)}
-              className={`flex items-center gap-1.5 py-2 px-3.5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
-                activeReport === rpt.id
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
+      {/* Sub-Reports Navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
+      <div className="w-full print:hidden">
+        {/* Mobile Dropdown Menu (< sm) */}
+        <div className="block sm:hidden w-full">
+          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
+            Select Report Tab:
+          </label>
+          <div className="relative w-full">
+            <select
+              value={activeReport}
+              onChange={e => setActiveReport(e.target.value)}
+              className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/50 dark:border-indigo-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-indigo-500 appearance-none pr-9"
             >
-              <rpt.icon size={14} />
-              {rpt.label}
-            </button>
-          ))}
+              {REPORT_TYPES.map(rpt => (
+                <option key={rpt.id} value={rpt.id}>
+                  {rpt.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-600 dark:text-indigo-400 font-black text-xs">
+              ▼
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Horizontal Tabs (>= sm) */}
+        <div className="hidden sm:block w-full overflow-x-auto">
+          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
+            {REPORT_TYPES.map(rpt => (
+              <button
+                key={rpt.id}
+                onClick={() => setActiveReport(rpt.id)}
+                className={`flex items-center gap-1.5 py-2 px-3.5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                  activeReport === rpt.id
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <rpt.icon size={14} />
+                {rpt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Main Report Render Content Card */}
-      <div ref={reportCardRef} className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm h-[500px] overflow-y-auto flex flex-col gap-4">
+      {/* Main Report Render Content Card (700px height on mobile, 500px on desktop) */}
+      <div ref={reportCardRef} className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm h-[700px] sm:h-[500px] overflow-y-auto flex flex-col gap-4">
         
         {loading ? (
           <div className="py-20 text-center text-slate-400 font-bold text-xs flex flex-col items-center gap-2">
@@ -869,10 +881,16 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             {/* Report Header Info */}
             <div id="report-card-header" className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="font-display font-black text-slate-900 dark:text-white text-base">
+                {/* Selected Event Name displayed over Report Title in Blue color */}
+                <div className="text-blue-600 dark:text-blue-400 font-extrabold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1.5 mb-0.5">
+                  <span>Event:</span>
+                  <span>{allEvents.find(e => e._id === filterEventId)?.title || 'All Events Combined'}</span>
+                </div>
+
+                <h3 className="font-display font-black text-slate-900 dark:text-white text-base sm:text-lg">
                   {activeReportObj?.label} Report
                 </h3>
-                <p className="text-sm text-black dark:text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {filterEventId ? `Scoped to selected event` : `Across all events combined`}
                 </p>
               </div>

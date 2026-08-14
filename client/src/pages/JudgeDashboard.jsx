@@ -65,6 +65,89 @@ export default function JudgeDashboard() {
     setShowSuccessModal(true);
   };
 
+  // Profile Settings State
+  const { updateProfile, refreshUser } = useAuth();
+  const [judgeProfileName, setJudgeProfileName] = useState(user?.name || '');
+  const [judgeProfileEmail, setJudgeProfileEmail] = useState(user?.email || '');
+  const [judgeProfileMobile, setJudgeProfileMobile] = useState(user?.mobile || '');
+  const [judgeProfilePassword, setJudgeProfilePassword] = useState('');
+  const [judgeProfileConfirmPassword, setJudgeProfileConfirmPassword] = useState('');
+  const [judgeProfileError, setJudgeProfileError] = useState('');
+  const [judgeProfileSubmitting, setJudgeProfileSubmitting] = useState(false);
+  const [uploadingJudgeAvatar, setUploadingJudgeAvatar] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setJudgeProfileName(user.name || '');
+      setJudgeProfileEmail(user.email || '');
+      setJudgeProfileMobile(user.mobile || '');
+    }
+  }, [user]);
+
+  const handleJudgeAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setJudgeProfileError('Profile photo must be less than 5 MB.');
+      return;
+    }
+
+    setUploadingJudgeAvatar(true);
+    setJudgeProfileError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const data = await apiFetch('/api/auth/upload-avatar', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (data.success) {
+        if (refreshUser) await refreshUser();
+        triggerSuccess('Photo Updated', 'Your profile photo has been updated successfully!');
+      }
+    } catch (err) {
+      setJudgeProfileError(err.message || 'Failed to upload profile photo');
+    } finally {
+      setUploadingJudgeAvatar(false);
+    }
+  };
+
+  const handleUpdateJudgeProfile = async (e) => {
+    e.preventDefault();
+    setJudgeProfileError('');
+    setJudgeProfileSubmitting(true);
+
+    if (judgeProfilePassword && judgeProfilePassword !== judgeProfileConfirmPassword) {
+      setJudgeProfileError('Passwords do not match');
+      setJudgeProfileSubmitting(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        name: judgeProfileName,
+        mobile: judgeProfileMobile
+      };
+      if (judgeProfilePassword) {
+        payload.password = judgeProfilePassword;
+      }
+      const data = await updateProfile(payload);
+      if (data.success) {
+        setJudgeProfilePassword('');
+        setJudgeProfileConfirmPassword('');
+        triggerSuccess('Profile Updated', 'Your jury profile settings have been successfully updated.');
+      }
+    } catch (err) {
+      setJudgeProfileError(err.message || 'Failed to update profile settings');
+    } finally {
+      setJudgeProfileSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     if (location.state?.tab) {
       setJudgeDashboardTab(location.state.tab);
@@ -181,6 +264,8 @@ export default function JudgeDashboard() {
     const selected = events.find(e => e._id === eId);
     if (!selected) return;
     setEvent(selected);
+    setUserSelectedEventId(selected._id);
+    setHistorySelectedEventId(selected._id);
     setLoading(true);
     setActivePhoto(null);
     try {
@@ -568,8 +653,8 @@ export default function JudgeDashboard() {
           <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Judge Dashboard</h1>
           <p className="text-sm text-black">Official panel grading workspace & competition ledger</p>
         </div>
-        {/* Event Selector Dropdown - matching Admin Dashboard */}
-        {events.length > 0 && (
+        {/* Event Selector Dropdown - hidden on profile settings & notifications pages */}
+        {events.length > 0 && judgeDashboardTab !== 'profile_settings' && judgeDashboardTab !== 'notifications' && (
           <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
             <Calendar size={15} className="text-amber-500 shrink-0" />
             <select
@@ -632,7 +717,7 @@ export default function JudgeDashboard() {
                 : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
-            Evaluation Portal Workspace
+            Evaluation Portal
           </button>
           <button
             onClick={() => setJudgeDashboardTab("event_history")}
@@ -659,7 +744,7 @@ export default function JudgeDashboard() {
                 <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
                   Welcome back, Judge {user?.name || "Jury Member"}!
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-black dark:text-slate-400">
                   Review assigned DSLR uploads, grade photography composition benchmarks, and submit final signed-off scores.
                 </p>
               </div>
@@ -1086,7 +1171,7 @@ export default function JudgeDashboard() {
               <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
                 Evaluation
               </h1>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-sm text-black mt-1">
                 Evaluating submissions assigned to your profile
               </p>
             </div>
@@ -2029,9 +2114,10 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "event_history" && userSelectedEventId && (() => {
-        const selectedHistoryEvent = events.find(e => e._id === (historySelectedEventId || event?._id || events[0]?._id)) || event || events[0];
-        const historyPhotos = selectedHistoryEvent ? (allPhotographsByEvent[selectedHistoryEvent._id] || []) : [];
+      {judgeDashboardTab === "event_history" && (() => {
+        const targetEventId = userSelectedEventId || historySelectedEventId || event?._id || events[0]?._id;
+        const selectedHistoryEvent = events.find(e => e._id === targetEventId) || event || events[0];
+        const historyPhotos = selectedHistoryEvent ? (allPhotographsByEvent[selectedHistoryEvent._id] || (selectedHistoryEvent._id === event?._id ? photographs : [])) : [];
         const totalHistoryPhotos = historyPhotos.length;
         const gradedHistoryPhotos = historyPhotos.filter(p => p.graded).length;
         const disapprovedHistoryPhotos = historyPhotos.filter(p => p.graded && p.score?.approvalStatus === 'Disapproved').length;
@@ -2054,10 +2140,9 @@ export default function JudgeDashboard() {
                     Jury Archives
                   </span>
                   <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">My Judging History & Details</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">View complete evaluation statistics, graded photographs, scores breakdown, and sign-off status event-wise</p>
+                  <p className="text-sm text-black dark:text-slate-400 mt-0.5">View complete evaluation statistics, graded photographs, scores breakdown, and sign-off status event-wise</p>
                 </div>
               </div>
-
             </div>
 
             {/* Empty State: No Assigned Events */}
@@ -2175,7 +2260,7 @@ export default function JudgeDashboard() {
                       <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
                         Evaluated Entries & Score Breakdown ({gradedHistoryPhotos})
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-sm text-black mt-0.5">
                         Detailed breakdown of scores, criteria, remarks, and approval statuses given by you for {selectedHistoryEvent.title}
                       </p>
                     </div>
@@ -2485,6 +2570,142 @@ export default function JudgeDashboard() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: PROFILE SETTINGS */}
+      {judgeDashboardTab === 'profile_settings' && (
+        <div className="max-w-7xl mx-auto animate-in fade-in duration-200 text-left my-6">
+          <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 bg-white dark:bg-slate-900">
+            <div>
+              <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">Jury Profile Settings</h3>
+              <p className="text-sm text-black mt-0.5">Manage your jury member account credentials and personal details</p>
+            </div>
+
+            {judgeProfileError && (
+              <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 p-3 rounded-xl text-xs text-red-600 dark:text-red-400">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                <span>{judgeProfileError}</span>
+              </div>
+            )}
+
+            {/* Profile Photo Upload Section */}
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+              <div className="relative group shrink-0">
+                <div className="w-20 h-20 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-md overflow-hidden border-2 border-indigo-500">
+                  {user?.avatar ? (
+                    <img
+                      src={getBackendUrl(user.avatar)}
+                      alt={user.name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <span>{user?.name ? user.name.charAt(0).toUpperCase() : 'J'}</span>
+                  )}
+                </div>
+                <label className="absolute inset-0 rounded-full bg-slate-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <Camera size={18} />
+                  <span className="text-[9px] font-bold mt-0.5">Change</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleJudgeAvatarUpload}
+                    disabled={uploadingJudgeAvatar}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-1">
+                <h4 className="font-display font-bold text-xs text-slate-900 dark:text-white">Profile Photo</h4>
+                <p className="text-[11px] text-slate-700 max-w-sm">
+                  Upload a jury panel member photo. This photo will appear in your top navigation bar and jury scorecards.
+                </p>
+                <label className="mt-1.5 inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer">
+                  <span>{uploadingJudgeAvatar ? 'Uploading Photo...' : 'Upload Photo'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleJudgeAvatarUpload}
+                    disabled={uploadingJudgeAvatar}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateJudgeProfile} className="flex flex-col gap-5 text-xs">
+              {/* All 3 Fields in ONE LINE: Jury Member Name, Mobile Number, Email Address */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-slate-500">Jury Member Name</label>
+                  <input
+                    type="text"
+                    value={judgeProfileName}
+                    onChange={(e) => setJudgeProfileName(e.target.value)}
+                    placeholder="Judge Name"
+                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-slate-500">Mobile Number</label>
+                  <input
+                    type="tel"
+                    value={judgeProfileMobile}
+                    onChange={(e) => setJudgeProfileMobile(e.target.value)}
+                    placeholder="9876543210"
+                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-slate-500">Email Address (Read-Only)</label>
+                  <input
+                    type="email"
+                    value={judgeProfileEmail}
+                    disabled
+                    className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 font-semibold cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-slate-500">New Password (Optional)</label>
+                  <input
+                    type="password"
+                    value={judgeProfilePassword}
+                    onChange={(e) => setJudgeProfilePassword(e.target.value)}
+                    placeholder="Leave blank to keep current password"
+                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-slate-500">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={judgeProfileConfirmPassword}
+                    onChange={(e) => setJudgeProfileConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-2">
+                <button
+                  type="submit"
+                  disabled={judgeProfileSubmitting}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {judgeProfileSubmitting ? 'Saving Profile...' : 'Save Profile Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
