@@ -693,42 +693,72 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {/* Dashboard Sub-navigation Tabs */}
-      <div className="w-full overflow-x-auto mb-3">
-        <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
-          <button
-            onClick={() => {
-              setJudgeDashboardTab("overview");
-              setUserSelectedEventId("");
-            }}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              judgeDashboardTab === "overview"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setJudgeDashboardTab("portal")}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              judgeDashboardTab === "portal"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            Evaluation Portal
-          </button>
-          <button
-            onClick={() => setJudgeDashboardTab("event_history")}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              judgeDashboardTab === "event_history"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            Event History
-          </button>
+      {/* Dashboard Sub-navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
+      <div className="w-full mb-3">
+        {/* Mobile Select Dropdown Menu (< sm) */}
+        <div className="block sm:hidden w-full">
+          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
+            Select Jury Menu:
+          </label>
+          <div className="relative w-full">
+            <select
+              value={judgeDashboardTab}
+              onChange={e => {
+                const val = e.target.value;
+                if (!val) return;
+                setJudgeDashboardTab(val);
+                if (val === 'overview') setUserSelectedEventId('');
+              }}
+              className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/50 dark:border-indigo-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-indigo-500 appearance-none pr-9"
+            >
+              <option value="">-- Select --</option>
+              <option value="overview">Overview</option>
+              <option value="portal">Evaluation Portal</option>
+              <option value="event_history">Event History</option>
+            </select>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-600 dark:text-indigo-400 font-black text-xs">
+              ▼
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Horizontal Tabs (>= sm) */}
+        <div className="hidden sm:block w-full overflow-x-auto">
+          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
+            <button
+              onClick={() => {
+                setJudgeDashboardTab("overview");
+                setUserSelectedEventId("");
+              }}
+              className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+                judgeDashboardTab === "overview"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setJudgeDashboardTab("portal")}
+              className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+                judgeDashboardTab === "portal"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              Evaluation Portal
+            </button>
+            <button
+              onClick={() => setJudgeDashboardTab("event_history")}
+              className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+                judgeDashboardTab === "event_history"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              Event History
+            </button>
+          </div>
         </div>
       </div>
 

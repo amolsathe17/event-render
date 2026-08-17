@@ -123,6 +123,8 @@ export default function Navbar() {
 
   const renderNotificationBell = () => {
     if (!user) return null;
+    const isDashboardPage = ['/dashboard', '/admin', '/judge', '/profile'].includes(location.pathname);
+    if (!isDashboardPage) return null;
     return (
       <div className="relative" ref={notifRef}>
         <button
@@ -469,7 +471,7 @@ export default function Navbar() {
 
       {/* Mobile Menu Drawer */}
       {isOpen && (
-        <div className="md:hidden bg-slate-900/92 dark:bg-slate-950/95 backdrop-blur-2xl border-b border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-white rounded-b-3xl overflow-hidden">
+        <div className="md:hidden bg-slate-900/70 dark:bg-slate-950/75 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-white rounded-b-none overflow-hidden">
           <div className="px-4 pt-3 pb-6 space-y-2 max-h-[85vh] overflow-y-auto">
             <Link
               to="/info"

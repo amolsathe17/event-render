@@ -270,8 +270,8 @@ router.post('/upload', protect, upload.fields([
     let width = null;
     let height = null;
     let format = ext.substring(1).toUpperCase();
-    let cameraMake = isVideoFile ? 'Short Video' : 'Unknown';
-    let cameraModel = isVideoFile ? 'Digital / Social Video' : 'Unknown';
+    let cameraMake = isVideoFile ? 'Short Video' : 'N/A';
+    let cameraModel = isVideoFile ? 'Digital / Social Video' : 'N/A';
     let lensModel = '';
     let originalCaptureDate = null;
 
@@ -284,8 +284,8 @@ router.post('/upload', protect, upload.fields([
         });
 
         if (exif) {
-          cameraMake = exif.Make || 'Unknown';
-          cameraModel = exif.Model || 'Unknown';
+          cameraMake = exif.Make || 'N/A';
+          cameraModel = exif.Model || 'N/A';
           lensModel = exif.LensModel || exif.LensUsed || '';
           originalCaptureDate = exif.DateTimeOriginal ? new Date(exif.DateTimeOriginal) : null;
           width = exif.ExifImageWidth || exif.ImageWidth || null;

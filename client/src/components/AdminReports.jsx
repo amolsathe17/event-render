@@ -832,9 +832,13 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
           <div className="relative w-full">
             <select
               value={activeReport}
-              onChange={e => setActiveReport(e.target.value)}
+              onChange={e => {
+                if (!e.target.value) return;
+                setActiveReport(e.target.value);
+              }}
               className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/50 dark:border-indigo-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-indigo-500 appearance-none pr-9"
             >
+              <option value="">-- Select --</option>
               {REPORT_TYPES.map(rpt => (
                 <option key={rpt.id} value={rpt.id}>
                   {rpt.label}

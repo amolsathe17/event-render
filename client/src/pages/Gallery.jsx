@@ -4,6 +4,17 @@ import { Camera, Search, Filter, Award, Sparkles, X, Maximize2, ShieldCheck, Hel
 import WatermarkPreview from '../components/WatermarkPreview';
 import { getBackendUrl } from '../utils/url';
 
+const formatExifBrandModel = (brand, model) => {
+  const isInvalid = (str) => !str || str.trim() === '' || str.trim().toUpperCase() === 'UNKNOWN' || str.trim().toUpperCase() === 'N/A';
+  const cleanBrand = isInvalid(brand) ? '' : brand.trim();
+  const cleanModel = isInvalid(model) ? '' : model.trim();
+
+  if (cleanBrand && cleanModel) return `${cleanBrand} ${cleanModel}`;
+  if (cleanBrand) return cleanBrand;
+  if (cleanModel) return cleanModel;
+  return 'N/A';
+};
+
 export default function Gallery() {
   const { apiFetch, user, loading: authLoading } = useAuth();
 
@@ -281,7 +292,7 @@ export default function Gallery() {
 
                         {/* Exif details footer */}
                         <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-center text-[9px] text-slate-450 uppercase tracking-wider font-bold">
-                          <span>{photo.cameraBrand} {photo.cameraModel}</span>
+                          <span>{formatExifBrandModel(photo.cameraBrand, photo.cameraModel)}</span>
                           <button
                             onClick={() => setSelectedPhoto(photo)}
                             className="text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -429,7 +440,7 @@ export default function Gallery() {
 
                           {/* Exif details footer */}
                           <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-center text-[9px] text-slate-450 uppercase tracking-wider font-bold">
-                            <span>{photo.cameraBrand} {photo.cameraModel}</span>
+                            <span>{formatExifBrandModel(photo.cameraBrand, photo.cameraModel)}</span>
                             <button
                               onClick={() => setSelectedPhoto(photo)}
                               className="text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -644,11 +655,11 @@ export default function Gallery() {
                     <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
                       <div>
                         <span>Brand:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.cameraBrand || 'Unknown'}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 font-sans">{!selectedPhoto.cameraBrand || selectedPhoto.cameraBrand.toUpperCase() === 'UNKNOWN' ? 'N/A' : selectedPhoto.cameraBrand}</p>
                       </div>
                       <div>
                         <span>Model:</span>
-                        <p className="font-bold text-slate-700 dark:text-slate-250">{selectedPhoto.cameraModel || 'Unknown'}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-250 font-sans">{!selectedPhoto.cameraModel || selectedPhoto.cameraModel.toUpperCase() === 'UNKNOWN' ? 'N/A' : selectedPhoto.cameraModel}</p>
                       </div>
                       <div>
                         <span>Lens:</span>

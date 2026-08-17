@@ -962,9 +962,36 @@ export default function Dashboard() {
               {(() => {
                 const photosList = allSubmissions.reduce((acc, s) => [...acc, ...(s.photographs || [])], []);
                 const totalPhotos = photosList.length;
-                const approvedCount = photosList.filter(p => p.status === 'Approved').length;
-                const rejectedCount = photosList.filter(p => p.status === 'Rejected' || p.status === 'Disapproved').length;
-                const pendingCount = totalPhotos - approvedCount - rejectedCount;
+
+                let approvedCount = 0;
+                let rejectedCount = 0;
+                let pendingCount = 0;
+
+                photosList.forEach(p => {
+                  const isDisapproved = 
+                    p.status === 'Rejected' || 
+                    p.status === 'Disapproved' || 
+                    p.approvalStatus === 'Disapproved' ||
+                    p.score?.approvalStatus === 'Disapproved' || 
+                    (Array.isArray(p.scores) && p.scores.some(s => s.approvalStatus === 'Disapproved'));
+
+                  const isApproved = !isDisapproved && (
+                    p.status === 'Approved' || 
+                    p.approvalStatus === 'Approved' ||
+                    p.score?.approvalStatus === 'Approved' || 
+                    (Array.isArray(p.scores) && p.scores.some(s => s.approvalStatus === 'Approved')) ||
+                    (p.score && typeof p.score.averageScore === 'number' && p.score.averageScore > 0) ||
+                    (Array.isArray(p.scores) && p.scores.some(s => typeof s.averageScore === 'number' && s.averageScore > 0))
+                  );
+
+                  if (isDisapproved) {
+                    rejectedCount++;
+                  } else if (isApproved) {
+                    approvedCount++;
+                  } else {
+                    pendingCount++;
+                  }
+                });
 
                 const statusData = [
                   { name: 'Approved', value: approvedCount, color: '#10B981', total: totalPhotos },
@@ -987,18 +1014,48 @@ export default function Dashboard() {
                       </p>
                     </div>
 
-                    <div className="w-full h-52 sm:h-56 flex items-center justify-center my-1">
+                    <div className="w-full h-52 sm:h-56 flex items-center justify-center my-1 relative">
+                      {/* Donut Hole Center Value & Label */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+                        <span className="font-display font-black text-2xl text-slate-900 dark:text-white">
+                          {totalPhotos}
+                        </span>
+                        <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {totalPhotos === 1 ? 'Entry' : 'Entries'}
+                        </span>
+                      </div>
+
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={displayData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={58}
-                            outerRadius={82}
-                            paddingAngle={displayData.length > 1 ? 5 : 0}
+                            innerRadius={55}
+                            outerRadius={80}
+                            paddingAngle={displayData.length > 1 ? 4 : 0}
                             dataKey="value"
                             stroke="none"
+                            label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
+                              if (!value || value <= 0) return null;
+                              const RADIAN = Math.PI / 180;
+                              const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                              return (
+                                <text
+                                  x={x}
+                                  y={y}
+                                  fill="#ffffff"
+                                  textAnchor="middle"
+                                  dominantBaseline="central"
+                                  className="text-xs font-black drop-shadow-md"
+                                >
+                                  {value}
+                                </text>
+                              );
+                            }}
+                            labelLine={false}
                           >
                             {displayData.map((entry, index) => (
                               <Cell key={`status-cell-${index}`} fill={entry.color} />
@@ -1153,7 +1210,7 @@ export default function Dashboard() {
                 timelineEvents.sort((a, b) => b.date - a.date);
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 text-left flex flex-col justify-between gap-5 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 text-left flex flex-col gap-4 shadow-xs">
                     <div>
                       <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
                         Activities History Timeline
@@ -1163,14 +1220,14 @@ export default function Dashboard() {
                       </p>
                     </div>
 
-                    <div className="w-full my-1">
+                    <div className="w-full">
                       {timelineEvents.length === 0 ? (
                         <div className="h-52 sm:h-56 flex items-center justify-center text-xs text-slate-400">
                           No timeline activities logged yet.
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-3.5 pl-3.5 border-l-2 border-indigo-100 dark:border-indigo-950/60 h-52 sm:h-56 overflow-y-auto pr-1 text-xs">
-                          {timelineEvents.slice(0, 8).map((evt, idx) => (
+                        <div className="flex flex-col gap-3.5 pl-3.5 border-l-2 border-indigo-100 dark:border-indigo-950/60 max-h-72 sm:max-h-80 overflow-y-auto pr-1 text-xs">
+                          {timelineEvents.map((evt, idx) => (
                             <div key={idx} className="relative flex flex-col gap-0.5">
                               <span className="absolute -left-4.75 top-1.5 w-2 h-2 rounded-full border-2 border-white dark:border-slate-900 bg-indigo-600" />
                               <span className="text-[10px] text-slate-400 font-semibold">
@@ -1182,10 +1239,6 @@ export default function Dashboard() {
                           ))}
                         </div>
                       )}
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      Total events: <strong className="text-slate-900 dark:text-white">{timelineEvents.length}</strong>
                     </div>
                   </div>
                 );
@@ -2831,17 +2884,64 @@ export default function Dashboard() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {uploadedPhotos.map((photo, pIdx) => {
                             const imgUrl = getBackendUrl(photo.fileUrl);
-                            const hasScore = typeof photo.score === 'number' || (Array.isArray(photo.scores) && photo.scores.length > 0);
-                            const finalScore = typeof photo.score === 'number' ? photo.score : (photo.scores?.[0]?.score || 'N/A');
+                            const isVideo = photo.mediaType === 'video' ||
+                              photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) ||
+                              photo.fileUrl?.includes('/video/upload/') ||
+                              photo.fileUrl?.includes('/video/') ||
+                              photo.fileUrl?.includes('video_');
+
+                            const cleanExif = (() => {
+                              const isInv = (s) => !s || s.trim() === '' || s.trim().toUpperCase() === 'UNKNOWN' || s.trim().toUpperCase() === 'N/A';
+                              const b = isInv(photo.cameraBrand) ? '' : photo.cameraBrand.trim();
+                              const m = isInv(photo.cameraModel) ? '' : photo.cameraModel.trim();
+                              if (b && m) return `${b} • ${m}`;
+                              if (b) return b;
+                              if (m) return m;
+                              return 'N/A';
+                            })();
+
+                            const juryRatingDisplay = (() => {
+                              if (typeof photo.score === 'number' && photo.score > 0) {
+                                return `${photo.score.toFixed(1)} / 10`;
+                              }
+                              if (photo.score && typeof photo.score.averageScore === 'number' && photo.score.averageScore > 0) {
+                                return `${photo.score.averageScore.toFixed(1)} / 10`;
+                              }
+                              if (Array.isArray(photo.scores) && photo.scores.length > 0) {
+                                const validNums = photo.scores
+                                  .map(s => typeof s.averageScore === 'number' ? s.averageScore : (typeof s.score === 'number' ? s.score : null))
+                                  .filter(v => v !== null && v > 0);
+                                if (validNums.length > 0) {
+                                  const avg = validNums.reduce((sum, v) => sum + v, 0) / validNums.length;
+                                  return `${avg.toFixed(1)} / 10`;
+                                }
+                              }
+                              return 'Pending Grade';
+                            })();
 
                             return (
                               <div key={pIdx} className="bg-white/90 dark:bg-slate-950 border border-purple-100 dark:border-purple-900/40 rounded-2xl p-3.5 flex flex-col gap-3 shadow-2xs">
                                 <div className="aspect-4/3 rounded-xl overflow-hidden bg-slate-900 relative">
-                                  <img
-                                    src={imgUrl}
-                                    alt={photo.title || `Entry ${pIdx+1}`}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  {isVideo ? (
+                                    <video
+                                      src={imgUrl}
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      controls
+                                      crossOrigin="anonymous"
+                                      referrerPolicy="no-referrer"
+                                      preload="metadata"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={imgUrl}
+                                      alt={photo.title || `Entry ${pIdx+1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  )}
                                   <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-900/80 text-white backdrop-blur-xs">
                                     {photo.category || 'Standard'}
                                   </div>
@@ -2851,17 +2951,15 @@ export default function Dashboard() {
                                   <h5 className="font-bold text-xs text-slate-900 dark:text-white truncate">
                                     {photo.title || `Submission #${pIdx+1}`}
                                   </h5>
-                                  {photo.cameraBrand && (
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                                      {photo.cameraBrand} {photo.cameraModel ? `• ${photo.cameraModel}` : ''}
-                                    </p>
-                                  )}
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                                    {cleanExif}
+                                  </p>
                                 </div>
 
                                 <div className="flex justify-between items-center pt-2 border-t border-purple-100 dark:border-purple-950 text-[10px]">
                                   <span className="text-slate-400 font-medium">Jury Rating:</span>
                                   <span className="font-black text-purple-600 dark:text-purple-400">
-                                    {hasScore ? `${finalScore}/10` : 'Pending Grade'}
+                                    {juryRatingDisplay}
                                   </span>
                                 </div>
                               </div>

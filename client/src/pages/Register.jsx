@@ -190,7 +190,7 @@ export default function Register() {
           </div>
           <Link
             to="/login"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5 font-bold"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
           >
             Go to Login <ArrowRight size={14} />
           </Link>
@@ -251,7 +251,7 @@ export default function Register() {
             <Link
               to="/login"
               state={{ forceJudge: true }}
-              className="mt-2 w-full bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center transition-all cursor-pointer font-bold"
+              className="mt-2 w-full bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center transition-all cursor-pointer"
             >
               Go to Judge/Admin Portal
             </Link>
@@ -263,21 +263,21 @@ export default function Register() {
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex items-center justify-center min-h-[calc(100vh-8rem)] py-8">
         {/* 3D Flip Card Container */}
-        <div className="w-full max-w-lg mx-auto [perspective:1200px] relative">
+        <div className="w-full max-w-lg mx-auto perspective-distant relative">
           <div
-            className={`w-full transition-transform duration-700 ease-in-out [transform-style:preserve-3d] relative ${
-              isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
+            className={`w-full transition-transform duration-700 ease-in-out transform-3d relative ${
+              isFlipped ? 'transform-[rotateY(180deg)]' : 'transform-[rotateY(0deg)]'
             }`}
           >
             {/* SIDE A: Register Form Card (Front Face) */}
             <div
-              className="w-full bg-white/20 dark:bg-slate-950/35 border border-white/30 dark:border-white/10 rounded-3xl shadow-2xl p-6 sm:p-8 flex flex-col gap-5 backdrop-blur-xl relative [backface-visibility:hidden]"
+              className="w-full bg-white/20 dark:bg-slate-950/35 border border-white/30 dark:border-white/10 rounded-3xl shadow-2xl p-6 sm:p-8 flex flex-col gap-5 backdrop-blur-xl relative backface-hidden"
             >
               {/* Top Bar with Brand Header & Semi-Transparent Info Control Button */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1 min-w-0">
-                  <h2 className="font-display font-extrabold text-xl text-white dark:text-white leading-tight">
-                    {isVerifying ? 'Email Verification' : 'Register to submit Entries'}
+                  <h2 className="font-display font-bold text-sm text-black dark:text-white leading-tight">
+                    {isVerifying ? 'Email Verification' : 'Enroll to submit Entries'}
                   </h2>
                 </div>
 
@@ -540,7 +540,7 @@ export default function Register() {
 
             {/* SIDE B: Information Card (Back Face) */}
             <div
-              className="w-full min-h-[460px] h-full absolute inset-0 bg-slate-950/45 text-white p-6 sm:p-8 rounded-3xl border border-white/20 backdrop-blur-xl shadow-2xl flex flex-col justify-between [transform:rotateY(180deg)] [backface-visibility:hidden] z-10 overflow-y-auto"
+              className="w-full min-h-115 h-full absolute inset-0 bg-slate-950/45 text-white p-6 sm:p-8 rounded-3xl border border-white/20 backdrop-blur-xl shadow-2xl flex flex-col justify-between transform-[rotateY(180deg)] backface-hidden z-10 overflow-y-auto"
             >
               {/* Top-Right Flip Control Button to Return to Form Card */}
               <button

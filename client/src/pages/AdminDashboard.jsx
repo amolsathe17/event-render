@@ -829,6 +829,12 @@ export default function AdminDashboard() {
     }
   }, [selectedEventId]);
 
+  useEffect(() => {
+    if (activeTab === 'event_history') {
+      fetchEventHistory();
+    }
+  }, [activeTab]);
+
   // Watch filters
   useEffect(() => {
     fetchParticipants();
@@ -1857,13 +1863,14 @@ export default function AdminDashboard() {
         {/* Mobile Select Dropdown Menu (< sm) */}
         <div className="block sm:hidden w-full">
           <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
-            Select Admin Tab:
+            Select Admin Menu:
           </label>
           <div className="relative w-full">
             <select
               value={activeTab}
               onChange={e => {
                 const newTab = e.target.value;
+                if (!newTab) return;
                 setActiveTab(newTab);
                 if (newTab === 'overview') {
                   setSelectedEventId('');
@@ -1872,12 +1879,14 @@ export default function AdminDashboard() {
               }}
               className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-amber-500 appearance-none pr-9"
             >
+              <option value="">-- Select --</option>
               {[
                 { id: 'overview', label: 'Synopsis' },
                 { id: 'participants', label: 'Participants' },
                 { id: 'photographs', label: 'Photographs / Videos' },
                 { id: 'judges', label: 'Judges & Results' },
                 { id: 'events', label: 'Contests & Configuration' },
+                { id: 'event_history', label: 'Contest Ledger & Events History' },
                 { id: 'categories_config', label: 'Categories' },
                 { id: 'expenses', label: 'Event Expenses' },
                 { id: 'reports', label: 'Reports' }
@@ -1902,6 +1911,7 @@ export default function AdminDashboard() {
               { id: 'photographs', label: 'Photographs / Videos', icon: Camera },
               { id: 'judges', label: 'Judges & Results', icon: Award },
               { id: 'events', label: 'Contests & Configuration', icon: Calendar },
+              { id: 'event_history', label: 'Contest Ledger & Events History', icon: History },
               { id: 'categories_config', label: 'Categories', icon: Layers },
               { id: 'expenses', label: 'Event Expenses', icon: Wallet },
               { id: 'reports', label: 'Reports', icon: FileText }
@@ -5282,7 +5292,15 @@ export default function AdminDashboard() {
                         <div className="flex flex-col gap-1 min-w-0">
                           <h5 className="font-bold text-slate-900 dark:text-white truncate">{photo.title}</h5>
                           <p className="text-[9px] text-slate-400">Filename: <span className="font-mono truncate block">{photo.originalFilename || 'N/A'}</span></p>
-                          <p className="text-[9px] text-slate-500">Camera: <span className="font-semibold">{photo.cameraBrand} {photo.cameraModel}</span></p>
+                          <p className="text-[9px] text-slate-500">Camera: <span className="font-semibold">{(() => {
+                            const isInv = (s) => !s || s.trim() === '' || s.trim().toUpperCase() === 'UNKNOWN' || s.trim().toUpperCase() === 'N/A';
+                            const b = isInv(photo.cameraBrand) ? '' : photo.cameraBrand.trim();
+                            const m = isInv(photo.cameraModel) ? '' : photo.cameraModel.trim();
+                            if (b && m) return `${b} ${m}`;
+                            if (b) return b;
+                            if (m) return m;
+                            return 'N/A';
+                          })()}</span></p>
                           <p className="text-[9px] text-slate-500">Lens: <span className="font-semibold">{photo.lensUsed || 'N/A'}</span></p>
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
