@@ -225,22 +225,14 @@ export default function JudgeDashboard() {
         setEvents(assigned);
         
         if (assigned.length > 0) {
-          const active = assigned.find(e => e.status === 'Active') || assigned[0];
-          setEvent(active);
-          setHistorySelectedEventId(active._id);
-          
           // Fetch assigned photos for ALL assigned events to populate overview statistics
           const photoByEventData = {};
-          let activePhotos = [];
           
           for (const ev of assigned) {
             try {
               const res = await apiFetch(`/api/judges/assigned-photos/${ev._id}`);
               if (res.success) {
                 photoByEventData[ev._id] = res.photographs;
-                if (ev._id === active._id) {
-                  activePhotos = res.photographs;
-                }
               }
             } catch (err) {
               console.warn(`Could not load photos for event ${ev.title}:`, err.message);
@@ -248,7 +240,15 @@ export default function JudgeDashboard() {
           }
           
           setAllPhotographsByEvent(photoByEventData);
-          setPhotographs(activePhotos);
+
+          if (!userSelectedEventId) {
+            setEvent(null);
+            setPhotographs(Object.values(photoByEventData).flat());
+          } else {
+            const currentSel = assigned.find(e => e._id === userSelectedEventId) || assigned[0];
+            setEvent(currentSel);
+            setPhotographs(photoByEventData[currentSel._id] || []);
+          }
           setSelectedSubmissionId('all');
         }
       }
@@ -261,13 +261,26 @@ export default function JudgeDashboard() {
   };
 
   const handleEventChange = async (eId) => {
-    const selected = events.find(e => e._id === eId);
-    if (!selected) return;
-    setEvent(selected);
-    setUserSelectedEventId(selected._id);
-    setHistorySelectedEventId(selected._id);
+    setUserSelectedEventId(eId || '');
+    setHistorySelectedEventId(eId || '');
     setLoading(true);
     setActivePhoto(null);
+
+    if (!eId) {
+      setEvent(null);
+      const allPhotosCombined = Object.values(allPhotographsByEvent).flat();
+      setPhotographs(allPhotosCombined);
+      setSelectedSubmissionId('all');
+      setLoading(false);
+      return;
+    }
+
+    const selected = events.find(e => e._id === eId);
+    if (!selected) {
+      setLoading(false);
+      return;
+    }
+    setEvent(selected);
     try {
       const photoData = await apiFetch(`/api/judges/assigned-photos/${selected._id}`);
       if (photoData.success) {
@@ -658,17 +671,15 @@ export default function JudgeDashboard() {
           <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
             <Calendar size={15} className="text-amber-500 shrink-0" />
             <select
-              value={userSelectedEventId}
+              value={userSelectedEventId || 'all'}
               onChange={(e) => {
                 const val = e.target.value;
                 setUserSelectedEventId(val);
-                if (val) {
-                  handleEventChange(val);
-                }
+                handleEventChange(val);
               }}
               className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
             >
-              <option value="">-- Select Event --</option>
+              <option value="all">All Events</option>
               {events.map((ev) => (
                 <option key={ev._id} value={ev._id}>
                   {ev.title} ({ev.status})
@@ -1263,10 +1274,10 @@ export default function JudgeDashboard() {
               <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-left shadow-sm">
                 <div>
                   <h2 className="font-display font-black text-lg text-slate-900 dark:text-white">
-                    {event?.title}
+                    {event ? event.title : 'All Events Overview'}
                   </h2>
                   <span className="text-[10px] text-slate-400 block font-semibold mt-0.5">
-                    Mode: {event?.scoringType} Scoring | Category limits: {event?.photoLimit} {(event?.mediaType === 'video' || String(event?.eventType).toLowerCase().includes('video') || String(event?.eventType).toLowerCase().includes('reel')) ? (event?.photoLimit > 1 ? 'video slots' : 'video slot') : (event?.photoLimit > 1 ? 'photo slots' : 'photo slot')}
+                    {event ? `Mode: ${event.scoringType} Scoring | Category limits: ${event.photoLimit}` : 'Combined overview & assigned entries across all assigned events'}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 shrink-0">
@@ -2457,7 +2468,8 @@ export default function JudgeDashboard() {
                       onChange={(e) => setBroadcastEventId(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                     >
-                      <option value="">All Events (Overall System)</option>
+                      <option value="">--Select--</option>
+                      <option value="all">All Events</option>
                       {events.map(ev => (
                         <option key={ev._id} value={ev._id}>{ev.title}</option>
                       ))}

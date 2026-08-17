@@ -165,9 +165,10 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
   });
 
   const fetchExpenses = async () => {
+    const activeId = selectedEventId || 'all';
     try {
       const query = new URLSearchParams();
-      if (selectedEventId) query.append('eventId', selectedEventId);
+      if (activeId && activeId !== 'all') query.append('eventId', activeId);
       if (search) query.append('search', search);
       if (categoryFilter) query.append('category', categoryFilter);
       if (statusFilter) query.append('paymentStatus', statusFilter);
@@ -178,12 +179,15 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
       }
     } catch (err) {
       console.error('Error fetching expenses:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchSummary = async () => {
+    const activeId = selectedEventId || 'all';
     try {
-      const query = selectedEventId ? `?eventId=${selectedEventId}` : '';
+      const query = activeId && activeId !== 'all' ? `?eventId=${activeId}` : '';
       const res = await apiFetch(`/api/expenses/summary${query}`);
       if (res.success) {
         setSummary(res.summary);
@@ -452,30 +456,23 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
           </p>
         </div>
 
-        {selectedEventId && (
-          <div className="relative z-10 flex items-center gap-3 self-start sm:self-center">
+        <div className="relative z-10 flex flex-wrap items-center gap-3 self-start sm:self-center">
+
+
+          {selectedEventId && (
             <button
               onClick={handleOpenAddModal}
               className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 border border-emerald-400/30"
             >
               <Plus size={16} /> Add New Expense
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Financial Summary Cards Grid - 5 Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {/* Card 1: Total Revenue */}
-        <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-          <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">Total Event Revenue</span>
-          <p className="font-display font-black text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
-            ₹{(summary?.totalRevenue || 0).toLocaleString('en-IN')}
-          </p>
-          <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Successful payments volume</span>
-        </div>
-
-        {/* Card 2: Total Expenses */}
+      {/* Financial Summary Cards Grid - 4 Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Expenses */}
         <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
           <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">Total Expenses</span>
           <p className="font-display font-black text-2xl sm:text-3xl text-rose-600 dark:text-rose-400">
@@ -484,27 +481,7 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
           <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">{summary?.expenseCount || 0} line item records</span>
         </div>
 
-        {/* Card 3: Net Profit / Loss */}
-        <div className={`border-2 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm ${
-          (summary?.netProfitLoss || 0) >= 0
-            ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700'
-            : 'bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-700'
-        }`}>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
-            <span>Net Profit / Loss</span>
-            {(summary?.netProfitLoss || 0) >= 0 ? <TrendingUp size={14} className="text-emerald-500" /> : <TrendingDown size={14} className="text-red-500" />}
-          </span>
-          <p className={`font-display font-black text-2xl sm:text-3xl ${
-            (summary?.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
-          }`}>
-            ₹{(summary?.netProfitLoss || 0).toLocaleString('en-IN')}
-          </p>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-            {(summary?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
-          </span>
-        </div>
-
-        {/* Card 4: Paid Expenses */}
+        {/* Card 2: Paid Expenses */}
         <div className="bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
           <span className="text-[10px] text-teal-900/80 dark:text-teal-300 font-extrabold uppercase tracking-wider">Paid Expenses</span>
           <p className="font-display font-black text-2xl sm:text-3xl text-teal-600 dark:text-teal-400">
@@ -513,13 +490,22 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
           <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
         </div>
 
-        {/* Card 5: Pending Expenses */}
+        {/* Card 3: Pending Expenses */}
         <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
           <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">Pending Expenses</span>
           <p className="font-display font-black text-2xl sm:text-3xl text-amber-600 dark:text-amber-500">
             ₹{(summary?.pendingExpenses || 0).toLocaleString('en-IN')}
           </p>
           <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Unsettled accounts</span>
+        </div>
+
+        {/* Card 4: Sponsorship & Grants Funding Support */}
+        <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+          <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">Funding Support</span>
+          <p className="font-display font-black text-2xl sm:text-3xl text-indigo-600 dark:text-indigo-400">
+            ₹{(summary?.totalFunding || 0).toLocaleString('en-IN')}
+          </p>
+          <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Sponsorships, CSR & Donations</span>
         </div>
       </div>
 

@@ -43,11 +43,13 @@ import {
   ArrowDown,
   Upload,
   Wallet,
+  Building2,
   FileText
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import StatsCharts from '../components/StatsCharts';
 import AdminExpenses from '../components/AdminExpenses';
+import AdminSponsorships from '../components/AdminSponsorships';
 import AdminReports from '../components/AdminReports';
 import { getBackendUrl, getApiBaseUrl } from '../utils/url';
 
@@ -682,6 +684,9 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [financialSummary, setFinancialSummary] = useState({
     totalRevenue: 0,
+    totalSponsorship: 0,
+    totalDonations: 0,
+    totalFunding: 0,
     totalExpenses: 0,
     paidExpenses: 0,
     pendingExpenses: 0,
@@ -690,7 +695,9 @@ export default function AdminDashboard() {
 
   const fetchFinancialSummary = async () => {
     try {
-      const query = selectedEventId ? `?eventId=${selectedEventId}` : '';
+      const activeId = selectedEventId || 'all';
+      const isSpecificEvent = activeId !== 'all';
+      const query = isSpecificEvent ? `?eventId=${activeId}` : '';
       const data = await apiFetch(`/api/expenses/summary${query}`);
       if (data.success && data.summary) {
         setFinancialSummary(data.summary);
@@ -702,7 +709,9 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const eidParam = selectedEventId ? `&eventId=${selectedEventId}` : '';
+      const activeId = selectedEventId || 'all';
+      const isSpecificEvent = activeId !== 'all';
+      const eidParam = isSpecificEvent ? `&eventId=${activeId}` : '';
       const data = await apiFetch(`/api/admin/dashboard-stats?_t=${Date.now()}${eidParam}`);
       if (data.success) {
         setStats(data.stats);
@@ -717,7 +726,9 @@ export default function AdminDashboard() {
 
   const fetchParticipants = async () => {
     try {
-      const eidParam = selectedEventId ? `&eventId=${selectedEventId}` : '';
+      const activeId = selectedEventId || 'all';
+      const isSpecificEvent = activeId !== 'all';
+      const eidParam = isSpecificEvent ? `&eventId=${activeId}` : '';
       const url = `/api/admin/participants?search=${partSearch}&city=${partCity}&isSuspended=${partSuspended}${eidParam}`;
       const data = await apiFetch(url);
       if (data.success) {
@@ -730,7 +741,9 @@ export default function AdminDashboard() {
 
   const fetchPhotographs = async () => {
     try {
-      const eidParam = selectedEventId ? `&eventId=${selectedEventId}` : '';
+      const activeId = selectedEventId || 'all';
+      const isSpecificEvent = activeId !== 'all';
+      const eidParam = isSpecificEvent ? `&eventId=${activeId}` : '';
       const url = `/api/admin/photographs?search=${photoSearch}&category=${photoCategory}&status=${photoStatus}&dslrStatus=${photoDslrStatus}${eidParam}`;
       const data = await apiFetch(url);
       if (data.success) {
@@ -823,10 +836,8 @@ export default function AdminDashboard() {
   // Re-fetch event-scoped or overall data when selectedEventId changes
   useEffect(() => {
     fetchStats();
-    if (selectedEventId) {
-      fetchParticipants();
-      fetchPhotographs();
-    }
+    fetchParticipants();
+    fetchPhotographs();
   }, [selectedEventId]);
 
   useEffect(() => {
@@ -1842,11 +1853,11 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
               <Calendar size={15} className="text-amber-500 shrink-0" />
               <select
-                value={selectedEventId || ''}
+                value={selectedEventId || 'all'}
                 onChange={e => setSelectedEventId(e.target.value)}
                 className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
               >
-                <option value="">-- Select Event --</option>
+                <option value="all">All Events</option>
                 {allEvents.map(ev => (
                   <option key={ev._id} value={ev._id}>
                     {ev.title} ({ev.status})
@@ -1881,14 +1892,14 @@ export default function AdminDashboard() {
             >
               <option value="">-- Select --</option>
               {[
-                { id: 'overview', label: 'Synopsis' },
+                { id: 'overview', label: 'Overview' },
                 { id: 'participants', label: 'Participants' },
                 { id: 'photographs', label: 'Photographs / Videos' },
                 { id: 'judges', label: 'Judges & Results' },
                 { id: 'events', label: 'Contests & Configuration' },
-                { id: 'event_history', label: 'Contest Ledger & Events History' },
                 { id: 'categories_config', label: 'Categories' },
                 { id: 'expenses', label: 'Event Expenses' },
+                { id: 'sponsorships', label: 'Donation & Sponsorship' },
                 { id: 'reports', label: 'Reports' }
               ].map(t => (
                 <option key={t.id} value={t.id}>
@@ -1903,17 +1914,17 @@ export default function AdminDashboard() {
         </div>
 
         {/* Desktop Horizontal Tabs (>= sm) */}
-        <div className="hidden sm:block w-full overflow-x-auto">
-          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
+        <div className="hidden sm:block w-full">
+          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs w-full justify-between items-center gap-0.5 sm:gap-1">
             {[
-              { id: 'overview', label: 'Synopsis', icon: BarChart },
+              { id: 'overview', label: 'Overview', icon: BarChart },
               { id: 'participants', label: 'Participants', icon: Users },
               { id: 'photographs', label: 'Photographs / Videos', icon: Camera },
               { id: 'judges', label: 'Judges & Results', icon: Award },
               { id: 'events', label: 'Contests & Configuration', icon: Calendar },
-              { id: 'event_history', label: 'Contest Ledger & Events History', icon: History },
               { id: 'categories_config', label: 'Categories', icon: Layers },
               { id: 'expenses', label: 'Event Expenses', icon: Wallet },
+              { id: 'sponsorships', label: 'Donation & Sponsorship', icon: Building2 },
               { id: 'reports', label: 'Reports', icon: FileText }
             ].map(t => (
               <button
@@ -1925,47 +1936,32 @@ export default function AdminDashboard() {
                   }
                   if (t.id === 'event_history') fetchEventHistory();
                 }}
-                className={`flex items-center gap-1.5 py-2 px-4 sm:px-5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 sm:px-2.5 lg:px-3 rounded-xl font-display text-[11px] lg:text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex-1 text-center ${
                   activeTab === t.id
                     ? 'bg-amber-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
                 }`}
               >
-                <t.icon size={14} />
-                {t.label}
+                <t.icon size={13} className="shrink-0" />
+                <span>{t.label}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Alert Banner when no event is selected */}
-      {!selectedEventId && (activeTab === 'participants' || activeTab === 'photographs' || activeTab === 'judges') && (
-        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
-          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
-            <AlertTriangle size={32} />
-          </div>
-          <div>
-            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
-              Please Select an Event
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
-              Please select an event from the top right dropdown menu to manage participants, photographs/videos, or judges & results.
-            </p>
-          </div>
-        </div>
-      )}
+
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
-          {/* Executive Financial Cards Grid (IMAGE 1) - Over the existing cards */}
+          {/* Row 1: Executive Financial Cards Grid - 4 Cards in a row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Financial Card 1: Total Revenue */}
             <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
               <span className="text-[10px] text-emerald-900/90 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                TOTAL REVENUE {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+                TOTAL REVENUE {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className="font-display font-black text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
                 ₹{(financialSummary.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
@@ -1973,10 +1969,21 @@ export default function AdminDashboard() {
               <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Successful payments volume</span>
             </div>
 
-            {/* Financial Card 2: Total Expenses */}
+            {/* Financial Card 2: Donation & Sponsorship */}
+            <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-purple-900/90 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                DONATION & SPONSORSHIP {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
+              </span>
+              <p className="font-display font-black text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
+                ₹{(financialSummary.totalFunding || 0).toLocaleString('en-IN')}
+              </p>
+              <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">CSR, Corporate & Donor grants</span>
+            </div>
+
+            {/* Financial Card 3: Total Expenses */}
             <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
               <span className="text-[10px] text-rose-900/90 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                TOTAL EXPENSES {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+                TOTAL EXPENSES {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className="font-display font-black text-2xl sm:text-3xl text-rose-600 dark:text-rose-400">
                 ₹{(financialSummary.totalExpenses || 0).toLocaleString('en-IN')}
@@ -1984,14 +1991,14 @@ export default function AdminDashboard() {
               <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Operational line items</span>
             </div>
 
-            {/* Financial Card 3: Net Profit / Loss */}
+            {/* Financial Card 4: Net Profit / Loss */}
             <div className={`border-2 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm ${
               (financialSummary.netProfitLoss || 0) >= 0
                 ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700'
                 : 'bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-700'
             }`}>
               <span className="text-[10px] text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider">
-                NET PROFIT / LOSS {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
+                NET PROFIT / LOSS {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className={`font-display font-black text-2xl sm:text-3xl ${
                 (financialSummary.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
@@ -2002,20 +2009,9 @@ export default function AdminDashboard() {
                 {(financialSummary.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
               </span>
             </div>
-
-            {/* Financial Card 4: Paid / Settled */}
-            <div className="bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-teal-900/90 dark:text-teal-300 font-extrabold uppercase tracking-wider">
-                PAID / SETTLED {selectedEventId ? '(SELECTED EVENT)' : '(CUMULATIVE)'}
-              </span>
-              <p className="font-display font-black text-2xl sm:text-3xl text-teal-600 dark:text-teal-400">
-                ₹{(financialSummary.paidExpenses || 0).toLocaleString('en-IN')}
-              </p>
-              <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
-            </div>
           </div>
 
-          {/* Key Operational Stats Cards Grid - 4 distinct cards (Participants, Entries, Photographs, Videos) */}
+          {/* Row 2: Operational & Payout Cards Grid - 4 Cards below in a row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Total Participants */}
             <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
@@ -2035,30 +2031,33 @@ export default function AdminDashboard() {
               <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Locked submission folders</span>
             </div>
 
-            {/* Card 3: Total Photographs */}
+            {/* Card 3: Total Photographs / Videos Combined */}
             <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
               <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                TOTAL PHOTOGRAPHS
+                TOTAL PHOTOGRAPHS / VIDEOS
               </span>
-              <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
-                {stats.totalPhotos || 0}
-              </p>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
+                  {(stats.totalPhotos || 0) + (stats.totalVideos || 0)}
+                </p>
+                <span className="text-xs font-bold text-purple-800 dark:text-purple-300 bg-purple-200/80 dark:bg-purple-900/60 px-2 py-0.5 rounded-lg border border-purple-300 dark:border-purple-700">
+                  {stats.totalPhotos || 0} Photos / {stats.totalVideos || 0} Videos
+                </span>
+              </div>
               <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
-                High-res image assets
+                High-res images & video media assets
               </span>
             </div>
 
-            {/* Card 4: Total Videos */}
-            <div className="bg-cyan-50/70 dark:bg-cyan-950/30 border-2 border-cyan-300 dark:border-cyan-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-cyan-900/80 dark:text-cyan-300 font-extrabold uppercase tracking-wider">
-                TOTAL VIDEOS
+            {/* Card 4: Paid / Settled */}
+            <div className="bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
+              <span className="text-[10px] text-teal-900/90 dark:text-teal-300 font-extrabold uppercase tracking-wider">
+                PAID / SETTLED {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
-              <p className="font-display font-extrabold text-2xl sm:text-3xl text-cyan-600 dark:text-cyan-400">
-                {stats.totalVideos || 0}
+              <p className="font-display font-black text-2xl sm:text-3xl text-teal-600 dark:text-teal-400">
+                ₹{(financialSummary.paidExpenses || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">
-                Video media assets
-              </span>
+              <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
             </div>
           </div>
 
@@ -2116,7 +2115,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 2: PARTICIPANTS */}
-      {activeTab === 'participants' && selectedEventId && (
+      {activeTab === 'participants' && (
         <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-in fade-in duration-200 h-125 overflow-y-auto">
           
           {/* Filters row */}
@@ -2295,7 +2294,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 3: PHOTOGRAPHS APPROVAL & ASSIGNMENT */}
-      {activeTab === 'photographs' && selectedEventId && (
+      {activeTab === 'photographs' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
           {/* Filters row */}
@@ -2345,13 +2344,23 @@ export default function AdminDashboard() {
           </div>
 
           {(() => {
-            const activeEvent = events.find(e => e._id === selectedEventId) || selectedEvent || events.find(e => e.status === 'Active') || events[0];
+            const activeEvent = (selectedEventId && selectedEventId !== 'all') ? events.find(e => e._id === selectedEventId) : null;
             const filteredPhotos = photographs.filter(p => {
-              if (selectedEventId && p.eventId !== selectedEventId) {
+              if (selectedEventId && selectedEventId !== 'all' && String(p.eventId) !== String(selectedEventId)) {
                 return false;
               }
               if (selectedParticipantFilter && p.participantName !== selectedParticipantFilter) {
                 return false;
+              }
+              if (photoCategory && p.category !== photoCategory) {
+                return false;
+              }
+              if (photoSearch) {
+                const s = photoSearch.toLowerCase();
+                const titleMatch = (p.title || '').toLowerCase().includes(s);
+                const nameMatch = (p.participantName || '').toLowerCase().includes(s);
+                const cameraMatch = (p.cameraBrand || p.cameraModel || '').toLowerCase().includes(s);
+                if (!titleMatch && !nameMatch && !cameraMatch) return false;
               }
               return true;
             });
@@ -2409,13 +2418,13 @@ export default function AdminDashboard() {
                   {/* TOTAL PHOTOGRAPHS / VIDEOS Card */}
                   <div className="flex items-start flex-col justify-between bg-purple-50/80 dark:bg-purple-950/25 border-2 border-purple-400/80 dark:border-purple-600/60 rounded-2xl p-4 shadow-2xs">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">
-                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS'}
+                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS / VIDEOS'}
                     </span>
                     <p className="font-display font-black text-3xl sm:text-4xl text-purple-600 dark:text-purple-400 my-0.5">
                       {filteredPhotos.length}
                     </p>
                     <span className="text-[10px] font-medium text-purple-600/90 dark:text-purple-300/80 block truncate w-full">
-                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'Short video assets' : 'High-res image assets'}
+                      {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'Short video assets' : 'Verified submission assets'}
                     </span>
                   </div>
                 </div>
@@ -2638,6 +2647,15 @@ export default function AdminDashboard() {
         />
       )}
 
+      {/* TAB: DONATION & SPONSORSHIP */}
+      {activeTab === 'sponsorships' && (
+        <AdminSponsorships
+          allEvents={allEvents}
+          selectedEventId={selectedEventId}
+          setSelectedEventId={setSelectedEventId}
+        />
+      )}
+
       {/* TAB: REPORTS */}
       {activeTab === 'reports' && (
         <AdminReports
@@ -2648,7 +2666,7 @@ export default function AdminDashboard() {
       )}
 
       {/* TAB 4: JUDGES AND COMPETITION RESULTS */}
-      {activeTab === 'judges' && selectedEventId && (
+      {activeTab === 'judges' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-200">
           
           {/* Left Column: Judges account creator & list */}
@@ -2735,39 +2753,12 @@ export default function AdminDashboard() {
           {/* Right Column: Leaderboard / Publish results */}
           <div className="lg:col-span-8 flex flex-col gap-6">
             <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">
                     Score Leaderboard & Results Declaration
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">Manage judge assignments, review evaluation progress, and publish winners for the selected event</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                  {events.length > 0 && (
-                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-2 shadow-2xs w-full sm:w-72">
-                      <Calendar size={14} className="text-amber-500 shrink-0" />
-                      <select
-                        value={selectedEventId || (events[0]?._id || '')}
-                        onChange={e => setSelectedEventId(e.target.value)}
-                        className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
-                      >
-                        {events.map(ev => (
-                          <option key={ev._id} value={ev._id}>
-                            {ev.title} ({ev.status})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleRefreshAll}
-                    className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold shrink-0"
-                    data-tooltip="Refresh Leaderboard & Progress"
-                  >
-                    <RefreshCw size={12} className="shrink-0" />
-                    Refresh
-                  </button>
                 </div>
               </div>
 
@@ -4674,7 +4665,8 @@ export default function AdminDashboard() {
                       onChange={(e) => setBroadcastEventId(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
                     >
-                      <option value="">All Events (Overall System)</option>
+                      <option value="">--Select--</option>
+                      <option value="all">All Events</option>
                       {events.map(ev => (
                         <option key={ev._id} value={ev._id}>{ev.title}</option>
                       ))}

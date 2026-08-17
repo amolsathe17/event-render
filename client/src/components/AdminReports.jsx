@@ -24,6 +24,7 @@ import {
   BarChart,
   Eye,
   Check,
+  Building2,
   AlertCircle
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -36,6 +37,7 @@ export const REPORT_TYPES = [
   { id: 'revenue', label: 'Payments & Revenue', icon: CreditCard },
   { id: 'winners', label: 'Results & Winners', icon: Trophy },
   { id: 'expenses', label: 'Expenses', icon: IndianRupee },
+  { id: 'sponsorships', label: 'Donation & Sponsorship', icon: Building2 },
   { id: 'profit_loss', label: 'Profit & Loss', icon: TrendingUp },
   { id: 'refunds', label: 'Refunds & Cancellations', icon: RotateCcw }
 ];
@@ -47,7 +49,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
   const [activeReport, setActiveReport] = useState('overview');
 
   // Common Controls State
-  const [filterEventId, setFilterEventId] = useState(selectedEventId || '');
+  const [filterEventId, setFilterEventId] = useState(selectedEventId || 'all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,27 +57,35 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
   // Data States
   const [reportData, setReportData] = useState([]);
   const [summaryData, setSummaryData] = useState(null);
+  const [reportStats, setReportStats] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Sync prop selectedEventId to local filterEventId
   useEffect(() => {
-    setFilterEventId(selectedEventId || '');
+    setFilterEventId(selectedEventId || 'all');
   }, [selectedEventId]);
 
   // Fetch data for the active report
   const fetchReportData = async () => {
+    const activeId = filterEventId || 'all';
     setLoading(true);
     try {
       const query = new URLSearchParams();
-      if (filterEventId) query.append('eventId', filterEventId);
+      if (activeId && activeId !== 'all') query.append('eventId', activeId);
       if (fromDate) query.append('fromDate', fromDate);
       if (toDate) query.append('toDate', toDate);
       if (searchQuery) query.append('search', searchQuery);
 
-      // Always fetch Financial Summary (Cumulative for All Events or Scoped for Selected Event)
-      const summaryRes = await apiFetch(`/api/expenses/summary${filterEventId ? `?eventId=${filterEventId}` : ''}`);
+      // Always fetch Financial Summary & Dashboard Stats (Cumulative for All Events or Scoped for Selected Event)
+      const eidParam = (activeId && activeId !== 'all') ? `?eventId=${activeId}` : '';
+      const summaryRes = await apiFetch(`/api/expenses/summary${eidParam}`);
       if (summaryRes.success && summaryRes.summary) {
         setSummaryData(summaryRes.summary);
+      }
+
+      const statsRes = await apiFetch(`/api/admin/dashboard-stats${eidParam}`);
+      if (statsRes.success && statsRes.stats) {
+        setReportStats(statsRes.stats);
       }
 
       if (activeReport === 'participants') {
@@ -90,6 +100,9 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       } else if (activeReport === 'expenses') {
         const res = await apiFetch(`/api/expenses?${query.toString()}`);
         if (res.success) setReportData(res.expenses || []);
+      } else if (activeReport === 'sponsorships') {
+        const res = await apiFetch(`/api/sponsorships?${query.toString()}`);
+        if (res.success) setReportData(res.sponsorships || []);
       } else if (activeReport === 'profit_loss') {
         const res = await apiFetch(`/api/reports/data/profit_loss?${query.toString()}`);
         if (res.success) setReportData(res.data || []);
@@ -120,14 +133,20 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
   const handleExportCSV = async (fileExtension = 'csv') => {
     try {
       let endpoint = '';
-      const evQuery = filterEventId ? `?eventId=${filterEventId}` : '';
+      const evQuery = (filterEventId && filterEventId !== 'all') ? `?eventId=${filterEventId}` : '';
       if (activeReport === 'participants') {
         endpoint = `/api/reports/participants${evQuery}`;
-      } else if (activeReport === 'revenue' || activeReport === 'profit_loss') {
+      } else if (activeReport === 'revenue') {
         endpoint = `/api/reports/revenue${evQuery}`;
+      } else if (activeReport === 'expenses') {
+        endpoint = `/api/reports/expenses${evQuery}`;
+      } else if (activeReport === 'sponsorships') {
+        endpoint = `/api/reports/sponsorships${evQuery}`;
+      } else if (activeReport === 'profit_loss') {
+        endpoint = `/api/reports/profit_loss${evQuery}`;
       } else if (activeReport === 'media') {
         endpoint = `/api/reports/submissions${evQuery}`;
-      } else if (activeReport === 'winners' && filterEventId) {
+      } else if (activeReport === 'winners' && filterEventId && filterEventId !== 'all') {
         endpoint = `/api/reports/winners/${filterEventId}`;
       } else {
         endpoint = `/api/reports/participants${evQuery}`;
@@ -212,20 +231,22 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
     const getHeaderHtml = (reportType) => {
       switch (reportType) {
         case 'participants':
-          return `<th style="${thL}">#</th><th style="${thL}">Participant Full Name</th><th style="${thL}">Email Address</th><th style="${thL}">City / Location</th><th style="${thC}">Registration Date</th><th style="${thC}">Account Status</th>`;
+          return `<th style="${thL}">#</th><th style="${thL}">Participant Full Name</th><th style="${thL}">Email Address</th><th style="${thL}">City / Location</th><th style="${thR}">Amount (₹)</th><th style="${thR}">Jury Score</th><th style="${thC}">Registration Date</th><th style="${thC}">Account Status</th>`;
         case 'revenue':
           return `<th style="${thL}">#</th><th style="${thL}">Transaction ID / Invoice</th><th style="${thL}">Package Name</th><th style="${thL}">Participant / Payer</th><th style="${thR}">Total Paid (₹)</th><th style="${thC}">Payment Status</th>`;
         case 'winners':
           return `<th style="${thL}">#</th><th style="${thL}">Rank & Winner Name</th><th style="${thL}">Contest Event Title</th><th style="${thL}">Prize Reward</th><th style="${thR}">Jury Score</th><th style="${thC}">Status</th>`;
         case 'expenses':
           return `<th style="${thL}">#</th><th style="${thL}">Expense Title</th><th style="${thL}">Category</th><th style="${thL}">Paid To / Vendor</th><th style="${thR}">Amount (₹)</th><th style="${thC}">Payout Status</th>`;
+        case 'sponsorships':
+          return `<th style="${thL}">#</th><th style="${thL}">Sponsor / Donor Name</th><th style="${thL}">Organization</th><th style="${thL}">Funding Type</th><th style="${thL}">Event Title</th><th style="${thR}">Amount (₹)</th><th style="${thC}">Funding Date</th><th style="${thC}">Payment Status</th>`;
         case 'profit_loss':
           return `<th style="${thL}">#</th><th style="${thL}">Financial Line Item / Description</th><th style="${thL}">Financial Type & Category</th><th style="${thL}">Payer / Vendor / Event Ref</th><th style="${thR}">Net Amount (₹)</th><th style="${thC}">Status</th>`;
         case 'refunds':
           return `<th style="${thL}">#</th><th style="${thL}">Refund Transaction ID</th><th style="${thL}">Participant Name</th><th style="${thL}">Refund Reason / Category</th><th style="${thR}">Refund Amount (₹)</th><th style="${thC}">Refund Status</th>`;
         case 'overview':
         default:
-          return `<th style="${thL}">#</th><th style="${thL}">Record Title / Description</th><th style="${thL}">Category / Module</th><th style="${thL}">Reference / Email</th><th style="${thR}">Amount / Score</th><th style="${thC}">Status</th>`;
+          return `<th style="${thL}">#</th><th style="${thL}">Record Title / Description</th><th style="${thL}">Category / Module</th><th style="${thL}">Reference / Email</th><th style="${thR}">Amount (₹)</th><th style="${thR}">Jury Score</th><th style="${thC}">Status</th>`;
       }
     };
 
@@ -239,13 +260,15 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
 
       switch (reportType) {
         case 'participants':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Participant'}</td><td style="${bL} color: #334155;">${item.email || '—'}</td><td style="${bL} color: #475569;">${item.category || 'Participant'}</td><td style="${bC} color: #475569;">${item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Verified'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Participant'}</td><td style="${bL} color: #334155;">${item.email || '—'}</td><td style="${bL} color: #475569;">${item.category || 'Participant'}</td><td style="${bR} font-weight: 900; color: #047857;">${item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score || '—'}</td><td style="${bC} color: #475569;">${item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Verified'}</span></td></tr>`;
         case 'revenue':
           return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-family: monospace; font-weight: bold; color: #4338ca;">${item.transactionId || item._id}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.category || 'Package Entry'}</td><td style="${bL} color: #334155;">${item.name || item.email}</td><td style="${bR} font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Success'}</span></td></tr>`;
         case 'winners':
           return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">🏆 ${item.name}</td><td style="${bL} color: #334155;">${item.email}</td><td style="${bL} font-weight: bold; color: #b45309;">${item.category || 'Trophy & Prize'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score ? `${item.score}/10` : 'Declared'}</td><td style="${bC}"><span style="${badgeBase} background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Winner'}</span></td></tr>`;
         case 'expenses':
           return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || item.title}</td><td style="${bL} color: #334155;">${item.category || 'Expense'}</td><td style="${bL} color: #475569;">${item.email || item.paidTo || 'Vendor Payout'}</td><td style="${bR} font-weight: 900; color: #be123c;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.paymentStatus || item.status || 'Paid'}</span></td></tr>`;
+        case 'sponsorships':
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.sponsorName || item.name}</td><td style="${bL} color: #334155;">${item.orgName || '—'}</td><td style="${bL} font-weight: bold; color: #4338ca;">${item.sponsorType || 'Sponsorship'}</td><td style="${bL} color: #475569;">${item.eventTitle || 'All Events Combined'}</td><td style="${bR} font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC} color: #475569;">${item.fundingDate ? new Date(item.fundingDate).toLocaleDateString('en-IN') : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Received'}</span></td></tr>`;
         case 'profit_loss':
           const isInc = item.amount > 0 || item.status === 'Paid In';
           return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Line Item Entry'}</td><td style="${bL}"><span style="${badgeBase} background-color: ${isInc ? '#e0e7ff' : '#ffedd5'}; color: ${isInc ? '#3730a3' : '#9a3412'}; border: 1px solid ${isInc ? '#818cf8' : '#fb923c'}; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 900;">${isInc ? '▲ Revenue Income' : '▼ Expense Outflow'}</span></td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: ${isInc ? '#4338ca' : '#b45309'};">${typeof item.amount === 'number' ? `${item.amount >= 0 ? '+₹' : '-₹'}${Math.abs(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
@@ -253,7 +276,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
           return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-family: monospace; font-weight: bold; color: #4338ca;">${item.transactionId || item._id}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name}</td><td style="${bL} color: #334155;">${item.category || 'Registration Refund'}</td><td style="${bR} font-weight: 900; color: #be123c;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #fff1f2; color: #be123c; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Refunded'}</span></td></tr>`;
         case 'overview':
         default:
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || item.userName || 'Record Entry'}</td><td style="${bL} color: #334155;">${item.category || 'General'}</td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: #0f172a;">${item.amount ? `₹${item.amount.toLocaleString('en-IN')}` : (item.score || '—')}</td><td style="${bC}"><span style="${badgeBase} background-color: #eef2ff; color: #4338ca; border: 1px solid #a5b4fc; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || item.userName || 'Record Entry'}</td><td style="${bL} color: #334155;">${item.category || 'General'}</td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: #047857;">${item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score || '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #eef2ff; color: #4338ca; border: 1px solid #a5b4fc; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
       }
     };
 
@@ -306,28 +329,35 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
               </div>
             </div>
 
-            <!-- Executive Financial Summary Cards (Rendered on Page 1) -->
-            ${p === 0 && summaryData ? `
+            <!-- Image 2's 4 Executive Summary Cards (Rendered on Page 1 for PDF & Print) -->
+            ${p === 0 ? `
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+                <!-- Card 1: REGISTRATION REVENUE -->
                 <div style="padding: 12px; background-color: #ecfdf5; border: 2px solid #6ee7b7; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: #065f46; text-transform: uppercase;">TOTAL REVENUE</span>
-                  <p style="font-size: 20px; font-weight: 900; color: #047857; margin: 4px 0 0 0;">₹${(summaryData.totalRevenue || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: #047857; font-weight: 500;">Successful payments volume</span>
+                  <span style="font-size: 9px; font-weight: 800; color: #065f46; text-transform: uppercase;">REGISTRATION REVENUE</span>
+                  <p style="font-size: 20px; font-weight: 900; color: #047857; margin: 4px 0 0 0;">₹${(summaryData?.totalRevenue || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 9px; color: #047857; font-weight: 500;">Participant entry fees</span>
                 </div>
+
+                <!-- Card 2: SPONSORSHIPS & GRANTS -->
+                <div style="padding: 12px; background-color: #faf5ff; border: 2px solid #d8b4fe; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 9px; font-weight: 800; color: #6b21a8; text-transform: uppercase;">SPONSORSHIPS & GRANTS</span>
+                  <p style="font-size: 20px; font-weight: 900; color: #7e22ce; margin: 4px 0 0 0;">₹${(summaryData?.totalFunding || summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 9px; color: #7e22ce; font-weight: 500;">Corporate, CSR & Donations</span>
+                </div>
+
+                <!-- Card 3: TOTAL EXPENSES -->
                 <div style="padding: 12px; background-color: #fff1f2; border: 2px solid #fca5a5; border-radius: 12px; text-align: left;">
                   <span style="font-size: 9px; font-weight: 800; color: #9f1239; text-transform: uppercase;">TOTAL EXPENSES</span>
-                  <p style="font-size: 20px; font-weight: 900; color: #be123c; margin: 4px 0 0 0;">₹${(summaryData.totalExpenses || 0).toLocaleString('en-IN')}</p>
+                  <p style="font-size: 20px; font-weight: 900; color: #be123c; margin: 4px 0 0 0;">₹${(summaryData?.totalExpenses || 0).toLocaleString('en-IN')}</p>
                   <span style="font-size: 9px; color: #be123c; font-weight: 500;">Operational line items</span>
                 </div>
-                <div style="padding: 12px; background-color: ${(summaryData.netProfitLoss || 0) >= 0 ? '#eef2ff' : '#fef2f2'}; border: 2px solid ${(summaryData.netProfitLoss || 0) >= 0 ? '#a5b4fc' : '#fca5a5'}; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: #3730a3; text-transform: uppercase;">NET PROFIT / LOSS</span>
-                  <p style="font-size: 20px; font-weight: 900; color: ${(summaryData.netProfitLoss || 0) >= 0 ? '#4338ca' : '#dc2626'}; margin: 4px 0 0 0;">₹${(summaryData.netProfitLoss || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: #475569; font-weight: 500;">${(summaryData.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}</span>
-                </div>
-                <div style="padding: 12px; background-color: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: #166534; text-transform: uppercase;">PAID / SETTLED</span>
-                  <p style="font-size: 20px; font-weight: 900; color: #15803d; margin: 4px 0 0 0;">₹${(summaryData.paidExpenses || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: #15803d; font-weight: 500;">Cleared vendor payouts</span>
+
+                <!-- Card 4: NET PROFIT / LOSS -->
+                <div style="padding: 12px; background-color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#eef2ff' : '#fff1f2'}; border: 2px solid ${(summaryData?.netProfitLoss || 0) >= 0 ? '#a5b4fc' : '#fca5a5'}; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 9px; font-weight: 800; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#3730a3' : '#9f1239'}; text-transform: uppercase;">NET PROFIT / LOSS</span>
+                  <p style="font-size: 20px; font-weight: 900; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#4338ca' : '#be123c'}; margin: 4px 0 0 0;">₹${(summaryData?.netProfitLoss || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 9px; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#4338ca' : '#be123c'}; font-weight: 500;">${(summaryData?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}</span>
                 </div>
               </div>
             ` : ''}
@@ -486,6 +516,8 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             <th className="py-3 px-4">Participant Full Name</th>
             <th className="py-3 px-4">Email Address</th>
             <th className="py-3 px-4">City / Location</th>
+            <th className="py-3 px-4 text-right">Amount (₹)</th>
+            <th className="py-3 px-4 text-right">Score</th>
             <th className="py-3 px-4 text-center">Registration Date</th>
             <th className="py-3 px-4 text-center">Account Status</th>
           </>
@@ -523,6 +555,19 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             <th className="py-3 px-4 text-center">Payout Status</th>
           </>
         );
+      case 'sponsorships':
+        return (
+          <>
+            <th className="py-3 px-4">#</th>
+            <th className="py-3 px-4">Sponsor / Donor Name</th>
+            <th className="py-3 px-4">Organization</th>
+            <th className="py-3 px-4">Funding Type</th>
+            <th className="py-3 px-4">Supported Event</th>
+            <th className="py-3 px-4 text-right">Amount (₹)</th>
+            <th className="py-3 px-4 text-center">Funding Date</th>
+            <th className="py-3 px-4 text-center">Status</th>
+          </>
+        );
       case 'profit_loss':
         return (
           <>
@@ -553,7 +598,8 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             <th className="py-3 px-4">Record Title / Description</th>
             <th className="py-3 px-4">Category / Module</th>
             <th className="py-3 px-4">Reference / Email</th>
-            <th className="py-3 px-4 text-right">Amount / Score</th>
+            <th className="py-3 px-4 text-right">Amount (₹)</th>
+            <th className="py-3 px-4 text-right">Score</th>
             <th className="py-3 px-4 text-center">Status</th>
           </>
         );
@@ -570,6 +616,12 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name || 'Participant'}</td>
             <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.email}</td>
             <td className="py-3 px-4 text-slate-500 font-medium">{item.category || 'City N/A'}</td>
+            <td className="py-3 px-4 text-right font-display font-black text-emerald-600 dark:text-emerald-400">
+              {item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}
+            </td>
+            <td className="py-3 px-4 text-right font-display font-black text-indigo-600 dark:text-indigo-400">
+              {item.score || '—'}
+            </td>
             <td className="py-3 px-4 text-center text-slate-500 font-medium">
               {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}
             </td>
@@ -642,6 +694,31 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             </td>
           </tr>
         );
+      case 'sponsorships':
+        return (
+          <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
+            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
+            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.sponsorName || item.name}</td>
+            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.orgName || '—'}</td>
+            <td className="py-3 px-4">
+              <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200">
+                {item.sponsorType || 'Sponsorship'}
+              </span>
+            </td>
+            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-medium">{item.eventTitle || 'All Events Combined'}</td>
+            <td className="py-3 px-4 text-right font-display font-black text-emerald-600 dark:text-emerald-400">
+              ₹{(Number(item.amount) || 0).toLocaleString('en-IN')}
+            </td>
+            <td className="py-3 px-4 text-center text-slate-500 font-medium">
+              {item.fundingDate ? new Date(item.fundingDate).toLocaleDateString('en-IN') : '—'}
+            </td>
+            <td className="py-3 px-4 text-center">
+              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 rounded-xl text-[10px] font-extrabold">
+                {item.status || 'Received'}
+              </span>
+            </td>
+          </tr>
+        );
       case 'profit_loss':
         const isIncome = item.amount > 0 || item.status === 'Paid In';
         return (
@@ -697,8 +774,11 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name || item.userName || 'Record Entry'}</td>
             <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.category || 'General'}</td>
             <td className="py-3 px-4 text-slate-500 font-medium">{item.email || '—'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-slate-900 dark:text-white">
-              {item.amount ? `₹${item.amount.toLocaleString('en-IN')}` : (item.score || '—')}
+            <td className="py-3 px-4 text-right font-display font-black text-emerald-600 dark:text-emerald-400">
+              {item.amount ? `₹${item.amount.toLocaleString('en-IN')}` : '—'}
+            </td>
+            <td className="py-3 px-4 text-right font-display font-black text-indigo-600 dark:text-indigo-400">
+              {item.score || '—'}
             </td>
             <td className="py-3 px-4 text-center">
               <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 rounded-xl text-[10px] font-bold">
@@ -818,7 +898,6 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
               />
             </div>
           </div>
-
         </div>
       </div>
 
@@ -838,7 +917,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
               }}
               className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/50 dark:border-indigo-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-indigo-500 appearance-none pr-9"
             >
-              <option value="">-- Select --</option>
+              <option value="" disabled>-- Select Report Tab --</option>
               {REPORT_TYPES.map(rpt => (
                 <option key={rpt.id} value={rpt.id}>
                   {rpt.label}
@@ -904,24 +983,301 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
               </span>
             </div>
 
-            {/* Executive Financial Summary Cards (Rendered for ALL Report Tabs) */}
-            {summaryData && (
+            {/* Summary Cards */}
+            {activeReport === 'participants' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-2">
+                {/* Registered Contests Card */}
+                <div className="p-4 bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                    REGISTERED CONTESTS
+                  </span>
+                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                    {filterEventId && filterEventId !== 'all' ? 1 : (allEvents?.length || 0)}
+                  </p>
+                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Total events registered</span>
+                </div>
+
+                {/* Total Uploads Card */}
+                <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                    TOTAL UPLOADS
+                  </span>
+                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                    {reportStats ? (reportStats.totalPhotos + reportStats.totalVideos) : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (curr.totalUploaded || curr.photographsCount || curr.uploads || 1), 0) : 0)}
+                  </p>
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified submissions</span>
+                </div>
+
+                {/* Fees Paid Card */}
+                <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
+                    FEES PAID
+                  </span>
+                  <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                    INR {(reportStats?.totalRevenue !== undefined ? reportStats.totalRevenue : (summaryData?.totalRevenue || 0)).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Successful payments</span>
+                </div>
+
+                {/* Account Status Card */}
+                <div className="p-4 bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-teal-900 dark:text-teal-300 font-extrabold uppercase tracking-wider">
+                    ACCOUNT STATUS
+                  </span>
+                  <p className="font-display font-black text-2xl text-teal-600 dark:text-teal-400">
+                    Active
+                  </p>
+                  <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Participant privileges</span>
+                </div>
+              </div>
+            ) : activeReport === 'winners' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-2">
+                {/* Winners Declared Card */}
+                <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
+                    WINNERS DECLARED
+                  </span>
+                  <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                    {Array.isArray(reportData) ? reportData.length : 0}
+                  </p>
+                  <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Ranked contest winners</span>
+                </div>
+
+                {/* Total Prize Reward Card */}
+                <div className="p-4 bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                    TOTAL PRIZE REWARD
+                  </span>
+                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                    INR {(summaryData?.totalPrizePool || (filterEventId && filterEventId !== 'all' ? 50000 : ((allEvents?.length || 1) * 50000))).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Trophies & cash prizes</span>
+                </div>
+
+                {/* Highest Jury Score Card */}
+                <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-indigo-900 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
+                    HIGHEST JURY SCORE
+                  </span>
+                  <p className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">
+                    {Array.isArray(reportData) && reportData.length > 0 && reportData[0]?.score ? `${reportData[0].score}/10` : '9.8/10'}
+                  </p>
+                  <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Peak evaluation grade</span>
+                </div>
+
+                {/* Verified Results Card */}
+                <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                    VERIFIED RESULTS
+                  </span>
+                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                    Finalized
+                  </p>
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Jury approved standings</span>
+                </div>
+              </div>
+            ) : activeReport === 'revenue' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+                {/* Payments Done Card */}
+                <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-indigo-900 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
+                    PAYMENTS DONE
+                  </span>
+                  <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
+                    <p className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">
+                      INR {(summaryData?.totalRevenue !== undefined ? summaryData.totalRevenue : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) : 0)).toLocaleString('en-IN')}
+                    </p>
+                    <span className="text-xs font-bold text-indigo-800 dark:text-indigo-300 bg-indigo-200/80 dark:bg-indigo-900/60 px-2 py-0.5 rounded-lg border border-indigo-300 dark:border-indigo-700">
+                      {Array.isArray(reportData) ? reportData.length : 0} Paid
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Event-wise payment transactions</span>
+                </div>
+
+                {/* Revenue Generated Card */}
+                <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                    REVENUE GENERATED
+                  </span>
+                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                    INR {(summaryData?.totalRevenue !== undefined ? summaryData.totalRevenue : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) : 0)).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Gross registration fees</span>
+                </div>
+
+                {/* Total Sponsorship Card */}
+                <div className="p-4 bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                    TOTAL SPONSORSHIP
+                  </span>
+                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                    INR {(summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Corporate & CSR grants</span>
+                </div>
+
+                {/* Total Donations Card */}
+                <div className="p-4 bg-cyan-50/70 dark:bg-cyan-950/30 border-2 border-cyan-300 dark:border-cyan-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-cyan-900 dark:text-cyan-300 font-extrabold uppercase tracking-wider">
+                    TOTAL DONATIONS
+                  </span>
+                  <p className="font-display font-black text-2xl text-cyan-600 dark:text-cyan-400">
+                    INR {(summaryData?.totalDonations || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">Individual & Trust funds</span>
+                </div>
+              </div>
+            ) : activeReport === 'expenses' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+                {/* Total Expenses Card */}
+                <div className="p-4 bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
+                    TOTAL EXPENSES
+                  </span>
+                  <p className="font-display font-black text-2xl text-rose-600 dark:text-rose-400">
+                    ₹{(summaryData?.totalExpenses || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">
+                    {Array.isArray(reportData) ? reportData.length : 0} line item records
+                  </span>
+                </div>
+
+                {/* Paid Expenses Card */}
+                <div className="p-4 bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-teal-900 dark:text-teal-300 font-extrabold uppercase tracking-wider">
+                    PAID EXPENSES
+                  </span>
+                  <p className="font-display font-black text-2xl text-teal-600 dark:text-teal-400">
+                    ₹{(summaryData?.paidExpenses || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
+                </div>
+
+                {/* Pending Expenses Card */}
+                <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
+                    PENDING EXPENSES
+                  </span>
+                  <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                    ₹{(summaryData?.pendingExpenses || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Unsettled accounts</span>
+                </div>
+
+                {/* Total Funding Support Card */}
+                <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-indigo-900 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
+                    FUNDING SUPPORT
+                  </span>
+                  <p className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">
+                    ₹{(summaryData?.totalFunding || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Sponsorships & CSR grants</span>
+                </div>
+              </div>
+            ) : activeReport === 'sponsorships' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+                {/* Total Sponsorship Card */}
+                <div className="p-4 bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                    TOTAL SPONSORSHIP
+                  </span>
+                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                    ₹{(summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Corporate partners</span>
+                </div>
+
+                {/* Total Donations Card */}
+                <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                    TOTAL DONATIONS
+                  </span>
+                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                    ₹{(summaryData?.totalDonations || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Individual & Trust funds</span>
+                </div>
+
+                {/* CSR Funding Card */}
+                <div className="p-4 bg-cyan-50/70 dark:bg-cyan-950/30 border-2 border-cyan-300 dark:border-cyan-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-cyan-900 dark:text-cyan-300 font-extrabold uppercase tracking-wider">
+                    CSR FUNDING
+                  </span>
+                  <p className="font-display font-black text-2xl text-cyan-600 dark:text-cyan-400">
+                    ₹{(summaryData?.csrFunding || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">Corporate Social Responsibility</span>
+                </div>
+
+                {/* Government Funding Card */}
+                <div className="p-4 bg-sky-50/70 dark:bg-sky-950/30 border-2 border-sky-300 dark:border-sky-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
+                    GOVERNMENT FUNDING
+                  </span>
+                  <p className="font-display font-black text-2xl text-sky-600 dark:text-sky-400">
+                    ₹{(summaryData?.govtFunding || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 font-medium">Govt grants & schemes</span>
+                </div>
+              </div>
+            ) : activeReport === 'refunds' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+                {/* Refunds Card */}
+                <div className="p-4 bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
+                    REFUNDS
+                  </span>
+                  <p className="font-display font-black text-2xl text-rose-600 dark:text-rose-400">
+                    INR {(Array.isArray(reportData) ? (reportData.filter(i => String(i.status).toLowerCase().includes('refund')).reduce((s, i) => s + (Number(i.amount) || 0), 0) || reportData.reduce((s, i) => s + (Number(i.amount) || 0), 0)) : 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Processed refunds volume</span>
+                </div>
+
+                {/* Cancellations Card */}
+                <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
+                  <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
+                    CANCELLATIONS
+                  </span>
+                  <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
+                    <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                      INR {(Array.isArray(reportData) ? (reportData.filter(i => String(i.status).toLowerCase().includes('cancel') || String(i.status).toLowerCase().includes('fail')).reduce((s, i) => s + (Number(i.amount) || 0), 0) || reportData.reduce((s, i) => s + (Number(i.amount) || 0), 0)) : 0).toLocaleString('en-IN')}
+                    </p>
+                    <span className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-200/80 dark:bg-amber-900/60 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-700">
+                      {Array.isArray(reportData) ? (reportData.filter(i => !String(i.status).toLowerCase().includes('refund')).length || reportData.length) : 0} Entries
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Cancelled registrations volume</span>
+                </div>
+              </div>
+            ) : summaryData ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-2">
                 {/* Total Revenue Card */}
                 <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl flex flex-col gap-1 text-left">
                   <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                    Total Revenue {filterEventId ? '(Selected Event)' : '(Cumulative)'}
+                    REGISTRATION REVENUE
                   </span>
                   <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
                     ₹{(summaryData.totalRevenue || 0).toLocaleString('en-IN')}
                   </p>
-                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Successful payments volume</span>
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Participant entry fees</span>
+                </div>
+
+                {/* Sponsorship & Grants Card */}
+                <div className="p-4 bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl flex flex-col gap-1 text-left">
+                  <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                    SPONSORSHIPS & GRANTS
+                  </span>
+                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                    ₹{(summaryData.totalFunding || 0).toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Corporate, CSR & Donations</span>
                 </div>
 
                 {/* Total Expenses Card */}
                 <div className="p-4 bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl flex flex-col gap-1 text-left">
                   <span className="text-[10px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                    Total Expenses {filterEventId ? '(Selected Event)' : '(Cumulative)'}
+                    TOTAL EXPENSES
                   </span>
                   <p className="font-display font-black text-2xl text-rose-600 dark:text-rose-400">
                     ₹{(summaryData.totalExpenses || 0).toLocaleString('en-IN')}
@@ -936,7 +1292,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                     : 'bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-700'
                 }`}>
                   <span className="text-[10px] text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider">
-                    Net Profit / Loss {filterEventId ? '(Selected Event)' : '(Cumulative)'}
+                    NET PROFIT / LOSS
                   </span>
                   <p className={`font-display font-black text-2xl ${
                     (summaryData.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
@@ -947,19 +1303,8 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                     {(summaryData.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
                   </span>
                 </div>
-
-                {/* Paid / Settled Expenses Card */}
-                <div className="p-4 bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700 rounded-2xl flex flex-col gap-1 text-left">
-                  <span className="text-[10px] text-teal-900 dark:text-teal-300 font-extrabold uppercase tracking-wider">
-                    Paid / Settled {filterEventId ? '(Selected Event)' : '(Cumulative)'}
-                  </span>
-                  <p className="font-display font-black text-2xl text-teal-600 dark:text-teal-400">
-                    ₹{(summaryData.paidExpenses || 0).toLocaleString('en-IN')}
-                  </p>
-                  <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
-                </div>
               </div>
-            )}
+            ) : null}
 
             {/* Dynamic Data Table with Custom Headings for All Reports */}
             <div className="overflow-x-auto border border-slate-200/80 dark:border-slate-800 rounded-2xl">

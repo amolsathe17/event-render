@@ -7,7 +7,7 @@ export const EventProvider = ({ children }) => {
   const { user, apiFetch } = useAuth();
 
   const [allEvents, setAllEvents] = useState([]);
-  const [selectedEventId, setSelectedEventIdState] = useState('');
+  const [selectedEventId, setSelectedEventIdState] = useState('all');
   const [eventsLoading, setEventsLoading] = useState(false);
 
   const getStorageKey = (u) => u?.role ? `selectedEventId_${u.role}` : 'selectedEventId';
@@ -37,19 +37,12 @@ export const EventProvider = ({ children }) => {
 
         const key = getStorageKey(currentUser);
         const saved = localStorage.getItem(key);
-        const savedValid = saved && events.find(e => e._id === saved);
+        const savedValid = (saved === 'all' || (saved && events.find(e => e._id === saved)));
 
         if (savedValid) {
           setSelectedEventIdState(saved);
-        } else if (events.length > 0) {
-          if (currentUser.role === 'Admin') {
-            setSelectedEventIdState('');
-          } else {
-            const active = events.find(e => e.status === 'Active');
-            const autoSelect = active || events[0];
-            setSelectedEventIdState(autoSelect._id);
-            localStorage.setItem(key, autoSelect._id);
-          }
+        } else {
+          setSelectedEventIdState('all');
         }
       }
     } catch (err) {
@@ -62,7 +55,7 @@ export const EventProvider = ({ children }) => {
   useEffect(() => {
     if (!user) {
       setAllEvents([]);
-      setSelectedEventIdState('');
+      setSelectedEventIdState('all');
       return;
     }
     loadEvents(user);

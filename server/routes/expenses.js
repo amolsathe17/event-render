@@ -9,6 +9,7 @@ const Expense = require('../models/Expense');
 const Event = require('../models/Event');
 const Payment = require('../models/Payment');
 const Submission = require('../models/Submission');
+const Sponsorship = require('../models/Sponsorship');
 const { protect, authorize } = require('../middleware/auth');
 
 // Multer storage for expense receipts
@@ -118,6 +119,29 @@ router.get('/summary', protect, authorize('Admin'), async (req, res) => {
       const successfulPayments = await Payment.find({ eventId, status: 'Success' });
       const totalRevenue = successfulPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+      // Sponsorships & Donations for this event
+      const sponsorships = await Sponsorship.find({ eventId });
+      let totalSponsorship = 0;
+      let totalDonations = 0;
+      let csrFunding = 0;
+      let govtFunding = 0;
+      let pendingFunding = 0;
+
+      sponsorships.forEach(s => {
+        const amt = Number(s.amount) || 0;
+        const st = (s.sponsorType || '').toLowerCase();
+        const stat = (s.status || '').toLowerCase();
+        if (st.includes('csr')) csrFunding += amt;
+        else if (st.includes('government')) govtFunding += amt;
+        else if (st.includes('individual') || st.includes('trust') || st.includes('ngo')) totalDonations += amt;
+        else totalSponsorship += amt;
+
+        if (stat.includes('pending') || stat.includes('partially')) pendingFunding += amt;
+      });
+
+      const totalFunding = totalSponsorship + totalDonations + csrFunding + govtFunding;
+      const grandTotalRevenue = totalRevenue + totalFunding;
+
       // Expenses for this event
       const expenses = await Expense.find({ eventId });
       const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -128,7 +152,7 @@ router.get('/summary', protect, authorize('Admin'), async (req, res) => {
         .filter(e => e.paymentStatus === 'Pending')
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-      const netProfitLoss = totalRevenue - totalExpenses;
+      const netProfitLoss = grandTotalRevenue - totalExpenses;
 
       // Category breakdown for this event
       const categoryMap = {};
@@ -153,6 +177,13 @@ router.get('/summary', protect, authorize('Admin'), async (req, res) => {
         eventTitle: eventObj.title,
         summary: {
           totalRevenue,
+          totalSponsorship,
+          totalDonations,
+          csrFunding,
+          govtFunding,
+          totalFunding,
+          grandTotalRevenue,
+          pendingFunding,
           totalExpenses,
           paidExpenses,
           pendingExpenses,
@@ -167,6 +198,28 @@ router.get('/summary', protect, authorize('Admin'), async (req, res) => {
       const allPayments = await Payment.find({ status: 'Success' });
       const totalRevenue = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+      const allSponsorships = await Sponsorship.find({});
+      let totalSponsorship = 0;
+      let totalDonations = 0;
+      let csrFunding = 0;
+      let govtFunding = 0;
+      let pendingFunding = 0;
+
+      allSponsorships.forEach(s => {
+        const amt = Number(s.amount) || 0;
+        const st = (s.sponsorType || '').toLowerCase();
+        const stat = (s.status || '').toLowerCase();
+        if (st.includes('csr')) csrFunding += amt;
+        else if (st.includes('government')) govtFunding += amt;
+        else if (st.includes('individual') || st.includes('trust') || st.includes('ngo')) totalDonations += amt;
+        else totalSponsorship += amt;
+
+        if (stat.includes('pending') || stat.includes('partially')) pendingFunding += amt;
+      });
+
+      const totalFunding = totalSponsorship + totalDonations + csrFunding + govtFunding;
+      const grandTotalRevenue = totalRevenue + totalFunding;
+
       const allExpenses = await Expense.find({});
       const totalExpenses = allExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
       const paidExpenses = allExpenses
@@ -176,7 +229,7 @@ router.get('/summary', protect, authorize('Admin'), async (req, res) => {
         .filter(e => e.paymentStatus === 'Pending')
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-      const netProfitLoss = totalRevenue - totalExpenses;
+      const netProfitLoss = grandTotalRevenue - totalExpenses;
 
       // Category breakdown across all events
       const categoryMap = {};
@@ -226,6 +279,13 @@ router.get('/summary', protect, authorize('Admin'), async (req, res) => {
         mode: 'all',
         summary: {
           totalRevenue,
+          totalSponsorship,
+          totalDonations,
+          csrFunding,
+          govtFunding,
+          totalFunding,
+          grandTotalRevenue,
+          pendingFunding,
           totalExpenses,
           paidExpenses,
           pendingExpenses,

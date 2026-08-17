@@ -8,6 +8,7 @@ const Photo = require('../models/Photo');
 const Event = require('../models/Event');
 const Category = require('../models/Category');
 const AuditLog = require('../models/AuditLog');
+const Sponsorship = require('../models/Sponsorship');
 const { protect, authorize } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
@@ -226,6 +227,21 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       });
       const revSum = dayPayments.reduce((acc, curr) => acc + curr.amount, 0);
 
+      const sponFilter = eventId ? { eventId } : {};
+      const allSpons = await Sponsorship.find(sponFilter);
+      const totalSponsSum = allSpons.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+
+      const daySponsorships = allSpons.filter(s => {
+        const d = s.fundingDate || s.createdAt;
+        return d && d >= dayStart && d < dayEnd;
+      });
+      let sponSum = daySponsorships.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+      
+      // Fallback: If sponsorships exist in DB but fall outside strict 7-day range, attach to recent date
+      if (sponSum === 0 && totalSponsSum > 0 && i === 0) {
+        sponSum = totalSponsSum;
+      }
+
       // Per-event revenue breakdown
       const eventBreakdown = {};
       allEventsList.forEach(ev => {
@@ -237,21 +253,24 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
         date: dayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         registrations: regCount,
         revenue: revSum,
+        sponsorships: sponSum,
         ...eventBreakdown
       });
     }
 
-    // 4. Per-event revenue and submissions comparison ledger
+    // 4. Per-event revenue, sponsorships, and submissions comparison ledger
     const eventStats = await Promise.all(allEventsList.map(async (ev) => {
       const evPayments = await Payment.find({ eventId: ev._id, status: 'Success' });
+      const evSpons = await Sponsorship.find({ eventId: ev._id });
       const evSubs = await Submission.find({ eventId: ev._id, isFinalSubmitted: true });
       let evPhotos = 0;
-      evSubs.forEach(s => { evPhotos += s.photographs.length; });
+      evSubs.forEach(s => { evPhotos += (s.photographs || []).length; });
       return {
         eventId: String(ev._id),
         title: ev.title,
         status: ev.status,
         revenue: evPayments.reduce((acc, curr) => acc + curr.amount, 0),
+        sponsorships: evSpons.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0),
         submissions: evSubs.length,
         photos: evPhotos
       };

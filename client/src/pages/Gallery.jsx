@@ -119,14 +119,21 @@ export default function Gallery() {
           <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3 mb-6">
             <label className="text-xs font-black text-slate-500 uppercase tracking-wider">SELECT EVENT:</label>
             <select
-              value={selectedEventId}
+              value={selectedEventId || ''}
               onChange={(e) => {
-                setSelectedEventId(e.target.value);
-                const found = eventsList.find(ev => ev._id === e.target.value);
-                if (found) setEvent(found);
+                const val = e.target.value;
+                setSelectedEventId(val);
+                if (!val) {
+                  setEvent(null);
+                } else {
+                  const found = eventsList.find(ev => ev._id === val);
+                  if (found) setEvent(found);
+                }
               }}
               className="w-full sm:w-auto px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-100 cursor-pointer shadow-xs focus:outline-none focus:border-indigo-500"
             >
+              <option value="">--Select--</option>
+              <option value="all">All Events</option>
               {eventsList.map(ev => (
                 <option key={ev._id} value={ev._id}>
                   {ev.title} {ev.winnersPublished ? '🏆 (Winners Published)' : ''}
@@ -383,8 +390,20 @@ export default function Gallery() {
                         key={photo.photoId}
                         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col group justify-between"
                       >
-                        <div className="relative overflow-hidden aspect-video">
-                          {photo.fileUrl ? (
+                        <div className="relative overflow-hidden aspect-video bg-black flex items-center justify-center">
+                          {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                            <video
+                              src={getBackendUrl(photo.fileUrl)}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              controls
+                              crossOrigin="anonymous"
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover opacity-80"
+                            />
+                          ) : photo.fileUrl ? (
                             <img
                               src={getBackendUrl(photo.fileUrl)}
                               alt={photo.title}
@@ -397,12 +416,12 @@ export default function Gallery() {
                               No Preview
                             </div>
                           )}
-                          <span className="absolute top-3 left-3 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                          <span className="absolute top-3 left-3 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm z-10">
                             <Flag size={9} className="fill-white" /> Disapproved
                           </span>
                           <button
                             onClick={() => setSelectedPhoto(photo)}
-                            className="absolute top-3 right-3 p-1.5 bg-slate-950/60 hover:bg-slate-950 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            className="absolute top-3 right-3 p-1.5 bg-slate-950/60 hover:bg-slate-950 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                           >
                             <Maximize2 size={14} />
                           </button>
@@ -492,25 +511,55 @@ export default function Gallery() {
                       key={idx}
                       className={`flex flex-col lg:flex-row items-center gap-6 p-6 bg-white dark:bg-slate-900 border rounded-3xl shadow-md transition-all hover:shadow-lg ${cardBorder}`}
                     >
-                      {/* Left: Winning Photograph Display */}
-                      <div className="relative group shrink-0 w-full lg:w-64 aspect-video overflow-hidden rounded-2xl bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        { (w.fileUrl || photographs.find(p => p.photoId === w.photoId || p.photoId === w.photographId)?.fileUrl) ? (
-                          <img
-                            src={getBackendUrl(w.fileUrl || photographs.find(p => p.photoId === w.photoId || p.photoId === w.photographId)?.fileUrl)}
-                            alt={w.photoTitle}
-                            crossOrigin="anonymous"
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500 text-xs font-semibold">
-                            No Photo Preview
+                      {/* Left: Winning Photograph / Video Display */}
+                      {(() => {
+                        const matchedPhoto = photographs.find(p => p.photoId === w.photoId || p.photoId === w.photographId || String(p.photoId) === String(w.photoId));
+                        const winnerMediaUrl = w.fileUrl || matchedPhoto?.fileUrl || '';
+                        const isVideo = targetWinnerEvent?.mediaType === 'video' ||
+                                        String(targetWinnerEvent?.eventType || '').toLowerCase().includes('video') ||
+                                        String(targetWinnerEvent?.eventType || '').toLowerCase().includes('reel') ||
+                                        w.mediaType === 'video' ||
+                                        matchedPhoto?.mediaType === 'video' ||
+                                        winnerMediaUrl.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) ||
+                                        winnerMediaUrl.includes('/video/upload/');
+
+                        const badgeText = isVideo ? 'WINNING VIDEO / REELS' : 'WINNING FRAME';
+
+                        return (
+                          <div className="relative group shrink-0 w-full lg:w-64 aspect-video overflow-hidden rounded-2xl bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                            {winnerMediaUrl ? (
+                              isVideo ? (
+                                <video
+                                  src={getBackendUrl(winnerMediaUrl)}
+                                  autoPlay
+                                  loop
+                                  muted
+                                  playsInline
+                                  controls
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                              ) : (
+                                <img
+                                  src={getBackendUrl(winnerMediaUrl)}
+                                  alt={w.photoTitle}
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                              )
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500 text-xs font-semibold">
+                                {isVideo ? 'No Video Preview' : 'No Photo Preview'}
+                              </div>
+                            )}
+                            <div className="absolute top-2 left-2 px-2.5 py-1 bg-black/75 backdrop-blur-sm rounded-lg text-[9px] text-white font-extrabold uppercase z-10 shadow-md">
+                              {badgeText}
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute top-2 left-2 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-[9px] text-white font-extrabold uppercase">
-                          Winning Frame
-                        </div>
-                      </div>
+                        );
+                      })()}
                       
                       {/* Middle: Winner details */}
                       <div className="flex-1 flex flex-col justify-between gap-4 text-left w-full">

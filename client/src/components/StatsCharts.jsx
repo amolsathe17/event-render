@@ -41,17 +41,21 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-xl text-xs max-w-xs text-left">
           <p className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 border-b border-slate-100 dark:border-slate-800 pb-1">{label}</p>
           <div className="flex flex-col gap-1">
-            <p className="text-indigo-600 dark:text-indigo-400 font-extrabold flex justify-between">
-              <span>{selectedEventId ? 'Event Revenue:' : 'Cumulative Revenue:'}</span>
+            <p className="text-indigo-600 dark:text-indigo-400 font-extrabold flex justify-between gap-3">
+              <span>Registration Revenue:</span>
               <span>₹{(dataItem.revenue || 0).toLocaleString()}</span>
             </p>
-            <p className="text-amber-500 dark:text-amber-400 font-bold flex justify-between">
+            <p className="text-purple-600 dark:text-purple-400 font-extrabold flex justify-between gap-3">
+              <span>Donation & Sponsorship:</span>
+              <span>₹{(dataItem.sponsorships || 0).toLocaleString()}</span>
+            </p>
+            <p className="text-amber-500 dark:text-amber-400 font-bold flex justify-between gap-3">
               <span>{selectedEventId ? 'Submissions:' : 'Registrations:'}</span>
               <span>{dataItem.registrations || 0}</span>
             </p>
             {!selectedEventId && events.length > 0 && (
               <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-0.5 text-[10px]">
-                <span className="font-semibold text-slate-400 uppercase">Per-Event Breakdown:</span>
+                <span className="font-semibold text-slate-400 uppercase">Per-Event Revenue Breakdown:</span>
                 {events.map((ev, i) => {
                   const evRev = dataItem[ev.title] || 0;
                   return (
@@ -91,20 +95,20 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Registrations & Revenue Line/Bar Chart - Full Width */}
+      {/* Registrations, Revenue & Sponsorship Line/Bar Chart - Full Width */}
       <div className="w-full bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-xs">
         
         {/* Card Header & Segmented Mode Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-left">
             <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">
-              Registration & Revenue Trends {selectedEventTitle ? `— ${selectedEventTitle}` : ''}
+              Registration, Revenue & Sponsorship Trends {selectedEventTitle ? `— ${selectedEventTitle}` : ''}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {selectedEventId
-                ? `Daily revenue volume & submission uploads specifically for "${selectedEventTitle || 'Selected Event'}" over the last 7 days`
+                ? `Daily registration revenue, sponsorship funding & submission uploads for "${selectedEventTitle || 'Selected Event'}" over the last 7 days`
                 : (chartMode === 'cumulative'
-                    ? 'Cumulative total revenue volume & participant signups across all events over the last 7 days'
+                    ? 'Daily registration revenue, corporate sponsorship & donation funding over the last 7 days'
                     : (chartMode === 'separate'
                         ? 'Separate event-wise daily revenue breakdown & cumulative participant registrations'
                         : 'Total revenue & submissions comparison across individual assigned contests'))
@@ -134,6 +138,16 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
                 }`}
               >
                 Per-Event Breakdown
+              </button>
+              <button
+                onClick={() => setChartMode('sponsorships')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  chartMode === 'sponsorships'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                Donation & Sponsorship
               </button>
               {eventStats.length > 0 && (
                 <button
@@ -187,11 +201,19 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
                 />
                 <Bar 
                   yAxisId="left" 
-                  name={selectedEventId ? "Event Revenue (INR)" : "Cumulative Revenue (INR)"} 
+                  name="Registration Revenue (INR)" 
                   dataKey="revenue" 
                   fill="#4f46e5" 
                   radius={[4, 4, 0, 0]}
-                  barSize={32}
+                  barSize={20}
+                />
+                <Bar 
+                  yAxisId="left" 
+                  name="Donation & Sponsorship (INR)" 
+                  dataKey="sponsorships" 
+                  fill="#a855f7" 
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
                 />
                 <Line 
                   yAxisId="right" 
@@ -249,6 +271,59 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
                     radius={idx === events.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                   />
                 ))}
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  name="Registrations" 
+                  dataKey="registrations" 
+                  stroke="#f59e0b" 
+                  strokeWidth={3}
+                  activeDot={{ r: 6 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+
+          {chartMode === 'sponsorships' && dailyStats.length > 0 && (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={dailyStats}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  yAxisId="left" 
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `₹${v}`}
+                />
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right" 
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<CustomComposedTooltip />} />
+                <Legend 
+                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                  iconType="circle"
+                />
+                <Bar 
+                  yAxisId="left" 
+                  name="Donation & Sponsorship (INR)" 
+                  dataKey="sponsorships" 
+                  fill="#9333ea" 
+                  radius={[6, 6, 0, 0]}
+                  barSize={36}
+                />
                 <Line 
                   yAxisId="right" 
                   type="monotone" 
