@@ -2175,8 +2175,8 @@ export default function AdminDashboard() {
           <p className="text-sm text-slate-600 dark:text-slate-400">Total operational control and performance ledger analytics</p>
         </div>
 
-        {/* Global Event Selection Dropdown Menu - Hidden on Events History Page */}
-        {activeTab !== 'event_history' && (
+        {/* Global Event Selection Dropdown Menu - Hidden on Contests, Categories, and Event History Tabs */}
+        {!['events', 'categories', 'event_history'].includes(activeTab) && (
           <div className="relative flex items-center shrink-0 w-full sm:w-auto">
             <select
               value={selectedEventId || 'all'}
