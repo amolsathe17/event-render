@@ -81,12 +81,53 @@ router.get('/events-history', protect, authorize('Admin'), async (req, res) => {
       submissions.forEach(s => {
         (s.photographs || []).forEach(p => {
           totalPhotos++;
-          const rawStatus = (p.status || '').toLowerCase();
-          const isDisapproved = rawStatus === 'rejected' || rawStatus === 'disapproved';
+          const rawStatus = (p.status || p.rawStatus || '').toLowerCase();
+          
+          let isDisapproved = rawStatus === 'rejected' || rawStatus === 'disapproved' || p.isApproved === false || p.approved === false;
+
+          if (!isDisapproved && Array.isArray(p.scores) && p.scores.length > 0) {
+            isDisapproved = p.scores.some(sc => {
+              const scStatus = (sc.approvalStatus || sc.status || '').toLowerCase();
+              return scStatus === 'disapproved' || scStatus === 'rejected';
+            });
+          }
+
+          if (!isDisapproved && p.score && typeof p.score === 'object') {
+            const scStatus = (p.score.approvalStatus || p.score.status || '').toLowerCase();
+            if (scStatus === 'disapproved' || scStatus === 'rejected') {
+              isDisapproved = true;
+            }
+          }
+
           const finalStatus = isDisapproved ? 'Disapproved' : 'Approved';
 
           if (isDisapproved) rejectedPhotos++;
           else approvedPhotos++;
+
+          let computedAvgScore = 0;
+          if (Array.isArray(p.scores) && p.scores.length > 0) {
+            const validScores = p.scores.map(sc => typeof sc.averageScore === 'number' ? sc.averageScore : (typeof sc.score === 'number' ? sc.score : 0));
+            const sum = validScores.reduce((acc, val) => acc + val, 0);
+            computedAvgScore = validScores.length > 0 ? parseFloat((sum / validScores.length).toFixed(1)) : 0;
+          } else if (typeof p.averageScore === 'number' && p.averageScore > 0) {
+            computedAvgScore = p.averageScore;
+          } else if (typeof p.score === 'number') {
+            computedAvgScore = p.score;
+          } else if (p.score && typeof p.score.averageScore === 'number') {
+            computedAvgScore = p.score.averageScore;
+          }
+
+          if (isDisapproved) {
+            computedAvgScore = 0;
+          }
+
+          let remarksText = p.judgeRemarks || p.remarks || p.rejectionReason || p.comments || '';
+          if (!remarksText && Array.isArray(p.scores) && p.scores.length > 0) {
+            const remarkItem = p.scores.find(sc => sc.remarks || sc.rejectionReason || sc.comment);
+            if (remarkItem) {
+              remarksText = remarkItem.remarks || remarkItem.rejectionReason || remarkItem.comment || '';
+            }
+          }
 
           const isVid = p.mediaType === 'video' || event.mediaType === 'video' || (p.fileUrl && p.fileUrl.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i));
 
@@ -107,9 +148,9 @@ router.get('/events-history', protect, authorize('Admin'), async (req, res) => {
             description: p.description,
             status: finalStatus,
             rawStatus: p.status || 'Submitted',
-            judgeRemarks: p.judgeRemarks || p.remarks || p.rejectionReason || p.comments || '',
+            judgeRemarks: remarksText,
             scores: p.scores || [],
-            averageScore: p.averageScore || 0,
+            averageScore: computedAvgScore,
             customFields: p.customFields || []
           });
         });

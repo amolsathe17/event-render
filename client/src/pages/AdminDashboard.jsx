@@ -2175,24 +2175,26 @@ export default function AdminDashboard() {
           <p className="text-sm text-slate-600 dark:text-slate-400">Total operational control and performance ledger analytics</p>
         </div>
 
-        {/* Global Event Selection Dropdown Menu */}
-        <div className="relative flex items-center shrink-0 w-full sm:w-auto">
-          <select
-            value={selectedEventId || 'all'}
-            onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
-            className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[240px]"
-          >
-            <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
-              All Events (Combined Ledger)
-            </option>
-            {allEvents.map(ev => (
-              <option key={ev._id || ev.id} value={ev._id || ev.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
-                {ev.title}
+        {/* Global Event Selection Dropdown Menu - Hidden on Events History Page */}
+        {activeTab !== 'event_history' && (
+          <div className="relative flex items-center shrink-0 w-full sm:w-auto">
+            <select
+              value={selectedEventId || 'all'}
+              onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
+              className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[240px]"
+            >
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                All Events (Combined Ledger)
               </option>
-            ))}
-          </select>
-          <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
-        </div>
+              {allEvents.map(ev => (
+                <option key={ev._id || ev.id} value={ev._id || ev.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                  {ev.title}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+          </div>
+        )}
       </div>
 
       {/* Navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
@@ -4576,20 +4578,34 @@ export default function AdminDashboard() {
                   const evPhotos = ev.allPhotographs || [];
                   const disapprovedPhotos = evPhotos.filter(p => {
                     const st = (p.status || p.rawStatus || '').toLowerCase();
-                    return st === 'rejected' || st === 'disapproved';
+                    const isDis = st === 'rejected' || st === 'disapproved' || p.isApproved === false || p.approved === false;
+                    if (isDis) return true;
+                    if (Array.isArray(p.scores) && p.scores.some(sc => {
+                      const scSt = (sc.approvalStatus || sc.status || '').toLowerCase();
+                      return scSt === 'disapproved' || scSt === 'rejected';
+                    })) return true;
+                    if (p.score && typeof p.score === 'object') {
+                      const scSt = (p.score.approvalStatus || p.score.status || '').toLowerCase();
+                      if (scSt === 'disapproved' || scSt === 'rejected') return true;
+                    }
+                    return false;
                   });
                   const approvedPhotos = evPhotos.filter(p => !disapprovedPhotos.includes(p));
 
                   return (
                     <div key={evId} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm transition-all">
                       
-                      {/* Accordion Panel Header - Identical to Gallery Page */}
+                      {/* Accordion Panel Header - Single Open Behavior */}
                       <div
                         onClick={() => {
                           setOpenHistoryEventIds(prev => {
                             const next = new Set(prev);
-                            if (next.has(evId)) next.delete(evId);
-                            else next.add(evId);
+                            if (next.has(evId)) {
+                              next.delete(evId);
+                            } else {
+                              next.clear();
+                              next.add(evId);
+                            }
                             return next;
                           });
                         }}
@@ -4824,7 +4840,19 @@ export default function AdminDashboard() {
 
                                         <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-center text-[9px] text-slate-450 uppercase tracking-wider font-bold">
                                           <span>Camera: {photo.cameraModel || photo.cameraBrand || 'N/A'}</span>
-                                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Grade: {photo.averageScore || 0}/10</span>
+                                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                            Grade: {(() => {
+                                              if (typeof photo.averageScore === 'number' && photo.averageScore > 0) {
+                                                return photo.averageScore.toFixed(1);
+                                              }
+                                              if (Array.isArray(photo.scores) && photo.scores.length > 0) {
+                                                const valid = photo.scores.map(s => typeof s.averageScore === 'number' ? s.averageScore : (typeof s.score === 'number' ? s.score : 0));
+                                                const sum = valid.reduce((a, b) => a + b, 0);
+                                                return valid.length > 0 ? (sum / valid.length).toFixed(1) : '0.0';
+                                              }
+                                              return '0.0';
+                                            })()}/10
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
