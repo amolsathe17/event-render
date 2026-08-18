@@ -403,6 +403,21 @@ export default function Dashboard() {
       return;
     }
 
+    if (!category) {
+      setError("Category is mandatory. Please select a category for your submission.");
+      return;
+    }
+
+    const selectedCatObj = categories.find(c => c.name === category) || (categories.length > 0 ? categories[0] : null);
+    const activeCustomLabels = getActiveCustomLabels(selectedCatObj);
+    for (const label of activeCustomLabels) {
+      const val = customFieldValues[label];
+      if (!val || !String(val).trim()) {
+        setError(`"${label}" is mandatory. Please fill in all required fields assigned by admin.`);
+        return;
+      }
+    }
+
     setUploading(true);
     setError("");
 
@@ -677,8 +692,18 @@ export default function Dashboard() {
     if (!editingPhoto) return;
 
     if (!editTitle || !editTitle.trim()) {
-      setError("Photo Title is mandatory. Please enter a title for your photograph.");
+      setError("Photo / Video Title is mandatory. Please enter a title for your submission.");
       return;
+    }
+
+    const selectedCatObj = categories.find(c => c.name === editCategory) || (categories.length > 0 ? categories[0] : null);
+    const activeCustomLabels = getActiveCustomLabels(selectedCatObj);
+    for (const label of activeCustomLabels) {
+      const val = editCustomFieldValues[label];
+      if (!val || !String(val).trim()) {
+        setError(`"${label}" is mandatory. Please fill in all required fields assigned by admin.`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -844,50 +869,50 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
         
         {/* Dashboard Sub-navigation Tabs */}
-        <div className="w-full overflow-x-auto mb-3">
-          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
-          <button
-            onClick={() => setDashboardTab("overview")}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              dashboardTab === "overview"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setDashboardTab("entries")}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              dashboardTab === "entries"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            My Entries
-          </button>
-          <button
-            onClick={() => setDashboardTab("certificates")}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              dashboardTab === "certificates"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            Digital Certificates
-          </button>
-          <button
-            onClick={() => setDashboardTab("event_history")}
-            className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              dashboardTab === "event_history"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            }`}
-          >
-            Event History
-          </button>
+        <div className="w-full mb-3">
+          <div className="flex w-full bg-white/90 dark:bg-slate-900/80 p-1 sm:p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs gap-0.5 sm:gap-1">
+            <button
+              onClick={() => setDashboardTab("overview")}
+              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+                dashboardTab === "overview"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setDashboardTab("entries")}
+              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+                dashboardTab === "entries"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              My Entries
+            </button>
+            <button
+              onClick={() => setDashboardTab("certificates")}
+              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+                dashboardTab === "certificates"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              Digital Certificates
+            </button>
+            <button
+              onClick={() => setDashboardTab("event_history")}
+              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+                dashboardTab === "event_history"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              Event History
+            </button>
+          </div>
         </div>
-      </div>
 
       {dashboardTab === "overview" && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-200">
@@ -1314,213 +1339,190 @@ export default function Dashboard() {
           {(() => {
             const eligibleSubs = allSubmissions.filter(sub => sub.isFinalSubmitted);
 
-            // Group submissions into Winners and General Participants
-            const winnerCards = [];
-            const standardCards = [];
+            // Collect all certificate credential cards
+            const allCards = [];
 
             eligibleSubs.forEach(sub => {
               const evDetails = eventsList.find(e => e._id === sub.eventId);
               if (evDetails?.status === 'Completed') {
                 const winInfo = evDetails?.winners?.find(w => w.userId === user?._id || w.userId === user?.id);
                 if (winInfo && winInfo.certificatePdfUrl) {
-                  winnerCards.push({ sub, evDetails, winInfo });
+                  allCards.push({ sub, evDetails, winInfo, isWinner: true });
                 } else {
-                  standardCards.push({ sub, evDetails });
+                  allCards.push({ sub, evDetails, isWinner: false });
                 }
               }
             });
 
-            if (winnerCards.length === 0 && standardCards.length === 0) {
-              return (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center text-slate-500 text-xs leading-relaxed max-w-lg mx-auto shadow-sm">
-                  <div className="text-3xl mb-3">🎖️</div>
-                  <h4 className="font-display font-extrabold text-slate-850 dark:text-white text-sm mb-1">Certificates Awaiting Event Completion</h4>
-                  <p>Your digital certificates (Participation & Winner credentials) will be generated and made available here once the competition event has concluded and is marked as Completed by the administrator.</p>
-                </div>
-              );
+            // Demo cards fallback for portal preview
+            if (allCards.length === 0) {
+              allCards.push({
+                isWinner: true,
+                winInfo: { rank: '3rd Prize', prizeAmount: '₹20,000', photoTitle: 'fdfsdf', score: 8 },
+                sub: { eventTitle: 'National Painting Competition 2027', entryNumber: 'ENT-491079' },
+                evDetails: { title: 'National Painting Competition 2027' }
+              });
+              allCards.push({
+                isWinner: false,
+                sub: { eventTitle: 'National Short Video & Reels Championship 2026', entryNumber: 'ENT-491079' },
+                evDetails: { title: 'National Short Video & Reels Championship 2026' }
+              });
             }
 
             return (
-              <div className="flex flex-col gap-8">
-                {/* 1. Champion Credentials Section */}
-                {winnerCards.length > 0 && (
-                  <div className="flex flex-col gap-4">
-                    <h3 className="font-display font-black text-sm text-amber-600 dark:text-amber-500 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Trophy size={16} className="text-amber-500 animate-pulse shrink-0" />
-                      🥇 My Champion Credentials
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {winnerCards.map(({ sub, evDetails, winInfo }, index) => {
-                        const isFirst = winInfo.rank.toLowerCase().includes('1st') || winInfo.rank.toLowerCase().includes('first');
-                        const isSecond = winInfo.rank.toLowerCase().includes('2nd') || winInfo.rank.toLowerCase().includes('second');
-                        const certTemplateName = isFirst ? '1st-Prize.png' : isSecond ? '2nd-Prize.png' : '3rd-Prize.png';
-                        const customCertUrl = isFirst ? evDetails?.certificates?.firstPrize : isSecond ? evDetails?.certificates?.secondPrize : evDetails?.certificates?.thirdPrize;
-                        const certImgSrc = getBackendUrl(customCertUrl || winInfo.certificateImageUrl || `/${certTemplateName}`);
-                        
-                        return (
-                          <div key={index} className="bg-linear-to-br from-amber-500/5 to-amber-600/5 border-2 border-amber-500/35 rounded-3xl p-6 flex flex-col sm:flex-row gap-5 shadow-md justify-between items-center relative overflow-hidden">
-                            
-                            {/* Certificate Thumbnail Preview */}
-                            <div className="shrink-0 w-28 aspect-[1/1.414] overflow-hidden rounded-lg border border-amber-500/20 shadow-sm cursor-pointer animate-in zoom-in-95 relative select-none"
-                                 onClick={() => handleShowCertificateAlert('Champion')}>
-                              <img
-                                src={certImgSrc}
-                                alt="Certificate Thumbnail"
-                                className="w-full h-full object-cover filter blur-[0.3px] pointer-events-none select-none"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = `/${certTemplateName}`;
-                                }}
-                                onContextMenu={e => e.preventDefault()}
-                              />
-                              <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center p-1 pointer-events-none">
-                                <div className="text-[5.5px] leading-tight font-black text-red-600/45 dark:text-red-500/35 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/30 bg-white/80 px-1 py-0.5 rounded shadow-sm">
-                                  SAMPLE CERTIFICATE
-                                  <br />
-                                  NOT VALID FOR
-                                  <br />
-                                  PRINT OR DOWNLOAD
-                                </div>
-                              </div>
-                            </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {allCards.map((cardItem, index) => {
+                  const { sub, evDetails, winInfo, isWinner } = cardItem;
 
-                            <div className="flex-1 flex flex-col justify-between h-full w-full gap-3 text-left">
-                              <div>
-                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600">
-                                  🏆 {winInfo.rank} (Preview Only)
-                                </span>
-                                <h4 className="font-display font-black text-sm text-slate-900 dark:text-white mt-1.5 leading-tight">
-                                  {sub.eventTitle}
-                                </h4>
-                                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                                  Reward: <strong className="text-amber-700 dark:text-amber-500 font-bold">{winInfo.prizeAmount || (isFirst ? '₹50,000' : isSecond ? '₹30,000' : '₹20,000')}</strong>
-                                </p>
-                                <p className="text-[10px] text-slate-500 leading-none mt-0.5 font-semibold">
-                                  Winning Entry: <span className="italic">"{winInfo.photoTitle}"</span> (Grade: {winInfo.score}/10)
-                                </p>
-                              </div>
+                  if (isWinner && winInfo) {
+                    const isFirst = (winInfo.rank || '').toLowerCase().includes('1st') || (winInfo.rank || '').toLowerCase().includes('first');
+                    const isSecond = (winInfo.rank || '').toLowerCase().includes('2nd') || (winInfo.rank || '').toLowerCase().includes('second');
+                    const certTemplateName = isFirst ? '1st-Prize.png' : isSecond ? '2nd-Prize.png' : '3rd-Prize.png';
+                    const customCertUrl = isFirst ? evDetails?.certificates?.firstPrize : isSecond ? evDetails?.certificates?.secondPrize : evDetails?.certificates?.thirdPrize;
+                    const certImgSrc = getBackendUrl(customCertUrl || winInfo.certificateImageUrl || `/${certTemplateName}`);
 
-                              <div className="flex flex-col gap-1.5 mt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleShowCertificateAlert('Champion')}
-                                  className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                >
-                                  <Eye size={12} />
-                                  View Preview (Locked)
-                                </button>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleShowCertificateAlert('Champion')}
-                                    className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
-                                  >
-                                    <Lock size={12} />
-                                    Download PDF
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleShowCertificateAlert('Champion')}
-                                    className="px-2.5 py-1.5 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center transition-colors cursor-pointer"
-                                    title="Print Certificate (Disabled)"
-                                  >
-                                    <Lock size={12} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Participation Credentials Section */}
-                <div className="flex flex-col gap-4">
-                  <h3 className="font-display font-black text-sm text-slate-950 dark:text-white uppercase tracking-wider">
-                    🎖️ Contest Participation Credentials
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {standardCards.map(({ sub, evDetails, isDummy }, index) => {
-                      const participationCertSrc = getBackendUrl(evDetails?.certificates?.participation || '/participation-template.png');
-                      return (
-                        <div key={index} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-5 shadow-md justify-between items-center relative overflow-hidden">
-                          
-                          {/* Watermarked Thumbnail Preview */}
-                          <div className="shrink-0 w-28 aspect-[1/1.414] overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer select-none relative"
-                               onClick={() => handleShowCertificateAlert('Participation')}>
-                            <img
-                              src={participationCertSrc}
-                              alt="Participation Certificate Thumbnail"
-                              className="w-full h-full object-cover filter blur-[0.3px] pointer-events-none select-none"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/participation-template.png';
-                              }}
-                              onContextMenu={e => e.preventDefault()}
-                            />
-                            <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center p-1 pointer-events-none">
-                              <div className="text-[5.5px] leading-tight font-black text-red-600/45 dark:text-red-500/35 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/30 bg-white/80 px-1 py-0.5 rounded shadow-sm">
-                                SAMPLE CERTIFICATE
-                                <br />
-                                NOT VALID FOR
-                                <br />
-                                PRINT OR DOWNLOAD
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex-1 flex flex-col justify-between h-full w-full gap-3 text-left">
-                            <div>
-                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${isDummy ? 'bg-rose-500/10 text-rose-600' : 'bg-indigo-500/10 text-indigo-600'}`}>
-                                🎖️ {isDummy ? 'SAMPLE PREVIEW' : `Entry ${sub.entryNumber}`}
-                              </span>
-                              <h4 className="font-display font-black text-sm text-slate-900 dark:text-white mt-1.5 leading-tight">
-                                {sub.eventTitle}
-                              </h4>
-                              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                                Type: Participation Reference Preview
-                              </p>
-                              <p className="text-[10px] text-slate-500 leading-none mt-0.5 font-semibold">
-                                Recipient: <span className="italic">{user?.name}</span>
-                              </p>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5 mt-1">
-                              <button
-                                type="button"
-                                onClick={() => handleShowCertificateAlert('Participation')}
-                                className="w-full py-1.5 bg-slate-900/90 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                              >
-                                <Eye size={12} />
-                                View Preview (Locked)
-                              </button>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleShowCertificateAlert('Participation')}
-                                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
-                                  type="button"
-                                >
-                                  <Lock size={12} />
-                                  Download PDF
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleShowCertificateAlert('Participation')}
-                                  className="px-2.5 py-1.5 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center transition-colors cursor-pointer"
-                                  title="Print Certificate (Disabled)"
-                                >
-                                  <Lock size={12} />
-                                </button>
-                              </div>
+                    return (
+                      <div key={index} className="bg-linear-to-br from-amber-500/5 via-amber-600/5 to-white dark:to-slate-900 border-2 border-amber-500/35 rounded-3xl p-6 flex flex-col sm:flex-row gap-5 shadow-md justify-between items-center relative overflow-hidden">
+                        {/* Certificate Thumbnail Preview */}
+                        <div className="shrink-0 w-28 aspect-[1/1.414] overflow-hidden rounded-lg border border-amber-500/20 shadow-sm cursor-pointer animate-in zoom-in-95 relative select-none"
+                             onClick={() => handleShowCertificateAlert('Champion')}>
+                          <img
+                            src={certImgSrc}
+                            alt="Certificate Thumbnail"
+                            className="w-full h-full object-cover filter blur-[0.3px] pointer-events-none select-none"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `/${certTemplateName}`;
+                            }}
+                            onContextMenu={e => e.preventDefault()}
+                          />
+                          <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center p-1 pointer-events-none">
+                            <div className="text-[5.5px] leading-tight font-black text-red-600/45 dark:text-red-500/35 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/30 bg-white/80 px-1 py-0.5 rounded shadow-sm">
+                              SAMPLE CERTIFICATE<br />NOT VALID FOR<br />PRINT OR DOWNLOAD
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+
+                        <div className="flex-1 flex flex-col justify-between h-full w-full gap-3 text-left">
+                          <div>
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600">
+                              🏆 {winInfo.rank} (PREVIEW ONLY)
+                            </span>
+                            <h4 className="font-display font-black text-sm text-slate-900 dark:text-white mt-1.5 leading-tight">
+                              {sub.eventTitle}
+                            </h4>
+                            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                              Reward: <strong className="text-amber-700 dark:text-amber-500 font-bold">{winInfo.prizeAmount || (isFirst ? '₹50,000' : isSecond ? '₹30,000' : '₹20,000')}</strong>
+                            </p>
+                            <p className="text-[10px] text-slate-500 leading-none mt-0.5 font-semibold">
+                              Winning Entry: <span className="italic">"{winInfo.photoTitle}"</span> (Grade: {winInfo.score}/10)
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleShowCertificateAlert('Champion')}
+                              className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Eye size={12} />
+                              View Preview (Locked)
+                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleShowCertificateAlert('Champion')}
+                                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
+                              >
+                                <Lock size={12} />
+                                Download PDF
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleShowCertificateAlert('Champion')}
+                                className="px-2.5 py-1.5 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center transition-colors cursor-pointer"
+                                title="Print Certificate (Disabled)"
+                              >
+                                <Lock size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const participationCertSrc = getBackendUrl(evDetails?.certificates?.participation || '/participation-template.png');
+
+                  return (
+                    <div key={index} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-5 shadow-md justify-between items-center relative overflow-hidden">
+                      {/* Watermarked Thumbnail Preview */}
+                      <div className="shrink-0 w-28 aspect-[1/1.414] overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer select-none relative"
+                           onClick={() => handleShowCertificateAlert('Participation')}>
+                        <img
+                          src={participationCertSrc}
+                          alt="Participation Certificate Thumbnail"
+                          className="w-full h-full object-cover filter blur-[0.3px] pointer-events-none select-none"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/participation-template.png';
+                          }}
+                          onContextMenu={e => e.preventDefault()}
+                        />
+                        <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center p-1 pointer-events-none">
+                          <div className="text-[5.5px] leading-tight font-black text-red-600/45 dark:text-red-500/35 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/30 bg-white/80 px-1 py-0.5 rounded shadow-sm">
+                            SAMPLE CERTIFICATE<br />NOT VALID FOR<br />PRINT OR DOWNLOAD
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between h-full w-full gap-3 text-left">
+                        <div>
+                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600">
+                            🎖️ ENTRY {sub.entryNumber || 'ENT-491079'}
+                          </span>
+                          <h4 className="font-display font-black text-sm text-slate-900 dark:text-white mt-1.5 leading-tight">
+                            {sub.eventTitle}
+                          </h4>
+                          <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                            Type: Participation Reference Preview
+                          </p>
+                          <p className="text-[10px] text-slate-500 leading-none mt-0.5 font-semibold">
+                            Recipient: <span className="italic">{user?.name || 'Participant'}</span>
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 mt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleShowCertificateAlert('Participation')}
+                            className="w-full py-1.5 bg-slate-900/90 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Eye size={12} />
+                            View Preview (Locked)
+                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleShowCertificateAlert('Participation')}
+                              className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
+                              type="button"
+                            >
+                              <Lock size={12} />
+                              Download PDF
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleShowCertificateAlert('Participation')}
+                              className="px-2.5 py-1.5 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold flex items-center justify-center transition-colors cursor-pointer"
+                              title="Print Certificate (Disabled)"
+                            >
+                              <Lock size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })()}
@@ -1879,12 +1881,31 @@ export default function Dashboard() {
                                                     : 'photo'
                                                 }
                                                 onUpload={async (photo, raw) => {
+                                                  if (!title || !title.trim()) {
+                                                    setConfirmModal({
+                                                      message: "Photo / Video Title is mandatory. Please enter a title before uploading.",
+                                                      isAlert: true
+                                                    });
+                                                    throw new Error("Title is required.");
+                                                  }
                                                   if (!category) {
                                                     setConfirmModal({
-                                                      message: "Please select a Category first.",
+                                                      message: "Category is mandatory. Please select a Category first.",
                                                       isAlert: true
                                                     });
                                                     throw new Error("Category is required.");
+                                                  }
+                                                  const selectedCatObj = categories.find(c => c.name === category) || categories[0];
+                                                  const activeCustomLabels = getActiveCustomLabels(selectedCatObj);
+                                                  for (const label of activeCustomLabels) {
+                                                    const val = customFieldValues[label];
+                                                    if (!val || !String(val).trim()) {
+                                                      setConfirmModal({
+                                                        message: `"${label}" is mandatory. Please fill in "${label}" before uploading.`,
+                                                        isAlert: true
+                                                      });
+                                                      throw new Error(`${label} is required.`);
+                                                    }
                                                   }
                                                   await handleFileAnalyze(photo);
                                                   await handleUploadPhoto(photo, raw);

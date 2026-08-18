@@ -44,7 +44,12 @@ import {
   Upload,
   Wallet,
   Building2,
-  FileText
+  FileText,
+  ChevronUp,
+  ChevronDown,
+  ShieldCheck,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import StatsCharts from '../components/StatsCharts';
@@ -527,8 +532,92 @@ export default function AdminDashboard() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeHistoryEvent, setActiveHistoryEvent] = useState(null);
   const [historySearch, setHistorySearch] = useState('');
+  const [openHistoryEventIds, setOpenHistoryEventIds] = useState(new Set());
+  const [historyEventSubTabs, setHistoryEventSubTabs] = useState({});
 
-  const downloadEventPDF = (e) => {
+  // Media Thumbnail Capture Helper (Video first-frame capture or Photo image base64)
+  const getMediaThumbnailBase64 = (mediaUrl, isVideo = false) => {
+    return new Promise((resolve) => {
+      if (!mediaUrl) return resolve(null);
+      const fullUrl = getBackendUrl(mediaUrl);
+
+      // Cloudinary video thumbnail trick
+      if (fullUrl.includes('cloudinary.com') && fullUrl.includes('/video/upload/')) {
+        const jpgUrl = fullUrl.replace(/\.(mp4|mov|webm|mkv|avi)$/i, '.jpg');
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          try {
+            const cvs = document.createElement('canvas');
+            cvs.width = img.width || 320;
+            cvs.height = img.height || 180;
+            const ctx = cvs.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            resolve(cvs.toDataURL('image/jpeg'));
+          } catch (e) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = jpgUrl;
+        return;
+      }
+
+      if (isVideo || mediaUrl.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i)) {
+        // Video First Frame Capture via Canvas
+        const video = document.createElement('video');
+        video.crossOrigin = 'Anonymous';
+        video.src = fullUrl;
+        video.muted = true;
+        video.playsInline = true;
+
+        const timer = setTimeout(() => resolve(null), 3000);
+
+        video.onloadeddata = () => {
+          video.currentTime = 0.5;
+        };
+
+        video.onseeked = () => {
+          clearTimeout(timer);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 180;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg'));
+          } catch (err) {
+            resolve(null);
+          }
+        };
+
+        video.onerror = () => {
+          clearTimeout(timer);
+          resolve(null);
+        };
+      } else {
+        // Photo Image Capture
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          try {
+            const cvs = document.createElement('canvas');
+            cvs.width = img.width || 320;
+            cvs.height = img.height || 180;
+            const ctx = cvs.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            resolve(cvs.toDataURL('image/jpeg'));
+          } catch (e) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = fullUrl;
+      }
+    });
+  };
+
+  const downloadEventPDF = async (e) => {
     if (!e) return;
     try {
       const doc = new jsPDF({
@@ -537,89 +626,211 @@ export default function AdminDashboard() {
         format: 'a4'
       });
 
+      let y = 20;
+
+      const checkAddPage = (space = 25) => {
+        if (y + space > 275) {
+          doc.addPage();
+          y = 20;
+          return true;
+        }
+        return false;
+      };
+
       // Header Banner
       doc.setFillColor(30, 27, 75);
-      doc.rect(0, 0, 210, 38, 'F');
+      doc.rect(0, 0, 210, 36, 'F');
 
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.text('COMPLETED EVENT AUDIT REPORT', 14, 20);
+      doc.text('COMPLETED EVENT & FINANCIAL AUDIT LEDGER', 14, 18);
 
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} | DSLR Platform`, 14, 28);
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} | Sumbaran Art Society`, 14, 26);
 
-      // Event Metas Box
+      // Event Metadata Box
       doc.setFillColor(248, 250, 252);
-      doc.rect(14, 44, 182, 36, 'F');
+      doc.rect(14, 42, 182, 42, 'F');
       doc.setDrawColor(226, 232, 240);
-      doc.rect(14, 44, 182, 36, 'S');
+      doc.rect(14, 42, 182, 42, 'S');
 
       doc.setTextColor(15, 23, 42);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(e.title || 'Untitled Contest', 18, 53);
+      doc.setFontSize(13);
+      doc.text(e.title || 'Untitled Contest', 18, 51);
 
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(71, 85, 105);
-      doc.text(`Status: ${e.status}   |   Submission Deadline: ${new Date(e.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`, 18, 61);
-      doc.text(`Theme: ${(e.theme || 'N/A').slice(0, 85)}`, 18, 67);
-      doc.text(`Venue: ${e.venue || 'Bal-Gandharv Art Gallery, Pune'}`, 18, 73);
+      doc.text(`Status: ${e.status || 'FINALIZED'}   |   Type: ${e.mediaType === 'video' ? 'SHORT VIDEO & REELS CONTEST' : 'PHOTOGRAPHY CONTEST'}`, 18, 59);
+      doc.text(`Submission Deadline: ${e.deadline ? new Date(e.deadline).toLocaleDateString('en-IN') : 'N/A'}`, 18, 65);
+      doc.text(`Venue / Location: ${e.venue || 'Sumbaran Art Gallery, Sadashiv Peth, Pune'}`, 18, 71);
+      doc.text(`Exhibition Date: ${e.exhibitionDate ? new Date(e.exhibitionDate).toLocaleDateString('en-IN') : 'N/A'}`, 18, 77);
 
-      // Quick Stats Cards
-      let y = 88;
+      y = 92;
+
+      // 1. PROFIT & LOSS FINANCIAL STATEMENT
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
-      doc.text('EVENT STATS & REVENUE SUMMARY', 14, y);
-      y += 5;
+      doc.text('1. PROFIT & LOSS FINANCIAL STATEMENT', 14, y);
+      y += 6;
 
-      doc.setFillColor(224, 231, 255);
+      const rev = e.totalRevenue || 0;
+      const spon = e.totalSponsorship || 0;
+      const exp = e.totalExpenses || 0;
+      const net = (rev + spon) - exp;
+
+      doc.setFillColor(236, 253, 245);
       doc.rect(14, y, 42, 18, 'F');
+      doc.setFillColor(250, 245, 255);
       doc.rect(60, y, 42, 18, 'F');
+      doc.setFillColor(255, 241, 242);
       doc.rect(106, y, 42, 18, 'F');
+      doc.setFillColor(net >= 0 ? 238 : 255, net >= 0 ? 242 : 241, net >= 0 ? 255 : 242);
       doc.rect(152, y, 44, 18, 'F');
 
-      doc.setFontSize(7.5);
-      doc.setTextColor(55, 48, 163);
-      doc.text('PARTICIPANTS', 18, y + 5);
-      doc.text('TOTAL PHOTOS', 64, y + 5);
-      doc.text('PAYMENTS', 110, y + 5);
-      doc.text('TOTAL REVENUE', 156, y + 5);
+      doc.setFontSize(7);
+      doc.setTextColor(4, 120, 87);
+      doc.text('REGISTRATION REVENUE', 17, y + 5);
+      doc.setTextColor(126, 34, 206);
+      doc.text('SPONSORSHIPS', 63, y + 5);
+      doc.setTextColor(190, 18, 60);
+      doc.text('OPERATIONAL EXPENSES', 109, y + 5);
+      doc.setTextColor(net >= 0 ? 67 : 190, net >= 0 ? 56 : 18, net >= 0 ? 202 : 60);
+      doc.text('NET PROFIT / LOSS', 155, y + 5);
 
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(15, 23, 42);
-      doc.text(String(e.participantsCount || 0), 18, y + 13);
-      doc.text(String(e.totalPhotos || 0), 64, y + 13);
-      doc.text(String(e.totalPaymentsCount || 0), 110, y + 13);
-      doc.text(`Rs. ${(e.totalRevenue || 0).toLocaleString()}`, 156, y + 13);
+      doc.text(`Rs. ${rev.toLocaleString()}`, 17, y + 13);
+      doc.text(`Rs. ${spon.toLocaleString()}`, 63, y + 13);
+      doc.text(`Rs. ${exp.toLocaleString()}`, 109, y + 13);
+      doc.text(`Rs. ${net.toLocaleString()}`, 155, y + 13);
 
-      y += 26;
+      y += 24;
 
-      // Winners Circle
+      // Expenses Breakdown if present
+      if (e.expenseDetails && e.expenseDetails.length > 0) {
+        checkAddPage(15);
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42);
+        doc.text('Expenses Ledger Breakdown:', 14, y);
+        y += 5;
+        e.expenseDetails.forEach((ex) => {
+          checkAddPage(7);
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(`• ${ex.title || ex.category}: Rs. ${(ex.amount || 0).toLocaleString()} (${ex.date ? new Date(ex.date).toLocaleDateString('en-IN') : 'N/A'}) - ${ex.notes || ex.paymentMode || ''}`, 18, y);
+          y += 5;
+        });
+        y += 2;
+      }
+
+      // Sponsorships Breakdown if present
+      if (e.sponsorshipDetails && e.sponsorshipDetails.length > 0) {
+        checkAddPage(15);
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42);
+        doc.text('Sponsorships & Grants Breakdown:', 14, y);
+        y += 5;
+        e.sponsorshipDetails.forEach((sp) => {
+          checkAddPage(7);
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(`• ${sp.sponsorName || sp.title}: Rs. ${(sp.amount || 0).toLocaleString()} - ${sp.tier || sp.notes || ''}`, 18, y);
+          y += 5;
+        });
+        y += 2;
+      }
+
+      // 2. WINNERS CIRCLE - OFFICIAL DIGITAL CERTIFICATES (ACTUAL UPLOADED CERTIFICATE TEMPLATES)
+      checkAddPage(60);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
-      doc.text('WINNERS CIRCLE', 14, y);
+      doc.text('2. WINNERS CIRCLE - OFFICIAL DIGITAL CERTIFICATES PREVIEW', 14, y);
       y += 6;
 
       if (e.winners && e.winners.length > 0) {
-        e.winners.forEach((w, idx) => {
-          doc.setFillColor(idx === 0 ? 254 : idx === 1 ? 241 : 255, idx === 0 ? 243 : idx === 1 ? 245 : 237, idx === 0 ? 199 : idx === 1 ? 249 : 213);
-          doc.rect(14, y, 182, 12, 'F');
-          doc.setFontSize(9);
+        // Pre-fetch actual certificate template images for all winners
+        const winnersWithCerts = await Promise.all(
+          e.winners.map(async (w) => {
+            const rankLower = (w.rank || '').toLowerCase();
+            const isFirst = rankLower.includes('1st') || rankLower.includes('first');
+            const isSecond = rankLower.includes('2nd') || rankLower.includes('second');
+            const certTemplateName = isFirst ? '1st-Prize.png' : isSecond ? '2nd-Prize.png' : '3rd-Prize.png';
+            const customCertUrl = isFirst ? e.certificates?.firstPrize : isSecond ? e.certificates?.secondPrize : e.certificates?.thirdPrize;
+            const certImgUrl = customCertUrl || `/${certTemplateName}`;
+            const certThumb = await getMediaThumbnailBase64(certImgUrl, false);
+            return { ...w, certThumb };
+          })
+        );
+
+        winnersWithCerts.forEach((w, idx) => {
+          checkAddPage(65);
+          
+          // Container Box
+          doc.setFillColor(254, 252, 232); // Amber 50
+          doc.rect(14, y, 182, 58, 'F');
+          doc.setDrawColor(217, 119, 6); // Amber 600
+          doc.setLineWidth(0.8);
+          doc.rect(14, y, 182, 58, 'S');
+
+          // Render ACTUAL CERTIFICATE IMAGE PREVIEW (Left side, x=18, y=y+4, width=36, height=50)
+          if (w.certThumb) {
+            try {
+              doc.addImage(w.certThumb, 'PNG', 18, y + 4, 36, 50);
+            } catch (err) {
+              doc.setFillColor(230, 230, 230);
+              doc.rect(18, y + 4, 36, 50, 'F');
+            }
+          } else {
+            doc.setFillColor(240, 240, 240);
+            doc.rect(18, y + 4, 36, 50, 'F');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            doc.text('CERTIFICATE', 22, y + 28);
+          }
+
+          // Sample Watermark text box overlay
+          doc.setFontSize(5);
+          doc.setTextColor(220, 38, 38);
           doc.setFont('helvetica', 'bold');
+          doc.text('SAMPLE CERTIFICATE - NOT VALID', 36, y + 26, { align: 'center' });
+
+          // Certificate Details (Right side, x=60)
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(217, 119, 6);
+          doc.text(`OFFICIAL WINNER CERTIFICATE (${(w.rank || 'WINNER').toUpperCase()})`, 60, y + 12);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(13);
           doc.setTextColor(15, 23, 42);
-          doc.text(`${w.rank}: ${w.userName || 'Artist'} - "${w.photoTitle || 'Entry'}"`, 18, y + 8);
+          doc.text(w.userName || 'Artist Name', 60, y + 20);
+
           doc.setFont('helvetica', 'normal');
-          doc.text(`Grade: ${w.score || 0}/10  |  Reward: ${w.reward || 'Award'}`, 125, y + 8);
-          y += 15;
+          doc.setFontSize(8.5);
+          doc.setTextColor(51, 65, 85);
+          doc.text(`Winning Entry: "${w.photoTitle || 'Untitled'}"`, 60, y + 27);
+          doc.text(`Contest Event: ${e.title}`, 60, y + 33);
+          doc.text(`Reward Prize: ${w.reward || 'Award'}   |   Jury Grade: ${w.score || 0}/10`, 60, y + 39);
+
+          doc.setFontSize(7.5);
+          doc.setTextColor(100, 116, 139);
+          doc.text(`Serial Number: CERT-SAS-2026-0${idx + 1}   |   Issued by: Sumbaran Art Society`, 60, y + 46);
+
+          y += 64;
         });
       } else {
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(148, 163, 184);
         doc.text('Winners rankings have not been declared/published yet.', 18, y + 4);
@@ -628,40 +839,151 @@ export default function AdminDashboard() {
 
       y += 4;
 
-      // Evaluation Judges Panel
+      // 3. APPROVED & DISAPPROVED SUBMISSIONS AUDIT WITH EMBEDDED PHOTO/VIDEO THUMBNAILS & JUDGE REMARKS
+      checkAddPage(30);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
-      doc.text('EVALUATION JUDGES PANEL', 14, y);
+      doc.text('3. SUBMISSIONS AUDIT & JUDGE REMARKS', 14, y);
+      y += 6;
+
+      const rawPhotos = e.allPhotographs || [];
+      if (rawPhotos.length > 0) {
+        // Pre-fetch thumbnails (first frame of videos or photo images)
+        const photosWithThumbs = await Promise.all(
+          rawPhotos.map(async (p) => {
+            const isVid = p.mediaType === 'video' || e.mediaType === 'video' || (p.fileUrl && p.fileUrl.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i));
+            const thumb = await getMediaThumbnailBase64(p.fileUrl, isVid);
+            return { ...p, isVid, thumb };
+          })
+        );
+
+        photosWithThumbs.forEach((p, idx) => {
+          checkAddPage(30);
+          const isDis = p.status === 'Rejected' || p.status === 'Disapproved';
+          doc.setFillColor(isDis ? 255 : 248, isDis ? 241 : 250, isDis ? 242 : 252);
+          doc.rect(14, y, 182, 24, 'F');
+          doc.setDrawColor(226, 232, 240);
+          doc.rect(14, y, 182, 24, 'S');
+
+          // Render Image / First Frame Video Thumbnail inside PDF
+          if (p.thumb) {
+            try {
+              doc.addImage(p.thumb, 'JPEG', 16, y + 2, 28, 20);
+            } catch (err) {
+              doc.setFillColor(210, 210, 210);
+              doc.rect(16, y + 2, 28, 20, 'F');
+            }
+          } else {
+            doc.setFillColor(220, 225, 230);
+            doc.rect(16, y + 2, 28, 20, 'F');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            doc.text(p.isVid ? 'VIDEO FRAME' : 'PHOTO', 18, y + 12);
+          }
+
+          // Item Details next to thumbnail (x = 48)
+          doc.setFontSize(8.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42);
+          doc.text(`${idx + 1}. "${p.title}" by ${p.participantName}`, 48, y + 7);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(71, 85, 105);
+          doc.text(`Status: ${p.status}  |  Category: ${p.category}  |  Camera: ${p.cameraModel || p.cameraBrand || 'N/A'}  |  Avg Grade: ${p.averageScore || 0}/10`, 48, y + 13);
+
+          const rems = (p.scores || []).filter(s => s.remarks).map(s => `"${s.remarks}" (${s.judgeName})`).join('; ');
+          if (rems || isDis) {
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(190, 18, 60);
+            doc.text(`Judge Remarks: ${rems || 'Disapproved during judge review.'}`, 48, y + 19);
+          }
+
+          y += 27;
+        });
+      } else {
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(148, 163, 184);
+        doc.text('No photographs/videos uploaded for this contest.', 18, y + 4);
+        y += 12;
+      }
+
+      y += 4;
+
+      // 4. CONTESTANTS & PARTICIPANTS DIRECTORY
+      checkAddPage(30);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('4. CONTESTANTS DIRECTORY', 14, y);
+      y += 6;
+
+      const parts = e.participantDetails || [];
+      if (parts.length > 0) {
+        parts.forEach((p, idx) => {
+          checkAddPage(10);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42);
+          doc.text(`${idx + 1}. ${p.name}`, 18, y);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(`Email: ${p.email} | Mobile: ${p.mobile} | City: ${p.city} | Status: ${p.isFinalSubmitted ? 'Finalized' : 'Draft'}`, 60, y);
+          y += 6;
+        });
+      } else {
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(148, 163, 184);
+        doc.text('No participants registered.', 18, y + 4);
+        y += 12;
+      }
+
+      y += 4;
+
+      // 5. EVALUATION JUDGES PANEL
+      checkAddPage(25);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('5. EVALUATION JUDGES PANEL', 14, y);
       y += 6;
 
       if (e.judgeDetails && e.judgeDetails.length > 0) {
         e.judgeDetails.forEach((j) => {
-          doc.setFontSize(9);
+          checkAddPage(8);
+          doc.setFontSize(8);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(51, 65, 85);
-          doc.text(`- ${j.name} (${j.email}) - Sign-off Status: ${j.hasConfirmed ? 'Signed Off' : 'Pending'}`, 18, y);
+          doc.text(`- Judge: ${j.name} (${j.email}) | City: ${j.city} | Sign-Off: ${j.hasConfirmed ? 'Signed Off' : 'Pending'}`, 18, y);
           y += 5;
         });
       } else {
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(148, 163, 184);
         doc.text('No judges assigned to this event.', 18, y);
-        y += 5;
+        y += 8;
       }
 
-      // Footer
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(148, 163, 184);
-      doc.text('Official Completed Event Summary - DSLR Competition Platform', 14, 285);
+      // Add Page Numbers Footer to all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(148, 163, 184);
+        doc.text('Official Event Audit Report - Sumbaran Art Society DSLR Platform', 14, 287);
+        doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
+      }
 
-      const filename = `${(e.title || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_Completed_Report.pdf`;
+      const filename = `${(e.title || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_Official_Audit_Report.pdf`;
       doc.save(filename);
     } catch (err) {
       console.error('Error generating event PDF:', err);
-      alert('Could not generate PDF for this event.');
+      alert('Could not generate PDF for this event: ' + err.message);
     }
   };
   
@@ -791,9 +1113,14 @@ export default function AdminDashboard() {
     try {
       const data = await apiFetch('/api/admin/events-history');
       if (data.success) {
-        setEventHistory(data.history);
-        if (data.history.length > 0 && !activeHistoryEvent) {
+        setEventHistory(data.history || []);
+        if (data.history && data.history.length > 0) {
           setActiveHistoryEvent(data.history[0]);
+          // Open ONLY ONE panel by default (first event in history)
+          const firstId = data.history[0].id || data.history[0]._id;
+          if (firstId) {
+            setOpenHistoryEventIds(new Set([firstId]));
+          }
         }
       }
     } catch (e) {
@@ -1842,30 +2169,29 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
       
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-sm text-Black">Total operational control and performance ledger analytics</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Total operational control and performance ledger analytics</p>
         </div>
-        {/* Event Selector - hidden on profile settings & notifications pages */}
-        <div className="flex items-center gap-3">
-          {allEvents.length > 0 && activeTab !== 'profile_settings' && activeTab !== 'notifications' && (
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
-              <Calendar size={15} className="text-amber-500 shrink-0" />
-              <select
-                value={selectedEventId || 'all'}
-                onChange={e => setSelectedEventId(e.target.value)}
-                className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
-              >
-                <option value="all">All Events</option>
-                {allEvents.map(ev => (
-                  <option key={ev._id} value={ev._id}>
-                    {ev.title} ({ev.status})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+
+        {/* Global Event Selection Dropdown Menu */}
+        <div className="relative flex items-center shrink-0 w-full sm:w-auto">
+          <select
+            value={selectedEventId || 'all'}
+            onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
+            className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[240px]"
+          >
+            <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+              All Events (Combined Ledger)
+            </option>
+            {allEvents.map(ev => (
+              <option key={ev._id || ev.id} value={ev._id || ev.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                {ev.title}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
         </div>
       </div>
 
@@ -4202,275 +4528,738 @@ export default function AdminDashboard() {
         </div>
       </div>
     )}
-      {/* TAB: EVENT HISTORY */}
+      {/* TAB: CONTEST LEDGER & EVENTS HISTORY */}
       {activeTab === 'event_history' && (
         <div className="animate-in fade-in duration-200 flex flex-col gap-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-2xl">
-              <History size={20} />
-            </div>
-            <div>
-              <h2 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">Contest Ledger & Events History</h2>
-              <p className="text-[10px] text-slate-400">Complete historical financial audits, judges sign-off status, and winner lists</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-6 min-h-150">
-            {/* Left Column: Events List */}
-            <div className="w-full md:w-1/3 flex flex-col gap-4">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={historySearch}
-                  onChange={(e) => setHistorySearch(e.target.value)}
-                  placeholder="Search contests by name..."
-                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-indigo-600"
-                />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-2xl">
+                <History size={20} />
               </div>
-
-              {historyLoading ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2 text-slate-400">
-                  <RefreshCw size={24} className="animate-spin text-indigo-600" />
-                  <span className="text-[10px] uppercase font-bold tracking-wider">Loading history data...</span>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2.5 overflow-y-auto max-h-150 pr-1">
-                  {eventHistory
-                    .filter(e => e.title.toLowerCase().includes(historySearch.toLowerCase()))
-                    .map(e => (
-                      <div
-                        key={e.id}
-                        onClick={() => setActiveHistoryEvent(e)}
-                        className={`p-3 border rounded-2xl cursor-pointer transition-all text-xs ${
-                          activeHistoryEvent?.id === e.id
-                            ? 'border-indigo-600 bg-indigo-50/20 dark:bg-indigo-950/10'
-                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start gap-2">
-                          <span className="font-extrabold text-slate-900 dark:text-white line-clamp-2 leading-tight">
-                            {e.title}
-                          </span>
-                          <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
-                            e.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' :
-                            e.status === 'Closed' ? 'bg-red-50 text-red-600 dark:bg-red-950/20' :
-                            e.status === 'Active' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20' :
-                            'bg-slate-100 text-slate-500'
-                          }`}>
-                            {e.status}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-[9px] text-slate-400 mt-2">
-                          <span>Deadline: {new Date(e.deadline).toLocaleDateString()}</span>
-                          <span>Created: {new Date(e.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    ))}
-                  {eventHistory.length === 0 && (
-                    <div className="text-center text-slate-400 py-12 text-xs">No contests found.</div>
-                  )}
-                </div>
-              )}
+              <div>
+                <h2 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">Events History</h2>
+                <p className="text-[10px] text-slate-400">Complete historical event records, approved/disapproved entries, judge remarks, contestant profiles, and financial ledger</p>
+              </div>
             </div>
-
-            {/* Right Column: Detail View */}
-            <div className="grow overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-              {activeHistoryEvent ? (
-                <div className="flex flex-col gap-6">
-                  {/* Event Title & status */}
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                    <div className="w-full">
-                      <h4 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white font-display leading-snug">
-                        {activeHistoryEvent.title}
-                      </h4>
-                      <p className="text-xs sm:text-[10px] text-slate-500 dark:text-slate-400 mt-1 sm:mt-0.5 leading-relaxed">Theme: {activeHistoryEvent.theme}</p>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 flex-wrap sm:flex-nowrap">
-                      <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                        activeHistoryEvent.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' :
-                        activeHistoryEvent.status === 'Closed' ? 'bg-red-50 text-red-600 dark:bg-red-950/20' :
-                        activeHistoryEvent.status === 'Active' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20' :
-                        'bg-slate-100 text-slate-500'
-                      }`}>
-                        {activeHistoryEvent.status}
-                      </span>
-                      <button
-                        onClick={() => downloadEventPDF(activeHistoryEvent)}
-                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
-                        title="Download Completed Event PDF"
-                      >
-                        <Download size={14} />
-                        <span>Download Event PDF</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEventToDeleteId(activeHistoryEvent.id);
-                          setEventToDeleteTitle(activeHistoryEvent.title);
-                          setShowDeleteEventModal(true);
-                        }}
-                        className="p-2.5 sm:p-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 rounded-xl sm:rounded-lg cursor-pointer transition-colors"
-                        data-tooltip="Archive & Delete Contest"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Quick stats grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl text-center">
-                      <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Participants</span>
-                      <span className="text-lg font-black text-slate-950 dark:text-white mt-0.5 block">
-                        {activeHistoryEvent.participantsCount}
-                      </span>
-                    </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl text-center">
-                      <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Total Photos</span>
-                      <span className="text-lg font-black text-slate-950 dark:text-white mt-0.5 block">
-                        {activeHistoryEvent.totalPhotos}
-                      </span>
-                      <span className="text-[8px] text-slate-400 mt-0.5 block">
-                        {activeHistoryEvent.approvedPhotos} Approved • {activeHistoryEvent.rejectedPhotos} Rejected
-                      </span>
-                    </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl text-center">
-                      <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Total Payments</span>
-                      <span className="text-lg font-black text-slate-950 dark:text-white mt-0.5 block">
-                        {activeHistoryEvent.totalPaymentsCount}
-                      </span>
-                    </div>
-                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/20 rounded-2xl text-center">
-                      <span className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold block uppercase tracking-wider">Total Revenue</span>
-                      <span className="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-0.5 block font-display">
-                        ₹{activeHistoryEvent.totalRevenue?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Winners section */}
-                  <div>
-                    <h5 className="font-display font-extrabold text-slate-900 dark:text-white text-[11px] mb-3 flex items-center gap-1.5 uppercase tracking-wide">
-                      <Award size={13} className="text-indigo-600" />
-                      Winners Circle
-                    </h5>
-                    {activeHistoryEvent.winnersPublished && activeHistoryEvent.winners?.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {activeHistoryEvent.winners.map((win, index) => (
-                          <div key={index} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl flex flex-col gap-1.5">
-                            <span className="text-[8px] font-black uppercase tracking-wider text-indigo-600">{win.rank}</span>
-                            <p className="font-bold text-[11px] text-slate-900 dark:text-white line-clamp-1">{win.photoTitle || 'Untitled'}</p>
-                            <div className="text-[9px] text-slate-400 flex flex-col gap-0.5">
-                              <span>By: {win.userName}</span>
-                              <span>Reward: {win.reward}</span>
-                              <span className="font-bold text-slate-600 dark:text-slate-300">Grade: {win.score}/10</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-[10px] text-slate-400 p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center">
-                        Winners rankings have not been declared/published for this contest yet.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Judges Section */}
-                  <div>
-                    <h5 className="font-display font-extrabold text-slate-900 dark:text-white text-[11px] mb-3 flex items-center gap-1.5 uppercase tracking-wide">
-                      <Users size={13} className="text-indigo-600" />
-                      Evaluation Judges Panel
-                    </h5>
-                    {activeHistoryEvent.judgeDetails?.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {activeHistoryEvent.judgeDetails.map((j) => (
-                          <div key={j.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl flex justify-between items-center text-xs">
-                            <div>
-                              <p className="font-bold text-[11px] text-slate-900 dark:text-white">{j.name}</p>
-                              <p className="text-[9px] text-slate-400">{j.email} • {j.city}</p>
-                            </div>
-                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
-                              j.hasConfirmed 
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' 
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-                            }`}>
-                              {j.hasConfirmed ? 'Signed Off' : 'Pending'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-[10px] text-slate-400 p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center">
-                        No judges assigned to this event.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Split lists: Participants vs Payments */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Participants List */}
-                    <div>
-                      <h5 className="font-display font-extrabold text-slate-900 dark:text-white text-[11px] mb-3 uppercase tracking-wide">
-                        Contestants ({activeHistoryEvent.participantDetails?.length || 0})
-                      </h5>
-                      <div className="max-h-60 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800">
-                        {activeHistoryEvent.participantDetails?.map((p) => (
-                          <div key={p.userId} className="p-2.5 flex justify-between items-center text-[10px] bg-slate-50/50 dark:bg-slate-950/30">
-                            <div>
-                              <p className="font-bold text-slate-900 dark:text-white">{p.name}</p>
-                              <p className="text-[9px] text-slate-400">{p.email}</p>
-                            </div>
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
-                              p.isFinalSubmitted 
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' 
-                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                            }`}>
-                              {p.isFinalSubmitted ? 'Finalized' : 'Draft'}
-                            </span>
-                          </div>
-                        ))}
-                        {(!activeHistoryEvent.participantDetails || activeHistoryEvent.participantDetails.length === 0) && (
-                          <div className="text-[10px] text-slate-400 p-6 text-center">No participants registered yet.</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Payments List */}
-                    <div>
-                      <h5 className="font-display font-extrabold text-slate-900 dark:text-white text-[11px] mb-3 uppercase tracking-wide">
-                        Revenue Transactions ({activeHistoryEvent.paymentDetails?.length || 0})
-                      </h5>
-                      <div className="max-h-60 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800">
-                        {activeHistoryEvent.paymentDetails?.map((pay, pIdx) => (
-                          <div key={pIdx} className="p-2.5 text-[10px] bg-slate-50/50 dark:bg-slate-950/30 flex justify-between items-start">
-                            <div>
-                              <p className="font-bold text-slate-950 dark:text-white">{pay.userName}</p>
-                              <p className="text-[8px] text-slate-400 font-mono mt-0.5">TXN: {pay.transactionId}</p>
-                              <p className="text-[8px] text-slate-400 mt-0.5">Date: {new Date(pay.paymentDate).toLocaleDateString()}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="font-black text-emerald-600 dark:text-emerald-400 font-display block">
-                                ₹{pay.amount}
-                              </span>
-                              <span className="text-[8px] text-slate-400 mt-0.5 block">{pay.packageName}</span>
-                            </div>
-                          </div>
-                        ))}
-                        {(!activeHistoryEvent.paymentDetails || activeHistoryEvent.paymentDetails.length === 0) && (
-                          <div className="text-[10px] text-slate-400 p-6 text-center">No payment transactions processed yet.</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 p-12">
-                  <History size={36} className="text-slate-300 mb-2 animate-pulse" />
-                  <p className="text-xs font-semibold">Select a contest from the left to view complete history details.</p>
-                </div>
-              )}
+            <div className="relative w-full sm:max-w-xs">
+              <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Search history contests..."
+                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-indigo-600"
+              />
             </div>
           </div>
+
+          {historyLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+              <RefreshCw size={28} className="animate-spin text-indigo-600" />
+              <span className="text-xs uppercase font-bold tracking-wider">Loading Contest Ledger History...</span>
+            </div>
+          ) : eventHistory.length === 0 ? (
+            <div className="text-center text-slate-400 py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
+              <History size={36} className="mx-auto mb-2 text-slate-350" />
+              <p className="text-sm font-semibold">No historical contest records found.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {eventHistory
+                .filter(ev => ev.title.toLowerCase().includes(historySearch.toLowerCase()))
+                .map(ev => {
+                  const evId = ev.id || ev._id;
+                  const isOpen = openHistoryEventIds.has(evId);
+                  const activeSubTab = historyEventSubTabs[evId] || 'gallery';
+                  const isVideoEvent = ev.mediaType === 'video' || String(ev.eventType).toLowerCase().includes('video') || String(ev.eventType).toLowerCase().includes('reel');
+
+                  const evPhotos = ev.allPhotographs || [];
+                  const disapprovedPhotos = evPhotos.filter(p => {
+                    const st = (p.status || p.rawStatus || '').toLowerCase();
+                    return st === 'rejected' || st === 'disapproved';
+                  });
+                  const approvedPhotos = evPhotos.filter(p => !disapprovedPhotos.includes(p));
+
+                  return (
+                    <div key={evId} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm transition-all">
+                      
+                      {/* Accordion Panel Header - Identical to Gallery Page */}
+                      <div
+                        onClick={() => {
+                          setOpenHistoryEventIds(prev => {
+                            const next = new Set(prev);
+                            if (next.has(evId)) next.delete(evId);
+                            else next.add(evId);
+                            return next;
+                          });
+                        }}
+                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 sm:px-6 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition-colors select-none"
+                      >
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h3 className="font-display font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
+                            {ev.title}
+                          </h3>
+                          <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            {isVideoEvent ? 'SHORT VIDEO & REELS CONTEST' : 'PHOTOGRAPHY CONTEST'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end flex-wrap sm:flex-nowrap">
+                          {ev.winnersPublished ? (
+                            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                              FINALIZED
+                            </span>
+                          ) : ev.status === 'Active' ? (
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800/80 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                              ACTIVE
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                              {ev.status || 'COMPLETED'}
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-400 font-bold">
+                            ({evPhotos.length} Uploaded)
+                          </span>
+                          <button
+                            onClick={(evt) => {
+                              evt.stopPropagation();
+                              downloadEventPDF(ev);
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-xl shadow-xs transition-all cursor-pointer"
+                            title="Download Completed Event PDF"
+                          >
+                            <Download size={12} />
+                            <span>PDF</span>
+                          </button>
+                          <button
+                            onClick={(evt) => {
+                              evt.stopPropagation();
+                              setEventToDeleteId(evId);
+                              setEventToDeleteTitle(ev.title);
+                              setShowDeleteEventModal(true);
+                            }}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-600 rounded-lg cursor-pointer transition-colors"
+                            title="Archive & Delete Contest"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          {isOpen ? (
+                            <ChevronUp size={20} className="text-slate-400 shrink-0" />
+                          ) : (
+                            <ChevronDown size={20} className="text-slate-400 shrink-0" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Accordion Panel Body */}
+                      {isOpen && (
+                        <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/40 flex flex-col gap-6">
+                          
+                          {/* Event Meta Details Banner (Deadline, Venue, Exhibition Date) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xs text-xs">
+                            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                              <Clock size={15} className="text-amber-500 shrink-0" />
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase block">Submission Deadline</span>
+                                <span className="font-extrabold text-slate-900 dark:text-white">
+                                  {ev.deadline ? new Date(ev.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                              <Building2 size={15} className="text-indigo-500 shrink-0" />
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase block">Venue / Location</span>
+                                <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-50 block">
+                                  {ev.venue || 'Sumbaran Art Gallery, Pune'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                              <Calendar size={15} className="text-emerald-500 shrink-0" />
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase block">Exhibition Date</span>
+                                <span className="font-extrabold text-slate-900 dark:text-white">
+                                  {ev.exhibitionDate ? new Date(ev.exhibitionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'To Be Announced'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Sub-Navigation Tabs Bar */}
+                          <div className="flex justify-center w-full">
+                            <div className="flex flex-wrap justify-center bg-slate-200/70 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 gap-1 text-xs font-bold">
+                              <button
+                                onClick={() => setHistoryEventSubTabs(prev => ({ ...prev, [evId]: 'gallery' }))}
+                                className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                                  activeSubTab === 'gallery'
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                <Camera size={13} className="shrink-0" />
+                                <span>Approved ({approvedPhotos.length})</span>
+                              </button>
+
+                              <button
+                                onClick={() => setHistoryEventSubTabs(prev => ({ ...prev, [evId]: 'disapproved' }))}
+                                className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                                  activeSubTab === 'disapproved'
+                                    ? 'bg-red-600 text-white shadow-md'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                <Flag size={13} className="shrink-0" />
+                                <span>Disapproved ({disapprovedPhotos.length})</span>
+                              </button>
+
+                              <button
+                                onClick={() => setHistoryEventSubTabs(prev => ({ ...prev, [evId]: 'winners' }))}
+                                className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                                  activeSubTab === 'winners'
+                                    ? 'bg-amber-600 text-white shadow-md'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                <Award size={13} className="shrink-0" />
+                                <span>Winners</span>
+                              </button>
+
+                              <button
+                                onClick={() => setHistoryEventSubTabs(prev => ({ ...prev, [evId]: 'judges' }))}
+                                className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                                  activeSubTab === 'judges'
+                                    ? 'bg-slate-800 text-white shadow-md'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                <Users size={13} className="shrink-0" />
+                                <span>Judges ({ev.judgeDetails?.length || 0})</span>
+                              </button>
+
+                              <button
+                                onClick={() => setHistoryEventSubTabs(prev => ({ ...prev, [evId]: 'participants' }))}
+                                className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                                  activeSubTab === 'participants'
+                                    ? 'bg-slate-800 text-white shadow-md'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                <Users size={13} className="shrink-0" />
+                                <span>Contestants ({ev.participantDetails?.length || 0})</span>
+                              </button>
+
+                              <button
+                                onClick={() => setHistoryEventSubTabs(prev => ({ ...prev, [evId]: 'ledger' }))}
+                                className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
+                                  activeSubTab === 'ledger'
+                                    ? 'bg-emerald-600 text-white shadow-md'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                <Wallet size={13} className="shrink-0" />
+                                <span>Financial Ledger</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* SUB-TAB 1: APPROVED */}
+                          {activeSubTab === 'gallery' && (
+                            <div>
+                              {approvedPhotos.length === 0 ? (
+                                <div className="text-center text-slate-400 py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                                  <Camera size={32} className="mx-auto mb-2 text-slate-300" />
+                                  <p className="text-xs font-semibold">No approved submissions found for this contest.</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                  {approvedPhotos.map(photo => (
+                                    <div
+                                      key={photo.photoId}
+                                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col group justify-between"
+                                    >
+                                      <div className="relative overflow-hidden aspect-video bg-black flex items-center justify-center">
+                                        {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                                          <video
+                                            src={getBackendUrl(photo.fileUrl)}
+                                            autoPlay
+                                            loop
+                                            muted
+                                            playsInline
+                                            controls
+                                            crossOrigin="anonymous"
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-contain"
+                                          />
+                                        ) : photo.fileUrl ? (
+                                          <img
+                                            src={getBackendUrl(photo.fileUrl)}
+                                            alt={photo.title}
+                                            crossOrigin="anonymous"
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500 text-xs">
+                                            No Preview
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="p-4 flex flex-col gap-3 justify-between grow">
+                                        <div>
+                                          <div className="flex justify-between items-start gap-2">
+                                            <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm line-clamp-1">
+                                              {photo.title}
+                                            </h3>
+                                            <span className="text-[9px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded font-bold text-slate-500 shrink-0">
+                                              {photo.category}
+                                            </span>
+                                          </div>
+                                          <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                                            By {photo.participantName}
+                                          </p>
+                                        </div>
+
+                                        <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-center text-[9px] text-slate-450 uppercase tracking-wider font-bold">
+                                          <span>Camera: {photo.cameraModel || photo.cameraBrand || 'N/A'}</span>
+                                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Grade: {photo.averageScore || 0}/10</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUB-TAB 2: DISAPPROVED */}
+                          {activeSubTab === 'disapproved' && (
+                            <div>
+                              {disapprovedPhotos.length === 0 ? (
+                                <div className="text-center text-slate-400 py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                                  <Flag size={32} className="mx-auto mb-2 text-slate-300" />
+                                  <p className="text-xs font-semibold">No disapproved submissions found for this contest.</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                  {disapprovedPhotos.map(photo => (
+                                    <div
+                                      key={photo.photoId}
+                                      className="bg-white dark:bg-slate-900 border border-red-200/80 dark:border-red-900/30 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between"
+                                    >
+                                      <div className="relative overflow-hidden aspect-video bg-black flex items-center justify-center">
+                                        {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                                          <video
+                                            src={getBackendUrl(photo.fileUrl)}
+                                            autoPlay
+                                            loop
+                                            muted
+                                            playsInline
+                                            controls
+                                            crossOrigin="anonymous"
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-contain"
+                                          />
+                                        ) : photo.fileUrl ? (
+                                          <img
+                                            src={getBackendUrl(photo.fileUrl)}
+                                            alt={photo.title}
+                                            crossOrigin="anonymous"
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-cover opacity-85"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500 text-xs">
+                                            No Preview
+                                          </div>
+                                        )}
+                                        <span className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md">
+                                          Disapproved
+                                        </span>
+                                      </div>
+
+                                      <div className="p-4 flex flex-col gap-3 justify-between grow">
+                                        <div>
+                                          <div className="flex justify-between items-start gap-2">
+                                            <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm line-clamp-1">
+                                              {photo.title}
+                                            </h3>
+                                            <span className="text-[9px] bg-red-50 text-red-600 dark:bg-red-950/30 px-2 py-0.5 rounded font-bold shrink-0">
+                                              {photo.category}
+                                            </span>
+                                          </div>
+                                          <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                                            By {photo.participantName}
+                                          </p>
+                                        </div>
+
+                                        {/* Judge Remarks Box */}
+                                        <div className="bg-red-50/80 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 rounded-xl p-3 text-[10px] text-red-700 dark:text-red-300">
+                                          <span className="font-bold uppercase tracking-wider block mb-1">Judge Remarks:</span>
+                                          {photo.scores && photo.scores.some(s => s.remarks) ? (
+                                            photo.scores.filter(s => s.remarks).map((s, idx) => (
+                                              <p key={idx} className="italic leading-snug">"{s.remarks}" — <span className="font-semibold">{s.judgeName}</span></p>
+                                            ))
+                                          ) : (
+                                            <p className="italic">Submission disapproved during judge review.</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUB-TAB 3: WINNERS - DIGITAL CERTIFICATE CREDENTIAL CARDS (Exact Layout matching Participant Portal) */}
+                          {activeSubTab === 'winners' && (
+                            <div>
+                              {!ev.winnersPublished || !ev.winners || ev.winners.length === 0 ? (
+                                <div className="text-center text-slate-400 py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                                  <Award size={32} className="mx-auto mb-2 text-slate-300 animate-bounce" />
+                                  <p className="text-xs font-semibold">Winners rankings have not been declared/published for this contest yet.</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                  {ev.winners.map((win, idx) => {
+                                    const rankLower = (win.rank || '').toLowerCase();
+                                    const isFirst = rankLower.includes('1st') || rankLower.includes('first');
+                                    const isSecond = rankLower.includes('2nd') || rankLower.includes('second');
+                                    const certTemplateName = isFirst ? '1st-Prize.png' : isSecond ? '2nd-Prize.png' : '3rd-Prize.png';
+                                    const customCertUrl = isFirst ? ev.certificates?.firstPrize : isSecond ? ev.certificates?.secondPrize : ev.certificates?.thirdPrize;
+                                    const certImgSrc = getBackendUrl(customCertUrl || `/${certTemplateName}`);
+
+                                    return (
+                                      <div key={idx} className="bg-linear-to-br from-amber-500/5 via-amber-600/5 to-white dark:to-slate-900 border-2 border-amber-500/35 rounded-3xl p-5 flex flex-col justify-between items-start gap-4 shadow-md relative overflow-hidden">
+                                        
+                                        {/* Top Section: Badge & Image Thumbnail */}
+                                        <div className="flex items-start gap-4 w-full">
+                                          {/* Certificate Thumbnail Preview Frame */}
+                                          <div
+                                            className="shrink-0 w-24 aspect-[1/1.414] overflow-hidden rounded-xl border-2 border-amber-500/30 shadow-sm cursor-pointer relative select-none group"
+                                            onClick={() => downloadEventPDF(ev)}
+                                          >
+                                            <img
+                                              src={certImgSrc}
+                                              alt="Certificate Thumbnail"
+                                              className="w-full h-full object-cover filter blur-[0.3px] group-hover:scale-105 transition-transform duration-300 pointer-events-none select-none"
+                                              onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = `/${certTemplateName}`;
+                                              }}
+                                              onContextMenu={e => e.preventDefault()}
+                                            />
+                                            <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center p-1 pointer-events-none">
+                                              <div className="text-[5px] leading-tight font-black text-red-600/60 dark:text-red-500/50 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/40 bg-white/90 dark:bg-slate-900/90 px-1 py-0.5 rounded shadow-xs">
+                                                SAMPLE CERTIFICATE
+                                                <br />
+                                                NOT VALID FOR
+                                                <br />
+                                                PRINT OR DOWNLOAD
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Certificate Details */}
+                                          <div className="flex-1 flex flex-col gap-1 text-left min-w-0">
+                                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1 w-max truncate">
+                                              🏆 {win.rank} (PREVIEW ONLY)
+                                            </span>
+                                            <h4 className="font-display font-black text-sm text-slate-900 dark:text-white mt-1 leading-tight line-clamp-2">
+                                              {ev.title}
+                                            </h4>
+                                            <p className="text-[11px] text-slate-500 mt-1 leading-tight font-semibold">
+                                              Reward: <strong className="text-amber-600 font-bold">{win.reward || '₹20,000'}</strong>
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+                                              Winning Entry: <span className="italic font-bold text-indigo-600 dark:text-indigo-400">"{win.photoTitle || 'Untitled'}"</span>
+                                            </p>
+                                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                                              Artist: <strong className="text-slate-900 dark:text-white font-bold">{win.userName}</strong>
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex flex-col gap-1.5 w-full mt-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => downloadEventPDF(ev)}
+                                            className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                          >
+                                            <Eye size={13} />
+                                            <span>View Preview (Locked)</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => downloadEventPDF(ev)}
+                                            className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 text-slate-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
+                                          >
+                                            <Lock size={13} />
+                                            <span>Download PDF</span>
+                                            <Lock size={11} className="ml-auto opacity-70" />
+                                          </button>
+                                        </div>
+
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUB-TAB 4: JUDGES */}
+                          {activeSubTab === 'judges' && (
+                            <div>
+                              {!ev.judgeDetails || ev.judgeDetails.length === 0 ? (
+                                <div className="text-center text-slate-400 py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                                  <Users size={32} className="mx-auto mb-2 text-slate-300" />
+                                  <p className="text-xs font-semibold">No judges assigned to this event.</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {ev.judgeDetails.map(j => (
+                                    <div key={j.id} className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex justify-between items-center text-xs shadow-2xs">
+                                      <div>
+                                        <p className="font-bold text-slate-900 dark:text-white text-sm">{j.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-semibold">{j.email} • {j.city}</p>
+                                      </div>
+                                      <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                                        j.hasConfirmed 
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' 
+                                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                      }`}>
+                                        {j.hasConfirmed ? 'Signed Off' : 'Pending'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUB-TAB 5: PARTICIPANTS DIRECTORY (ALL DETAILS) */}
+                          {activeSubTab === 'participants' && (
+                            <div>
+                              {!ev.participantDetails || ev.participantDetails.length === 0 ? (
+                                <div className="text-center text-slate-400 py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                                  <Users size={32} className="mx-auto mb-2 text-slate-300" />
+                                  <p className="text-xs font-semibold">No participants registered for this event.</p>
+                                </div>
+                              ) : (
+                                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-2xs">
+                                  <table className="w-full text-left text-xs">
+                                    <thead>
+                                      <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                                        <th className="py-3 px-4">#</th>
+                                        <th className="py-3 px-4">Participant Name</th>
+                                        <th className="py-3 px-4">Email</th>
+                                        <th className="py-3 px-4">Mobile Number</th>
+                                        <th className="py-3 px-4">City</th>
+                                        <th className="py-3 px-4 text-center">Uploaded</th>
+                                        <th className="py-3 px-4 text-center">Submission Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                      {ev.participantDetails.map((p, pIdx) => (
+                                        <tr key={p.userId || pIdx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
+                                          <td className="py-3 px-4 font-bold text-slate-400">{pIdx + 1}</td>
+                                          <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{p.name}</td>
+                                          <td className="py-3 px-4 text-slate-500 font-medium">{p.email}</td>
+                                          <td className="py-3 px-4 text-slate-500 font-mono">{p.mobile || 'N/A'}</td>
+                                          <td className="py-3 px-4 text-slate-500 font-medium">{p.city || 'N/A'}</td>
+                                          <td className="py-3 px-4 text-center font-extrabold text-indigo-600">{p.photosCount || 0}</td>
+                                          <td className="py-3 px-4 text-center">
+                                            <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
+                                              p.isFinalSubmitted 
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' 
+                                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                            }`}>
+                                              {p.isFinalSubmitted ? 'Finalized' : 'Draft'}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* SUB-TAB 6: FINANCIAL LEDGER (PROFIT & LOSS, EXPENSES, SPONSORSHIPS, REVENUE) */}
+                          {activeSubTab === 'ledger' && (
+                            <div className="flex flex-col gap-6">
+                              {/* Financial Audit Cards */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center shadow-2xs">
+                                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Registration Revenue</span>
+                                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-display mt-1 block">
+                                    ₹{(ev.totalRevenue || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center shadow-2xs">
+                                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Sponsorships & Grants</span>
+                                  <span className="text-xl font-black text-purple-600 dark:text-purple-400 font-display mt-1 block">
+                                    ₹{(ev.totalSponsorship || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center shadow-2xs">
+                                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Total Expenses</span>
+                                  <span className="text-xl font-black text-rose-600 dark:text-rose-400 font-display mt-1 block">
+                                    ₹{(ev.totalExpenses || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-900/30 rounded-2xl text-center shadow-2xs">
+                                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold block uppercase tracking-wider">Net Profit / Loss</span>
+                                  <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1 block font-display">
+                                    ₹{(ev.netProfitLoss || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Sponsorships & Donations Breakdown */}
+                               {ev.sponsorshipDetails && ev.sponsorshipDetails.length > 0 && (
+                                 <div>
+                                   <h4 className="font-display font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center justify-between">
+                                     <span>Sponsorships & Donations ({ev.sponsorshipDetails.length})</span>
+                                     <span className="text-purple-600 dark:text-purple-400 font-black text-xs">Total: ₹{(ev.totalSponsorship || 0).toLocaleString('en-IN')}</span>
+                                   </h4>
+                                   <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-2xs">
+                                     <table className="w-full text-left text-xs">
+                                       <thead>
+                                         <tr className="bg-slate-100 dark:bg-slate-800 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-700">
+                                           <th className="py-3 px-4">Sponsor / Donor</th>
+                                           <th className="py-3 px-4">Type & Category</th>
+                                           <th className="py-3 px-4">Supported Event</th>
+                                           <th className="py-3 px-4 text-emerald-600 font-bold">Amount (₹)</th>
+                                           <th className="py-3 px-4">Funding Date</th>
+                                           <th className="py-3 px-4">Payment Info</th>
+                                           <th className="py-3 px-4 text-center">Status</th>
+                                           <th className="py-3 px-4 text-center">Document</th>
+                                         </tr>
+                                       </thead>
+                                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                         {ev.sponsorshipDetails.map((sp, idx) => (
+                                           <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
+                                             <td className="py-3.5 px-4">
+                                               <p className="font-bold text-slate-900 dark:text-white text-xs">{sp.sponsorName}</p>
+                                               {sp.orgName && <p className="text-[10px] text-slate-500">{sp.orgName}</p>}
+                                               {sp.contactPerson && <p className="text-[10px] text-slate-400">Contact: {sp.contactPerson}</p>}
+                                             </td>
+                                             <td className="py-3.5 px-4">
+                                               <span className="px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                 {sp.sponsorType || 'CSR Funding'}
+                                               </span>
+                                               <p className="text-[10px] text-slate-400 mt-1 font-semibold">{sp.category || 'CSR'}</p>
+                                             </td>
+                                             <td className="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200 max-w-xs leading-snug">
+                                               {sp.supportedEvent || ev.title}
+                                             </td>
+                                             <td className="py-3.5 px-4 font-black text-emerald-600 dark:text-emerald-400 text-sm font-display">
+                                               ₹{(sp.amount || 0).toLocaleString('en-IN')}
+                                             </td>
+                                             <td className="py-3.5 px-4 font-medium text-slate-600 dark:text-slate-300">
+                                               {sp.fundingDate ? new Date(sp.fundingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                             </td>
+                                             <td className="py-3.5 px-4">
+                                               <p className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{sp.paymentInfo || 'UPI'}</p>
+                                               {sp.referenceId && <p className="text-[9px] font-mono text-slate-400">Ref: {sp.referenceId}</p>}
+                                             </td>
+                                             <td className="py-3.5 px-4 text-center">
+                                               <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                                 {sp.status || 'RECEIVED'}
+                                               </span>
+                                             </td>
+                                             <td className="py-3.5 px-4 text-center text-slate-400 italic text-[10px]">
+                                               {sp.documentUrl ? (
+                                                 <a href={getBackendUrl(sp.documentUrl)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline font-bold">View</a>
+                                               ) : 'None'}
+                                             </td>
+                                           </tr>
+                                         ))}
+                                       </tbody>
+                                     </table>
+                                   </div>
+                                 </div>
+                               )}
+
+                              {/* Expenses Breakdown */}
+                              {ev.expenseDetails && ev.expenseDetails.length > 0 && (
+                                <div>
+                                  <h4 className="font-display font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider mb-3">
+                                    Operational Event Expenses ({ev.expenseDetails.length})
+                                  </h4>
+                                  <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
+                                    <table className="w-full text-left text-xs">
+                                      <thead>
+                                        <tr className="bg-slate-100 dark:bg-slate-800 font-bold">
+                                          <th className="py-2.5 px-4">Expense Title</th>
+                                          <th className="py-2.5 px-4">Category</th>
+                                          <th className="py-2.5 px-4">Vendor / Paid To</th>
+                                          <th className="py-2.5 px-4 text-right">Amount (₹)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {ev.expenseDetails.map((ex, idx) => (
+                                          <tr key={idx}>
+                                            <td className="py-2.5 px-4 font-bold">{ex.title}</td>
+                                            <td className="py-2.5 px-4 text-slate-500">{ex.category}</td>
+                                            <td className="py-2.5 px-4 font-medium">{ex.paidTo || '—'}</td>
+                                            <td className="py-2.5 px-4 text-right font-bold text-rose-600 font-display">₹{(ex.amount || 0).toLocaleString('en-IN')}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Transactions List */}
+                              <div>
+                                <h4 className="font-display font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider mb-3">
+                                  Revenue Payment Logs ({ev.paymentDetails?.length || 0})
+                                </h4>
+                                {!ev.paymentDetails || ev.paymentDetails.length === 0 ? (
+                                  <div className="text-center text-slate-400 py-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                                    <Wallet size={32} className="mx-auto mb-2 text-slate-300" />
+                                    <p className="text-xs font-semibold">No payment transactions recorded for this event.</p>
+                                  </div>
+                                ) : (
+                                  <div className="max-h-80 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+                                    {ev.paymentDetails.map((pay, pIdx) => (
+                                      <div key={pIdx} className="p-3.5 text-xs flex justify-between items-start">
+                                        <div>
+                                          <p className="font-bold text-slate-900 dark:text-white text-sm">{pay.userName}</p>
+                                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">TXN: {pay.transactionId}</p>
+                                          <p className="text-[10px] text-slate-400 mt-0.5">Date: {new Date(pay.paymentDate).toLocaleDateString('en-IN')}</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="font-black text-emerald-600 dark:text-emerald-400 font-display block text-base">
+                                            ₹{pay.amount}
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 font-semibold mt-0.5 block">{pay.packageName}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                        </div>
+                      )}
+
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
       )}
 
@@ -5274,13 +6063,27 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedParticipant.photographs.map(photo => (
                       <div key={photo.id} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex gap-3 p-3">
-                        <img 
-                          src={getBackendUrl(photo.fileUrl)} 
-                          alt={photo.title}
-                          className="w-24 h-24 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-slate-800"
-                          crossOrigin="anonymous"
-                          referrerPolicy="no-referrer"
-                        />
+                        {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') ? (
+                          <video 
+                            src={getBackendUrl(photo.fileUrl)} 
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            controls
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
+                            className="w-24 h-24 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-slate-800 bg-slate-950"
+                          />
+                        ) : (
+                          <img 
+                            src={getBackendUrl(photo.fileUrl)} 
+                            alt={photo.title}
+                            className="w-24 h-24 object-cover rounded-lg shrink-0 border border-slate-200 dark:border-slate-800"
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
                         <div className="flex flex-col gap-1 min-w-0">
                           <h5 className="font-bold text-slate-900 dark:text-white truncate">{photo.title}</h5>
                           <p className="text-[9px] text-slate-400">Filename: <span className="font-mono truncate block">{photo.originalFilename || 'N/A'}</span></p>
@@ -6226,7 +7029,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
-                    Contest Ledger & Events History
+                    Events History
                   </h3>
                   <p className="text-[10px] text-slate-400">Complete historical financial audits, judges sign-off status, and winner lists</p>
                 </div>

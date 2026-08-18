@@ -95,8 +95,8 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Registrations, Revenue & Sponsorship Line/Bar Chart - Full Width */}
-      <div className="w-full bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-xs">
+      {/* Registrations, Revenue & Sponsorship Line/Bar Chart - Hidden on Mobile View */}
+      <div className="hidden sm:flex w-full bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex-col gap-4 shadow-xs">
         
         {/* Card Header & Segmented Mode Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

@@ -24,7 +24,8 @@ import {
   ArrowDownRight,
   Building,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getBackendUrl } from '../utils/url';
@@ -457,21 +458,17 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
         </div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-3 self-start sm:self-center">
-
-
-          {selectedEventId && (
-            <button
-              onClick={handleOpenAddModal}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 border border-emerald-400/30"
-            >
-              <Plus size={16} /> Add New Expense
-            </button>
-          )}
+          <button
+            onClick={handleOpenAddModal}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 border border-emerald-400/30"
+          >
+            <Plus size={16} /> Add New Expense
+          </button>
         </div>
       </div>
 
       {/* Financial Summary Cards Grid - 4 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Expenses */}
         <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
           <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">Total Expenses</span>

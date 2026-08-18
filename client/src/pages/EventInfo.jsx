@@ -199,6 +199,14 @@ function PrizeRow({ prize, idx, faded }) {
 // ── Active Event Card ─────────────────────────────────────────────────────────
 
 function ActiveEventDetailCard({ event, onEnroll }) {
+  const { user } = useAuth();
+  const isAdminOrJudge = Boolean(user && (
+    user.role === 'admin' || 
+    user.role === 'judge' || 
+    user.role === 'Admin' || 
+    user.role === 'Judge' || 
+    user.isAdmin
+  ));
   const colors = getColors(event.eventType);
   const Icon = EVENT_ICONS[event.eventType] || EVENT_ICONS.default;
   const countdown = useCountdown(event.deadline);
@@ -477,14 +485,16 @@ function ActiveEventDetailCard({ event, onEnroll }) {
           )}
         </div>
 
-        <div className="flex justify-center">
-          <button
-            onClick={() => onEnroll(event)}
-            className={`w-fit px-8 py-3 rounded-full text-sm font-bold text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${colors.btn}`}
-          >
-            Enroll in This Event <ArrowRight size={15} />
-          </button>
-        </div>
+        {!isAdminOrJudge && (
+          <div className="flex justify-center">
+            <button
+              onClick={() => onEnroll(event)}
+              className={`w-fit px-8 py-3 rounded-full text-sm font-bold text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${colors.btn}`}
+            >
+              Enroll in This Event <ArrowRight size={15} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -493,6 +503,14 @@ function ActiveEventDetailCard({ event, onEnroll }) {
 // ── Upcoming Event Card ───────────────────────────────────────────────────────
 
 function UpcomingEventCard({ event, onEnroll }) {
+  const { user } = useAuth();
+  const isAdminOrJudge = Boolean(user && (
+    user.role === 'admin' || 
+    user.role === 'judge' || 
+    user.role === 'Admin' || 
+    user.role === 'Judge' || 
+    user.isAdmin
+  ));
   const colors = getColors(event.eventType);
   const Icon = EVENT_ICONS[event.eventType] || EVENT_ICONS.default;
   const [themeExpanded, setThemeExpanded] = useState(false);
@@ -631,14 +649,16 @@ function UpcomingEventCard({ event, onEnroll }) {
         )}
       </div>
 
-      <div className="relative px-5 pb-5 pt-1 flex justify-center">
-        <button
-          onClick={() => onEnroll(event)}
-          className="w-fit px-6 py-2.5 rounded-full text-xs font-bold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          Register to Get Notified <ChevronRight size={13} />
-        </button>
-      </div>
+      {!isAdminOrJudge && (
+        <div className="relative px-5 pb-5 pt-1 flex justify-center">
+          <button
+            onClick={() => onEnroll(event)}
+            className="w-fit px-6 py-2.5 rounded-full text-xs font-bold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            Register to Get Notified <ChevronRight size={13} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

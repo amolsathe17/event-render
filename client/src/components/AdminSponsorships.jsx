@@ -20,6 +20,7 @@ import {
   Layers,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   X
 } from 'lucide-react';
 

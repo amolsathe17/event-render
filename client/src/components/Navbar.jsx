@@ -146,7 +146,7 @@ export default function Navbar() {
           <div 
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 mt-2 w-[280px] sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+            className="absolute right-0 mt-2 w-70 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
           >
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
               <h4 className="font-display font-extrabold text-slate-900 dark:text-white text-xs">Notifications</h4>
@@ -190,7 +190,7 @@ export default function Navbar() {
                           : 'bg-indigo-50/40 dark:bg-indigo-950/10 text-slate-900 dark:text-slate-200 font-medium'
                       } hover:bg-slate-50 dark:hover:bg-slate-850`}
                     >
-                      <div className="flex-grow text-xs leading-relaxed">
+                      <div className="grow text-xs leading-relaxed">
                         <p>{notif.message}</p>
                         <span className="text-[9px] text-slate-400 block mt-1">
                           {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
@@ -639,7 +639,7 @@ export default function Navbar() {
 
       {/* Participant Centered Notifications Modal Popup */}
       {showParticipantModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-4xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex justify-between items-center border-b border-slate-200/60 dark:border-slate-800 pb-4">
@@ -685,7 +685,7 @@ export default function Navbar() {
                       key={notif._id || idx}
                       className="border border-slate-100 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-slate-900 p-4 flex items-center justify-between gap-4 shadow-sm text-xs font-semibold"
                     >
-                      <div className="flex items-center gap-3.5 flex-grow text-left">
+                      <div className="flex items-center gap-3.5 grow text-left">
                         {/* Green Badge Icon */}
                         <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
                           <CheckCheck size={14} />
@@ -703,12 +703,12 @@ export default function Navbar() {
                         {!notif.isRead ? (
                           <button
                             onClick={(e) => markAsRead(notif._id || realIdx, e)}
-                            className="text-slate-400 hover:text-slate-650 dark:text-slate-400 dark:hover:text-slate-250 font-black tracking-wider text-[10px] uppercase cursor-pointer py-1 px-2.5 rounded-lg transition-all font-bold"
+                            className="text-slate-400 hover:text-slate-650 dark:text-slate-400 dark:hover:text-slate-250 font-black tracking-wider text-[10px] uppercase cursor-pointer py-1 px-2.5 rounded-lg transition-all"
                           >
                             DISMISS
                           </button>
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-600 font-extrabold tracking-wider text-[10px] uppercase select-none px-2 font-bold">
+                          <span className="text-slate-400 dark:text-slate-600 font-extrabold tracking-wider text-[10px] uppercase select-none px-2">
                             READ
                           </span>
                         )}
@@ -735,7 +735,7 @@ export default function Navbar() {
 
       {/* ═════════════════ AUTOMATIC REMINDER / NOTIFICATION POPUP ON LOGIN ═════════════════ */}
       {showReminderPopup && unreadNotifs.length > 0 && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-300 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-500/40 dark:border-amber-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 relative overflow-hidden text-left">
             {/* Top Accent Line */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-amber-500 via-orange-500 to-indigo-600" />

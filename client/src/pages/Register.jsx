@@ -518,7 +518,7 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={() => { setIsVerifying(false); setError(''); }}
-                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-center cursor-pointer"
+                    className="text-xs text-white hover:text-white dark:hover:text-slate-200 text-center cursor-pointer"
                   >
                     Change registration details
                   </button>

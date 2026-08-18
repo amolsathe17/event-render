@@ -29,23 +29,43 @@ router.get('/events-history', protect, authorize('Admin'), async (req, res) => {
     const history = [];
 
     for (const event of events) {
-      // Find submissions for this event
-      const submissions = await Submission.find({ eventId: event._id.toString() });
+      // Find submissions for this event flexibly (matching String, ObjectId, or fallback)
+      const evIdStr = event._id.toString();
+      let submissions = await Submission.find({
+        $or: [
+          { eventId: evIdStr },
+          { eventId: event._id },
+          { eventId: event.id }
+        ]
+      });
+
+      // Fallback: If no submissions found with strict eventId, fetch all submissions if 1 event exists
+      if (submissions.length === 0 && events.length === 1) {
+        submissions = await Submission.find({});
+      }
 
       // Unique participants count
       const participantIds = new Set(submissions.map(s => s.userId));
       const participantsCount = participantIds.size;
 
-      // Extract participant details (names and emails)
-      const participantDetails = [];
+      // Extract full participant details
+      const participantUsers = await User.find({ _id: { $in: Array.from(participantIds) } });
+      const userMap = new Map(participantUsers.map(u => [u._id.toString(), u]));
+
       const seenUserIds = new Set();
+      const participantDetails = [];
       submissions.forEach(sub => {
         if (!seenUserIds.has(sub.userId)) {
           seenUserIds.add(sub.userId);
+          const u = userMap.get(sub.userId);
           participantDetails.push({
             userId: sub.userId,
-            name: sub.userName || 'Unknown',
-            email: sub.userEmail || 'N/A',
+            name: u?.name || sub.userName || 'Unknown',
+            email: u?.email || sub.userEmail || 'N/A',
+            mobile: u?.mobile || sub.userMobile || 'N/A',
+            city: u?.city || sub.userCity || 'N/A',
+            entryNumber: u?.entryNumber || sub.entryNumber || 'N/A',
+            photosCount: sub.photographs?.length || 0,
             isFinalSubmitted: sub.isFinalSubmitted
           });
         }
@@ -56,13 +76,42 @@ router.get('/events-history', protect, authorize('Admin'), async (req, res) => {
       let approvedPhotos = 0;
       let rejectedPhotos = 0;
       let pendingPhotos = 0;
+      const allPhotographs = [];
 
       submissions.forEach(s => {
-        s.photographs.forEach(p => {
+        (s.photographs || []).forEach(p => {
           totalPhotos++;
-          if (p.status === 'Approved') approvedPhotos++;
-          else if (p.status === 'Rejected') rejectedPhotos++;
-          else pendingPhotos++;
+          const rawStatus = (p.status || '').toLowerCase();
+          const isDisapproved = rawStatus === 'rejected' || rawStatus === 'disapproved';
+          const finalStatus = isDisapproved ? 'Disapproved' : 'Approved';
+
+          if (isDisapproved) rejectedPhotos++;
+          else approvedPhotos++;
+
+          const isVid = p.mediaType === 'video' || event.mediaType === 'video' || (p.fileUrl && p.fileUrl.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i));
+
+          allPhotographs.push({
+            photoId: p.photoId || p._id || p.id,
+            submissionId: s._id,
+            title: p.title || 'Untitled',
+            category: p.category || 'General',
+            fileUrl: p.fileUrl,
+            mediaType: isVid ? 'video' : 'photo',
+            participantName: s.userName || p.participantName || 'Unknown Participant',
+            participantEmail: s.userEmail || p.participantEmail || 'N/A',
+            cameraBrand: p.cameraBrand,
+            cameraModel: p.cameraModel,
+            lensUsed: p.lensUsed,
+            location: p.location,
+            dateCaptured: p.dateCaptured,
+            description: p.description,
+            status: finalStatus,
+            rawStatus: p.status || 'Submitted',
+            judgeRemarks: p.judgeRemarks || p.remarks || p.rejectionReason || p.comments || '',
+            scores: p.scores || [],
+            averageScore: p.averageScore || 0,
+            customFields: p.customFields || []
+          });
         });
       });
 
@@ -80,6 +129,46 @@ router.get('/events-history', protect, authorize('Admin'), async (req, res) => {
         paymentDate: p.paymentDate || p.createdAt
       }));
 
+      // Expenses stats
+      const Expense = mongoose.models.Expense || require('../models/Expense');
+      const expenses = await Expense.find({ eventId: event._id.toString() });
+      const totalExpenses = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      const expenseDetails = expenses.map(e => ({
+        id: e._id,
+        title: e.title,
+        category: e.category,
+        amount: e.amount,
+        paidTo: e.paidTo,
+        paymentStatus: e.paymentStatus
+      }));
+
+      // Sponsorships stats
+      const sponsorships = await Sponsorship.find({ 
+        $or: [
+          { eventId: event._id.toString() },
+          { eventId: event._id },
+          { supportedEvent: event.title }
+        ]
+      });
+      const totalSponsorship = sponsorships.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      const sponsorshipDetails = sponsorships.map(sp => ({
+        id: sp._id,
+        sponsorName: sp.sponsorName || sp.name || 'Anonymous Sponsor',
+        orgName: sp.orgName || sp.organization || sp.companyName || '',
+        contactPerson: sp.contactPerson || sp.contact || sp.contactName || '',
+        sponsorType: sp.sponsorType || sp.type || sp.category || 'CSR Funding',
+        category: sp.category || sp.sponsorType || 'CSR',
+        supportedEvent: sp.supportedEvent || event.title,
+        amount: sp.amount || 0,
+        fundingDate: sp.fundingDate || sp.date || sp.createdAt,
+        paymentInfo: sp.paymentInfo || sp.paymentMethod || sp.referenceId || sp.utrNumber || 'UPI',
+        referenceId: sp.referenceId || sp.utrNumber || sp.utr || '',
+        status: sp.status || 'RECEIVED',
+        documentUrl: sp.documentUrl || sp.document || null
+      }));
+
+      const netProfitLoss = (totalRevenue + totalSponsorship) - totalExpenses;
+
       // Judges names
       const judgeUsers = await User.find({ _id: { $in: event.assignedJudges || [] } });
       const judgeDetails = judgeUsers.map(j => ({
@@ -94,20 +183,31 @@ router.get('/events-history', protect, authorize('Admin'), async (req, res) => {
         id: event._id,
         title: event.title,
         theme: event.theme,
+        venue: event.venue || event.location || 'Sumbaran Art Gallery, Pune',
+        exhibitionDate: event.exhibitionDate || event.eventDate || event.deadline,
         status: event.status,
+        mediaType: event.mediaType,
+        eventType: event.eventType,
         deadline: event.deadline,
         createdAt: event.createdAt,
         winnersPublished: event.winnersPublished,
         winners: event.winners || [],
+        certificates: event.certificates || {},
         participantsCount,
         participantDetails,
         totalPhotos,
         approvedPhotos,
         rejectedPhotos,
         pendingPhotos,
+        allPhotographs,
         totalPaymentsCount,
         totalRevenue,
         paymentDetails,
+        totalExpenses,
+        expenseDetails,
+        totalSponsorship,
+        sponsorshipDetails,
+        netProfitLoss,
         judgeDetails
       });
     }
