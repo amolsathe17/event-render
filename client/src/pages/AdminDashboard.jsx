@@ -2176,7 +2176,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Global Event Selection Dropdown Menu - Hidden on Contests, Categories, and Event History Tabs */}
-        {!['events', 'categories', 'event_history'].includes(activeTab) && (
+        {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
           <div className="relative flex items-center shrink-0 w-full sm:w-auto">
             <select
               value={selectedEventId || 'all'}
