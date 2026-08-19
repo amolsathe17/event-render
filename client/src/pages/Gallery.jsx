@@ -47,15 +47,8 @@ export default function Gallery() {
         const eData = await apiFetch('/api/events');
         if (eData.success && eData.events.length > 0) {
           setEventsList(eData.events);
-          
-          // Expand ONLY ONE panel by default (first published event > active event > first event)
-          const publishedEvt = eData.events.find(e => e.winnersPublished && e.winners && e.winners.length > 0);
-          const activeEvt = eData.events.find(e => e.status === 'Active');
-          const primaryEvent = publishedEvt || activeEvt || eData.events[0];
-          
-          if (primaryEvent && primaryEvent._id) {
-            setOpenEventIds(new Set([primaryEvent._id]));
-          }
+          // Keep all panels closed by default when page loads
+          setOpenEventIds(new Set());
         }
 
         // Fetch categories
@@ -77,8 +70,12 @@ export default function Gallery() {
   const toggleEventOpen = (eventId) => {
     setOpenEventIds(prev => {
       const next = new Set(prev);
-      if (next.has(eventId)) next.delete(eventId);
-      else next.add(eventId);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.clear();
+        next.add(eventId);
+      }
       return next;
     });
   };
@@ -334,6 +331,9 @@ export default function Gallery() {
                                         No Preview
                                       </div>
                                     )}
+                                    <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
+                                      <ShieldCheck size={10} className="fill-white/20" /> Approved
+                                    </span>
                                     <button
                                       onClick={() => setSelectedPhoto(photo)}
                                       className="absolute top-3 right-3 p-1.5 bg-slate-950/60 hover:bg-slate-950 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
@@ -418,7 +418,7 @@ export default function Gallery() {
                                           No Preview
                                         </div>
                                       )}
-                                      <span className="absolute top-3 left-3 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm z-10">
+                                      <span className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
                                         <Flag size={9} className="fill-white" /> Disapproved
                                       </span>
                                       <button

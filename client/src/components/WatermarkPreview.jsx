@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function WatermarkPreview({ src, className = "", enableZoom = false }) {
+export default function WatermarkPreview({ src, className = "", enableZoom = false, objectFit = "contain" }) {
   const [currentSrc, setCurrentSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
   const [zoomStyle, setZoomStyle] = useState({
@@ -80,9 +80,11 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
     src.includes('video_')
   );
 
+  const fitClass = objectFit === 'cover' ? 'object-cover' : 'object-contain';
+
   return (
     <div 
-      className={`relative overflow-hidden w-full h-full ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
+      className={`relative overflow-hidden w-full h-full min-h-[220px] ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchMove}
@@ -100,7 +102,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           preload="metadata"
-          className="absolute inset-0 w-full h-full object-cover mx-auto pointer-events-none" 
+          className={`absolute inset-0 w-full h-full mx-auto pointer-events-none ${fitClass}`} 
         />
       ) : (
         <img 
@@ -108,7 +110,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
           alt="Image Preview" 
           onError={handleImgError}
           style={enableZoom ? zoomStyle : undefined}
-          className="absolute inset-0 w-full h-full object-cover mx-auto" 
+          className={`absolute inset-0 w-full h-full mx-auto ${fitClass}`} 
         />
       )}
     </div>

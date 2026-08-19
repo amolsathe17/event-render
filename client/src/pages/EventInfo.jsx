@@ -23,6 +23,7 @@ import {
   BarChart2,
   BookOpen,
   Layers,
+  LayoutDashboard,
   Clock,
   Lock,
   TrendingUp,
@@ -1437,10 +1438,15 @@ export default function EventInfo() {
                 </>
               ) : (
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md"
+                  onClick={() => {
+                    if (user?.role === 'Admin') navigate('/admin');
+                    else if (user?.role === 'Judge') navigate('/judge');
+                    else navigate('/dashboard');
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md inline-flex items-center gap-2"
                 >
-                  Go to My Dashboard
+                  <LayoutDashboard size={18} />
+                  <span>Go to My Dashboard</span>
                 </button>
               )}
             </div>

@@ -1,11 +1,21 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronDown, Sparkles, Compass, Feather, Quote, Palette } from "lucide-react";
+import { ChevronDown, Sparkles, Compass, Feather, Quote, Palette, LayoutDashboard, Info, Trophy } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const handleDashboardRedirect = () => {
+    if (user?.role === 'Admin') {
+      navigate('/admin');
+    } else if (user?.role === 'Judge') {
+      navigate('/judge');
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   return (
     <div className="relative min-h-screen text-slate-800 bg-white dark:bg-slate-950">
@@ -53,17 +63,19 @@ export default function Landing() {
                 <>
                   <Link
                     to="/info"
-                    className="bg-white hover:bg-red-700 text-black hover:text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md"
+                    className="bg-white hover:bg-red-700 text-black hover:text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md inline-flex items-center gap-2"
                   >
-                    Explore / Enroll  Events
+                    <Info size={18} />
+                    <span>Explore / Enroll Events</span>
                   </Link>
                 </>
               ) : (
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="bg-white hover:bg-red-700 text-black hover:text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md"
+                  onClick={handleDashboardRedirect}
+                  className="bg-white hover:bg-red-700 text-black hover:text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md inline-flex items-center gap-2"
                 >
-                  Go to My Dashboard
+                  <LayoutDashboard size={18} />
+                  <span>Go to My Dashboard</span>
                 </button>
               )}
             </div>
@@ -187,17 +199,19 @@ export default function Landing() {
                 <>
                   <Link
                     to="/info"
-                    className="bg-blue-600 hover:bg-red-700 text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md"
+                    className="bg-blue-600 hover:bg-red-700 text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md inline-flex items-center gap-2"
                   >
-                    Explore / Enroll  Events
+                    <Info size={18} />
+                    <span>Explore / Enroll Events</span>
                   </Link>
                 </>
               ) : (
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="bg-white hover:bg-red-700 text-black hover:text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md"
+                  onClick={handleDashboardRedirect}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 px-8 rounded-2xl cursor-pointer transition-all shadow-md inline-flex items-center gap-2"
                 >
-                  Go to My Dashboard
+                  <LayoutDashboard size={18} />
+                  <span>Go to My Dashboard</span>
                 </button>
               )}
             </div>

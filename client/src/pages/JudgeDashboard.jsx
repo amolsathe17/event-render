@@ -50,6 +50,19 @@ export default function JudgeDashboard() {
 
   const [showSignOffModal, setShowSignOffModal] = useState(false);
   const [showSignedOffBlockModal, setShowSignedOffBlockModal] = useState(false);
+  const [showJudgeAlertModal, setShowJudgeAlertModal] = useState(false);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      const closedDeadlineEvents = events.filter(e => e.deadline && new Date() >= new Date(e.deadline));
+      if (closedDeadlineEvents.length > 0) {
+        const timer = setTimeout(() => {
+          setShowJudgeAlertModal(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [events.length]);
 
   // Broadcast Notification State
   const [broadcasts, setBroadcasts] = useState([]);
@@ -1246,6 +1259,28 @@ export default function JudgeDashboard() {
             </div>
           ) : (
             <>
+              {/* Submission Deadline Passed Alert Banner for Judges */}
+              {event?.deadline && new Date() >= new Date(event.deadline) && (
+                <div className="mb-6 bg-linear-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-500/40 p-4 sm:p-5 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-in fade-in duration-200">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm">
+                      <Clock size={20} className="animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        Submission Deadline Closed ({new Date(event.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-semibold mt-0.5">
+                        Submissions for <strong className="text-amber-600 dark:text-amber-400">"{event.title}"</strong> are now closed. Please complete evaluations for all assigned entries.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 hidden sm:inline-block shadow-xs">
+                    Evaluation Open
+                  </span>
+                </div>
+              )}
+
               {/* Evaluation Mode Tabs */}
               <div className="flex mb-6 bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 w-fit">
                 <button
@@ -1552,26 +1587,23 @@ export default function JudgeDashboard() {
 
       {/* Online Evaluation Grade Sheet / Modal popup */}
       {activePhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-[95%] md:max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200 text-left my-8 h-auto max-h-[90vh] md:h-[90vh] overflow-y-auto md:overflow-hidden mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-[95%] lg:max-w-7xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in zoom-in-95 duration-200 text-left my-8 h-auto max-h-[90vh] lg:h-[90vh] overflow-y-auto lg:overflow-hidden mx-auto">
             
-            {/* Left Column: Watermarked Zoom Preview */}
-            <div className="w-full md:flex-1 bg-slate-950 relative overflow-hidden flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 h-auto shrink-0">
-              <div className="absolute top-4 left-4 z-10 flex gap-2">
-                <span className="bg-slate-900/80 backdrop-blur text-white text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
-                  Online Zoom Mode
-                </span>
-                <span className={`bg-slate-900/85 backdrop-blur text-white text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm ${
-                  activePhoto.graded ? 'text-emerald-500' : 'text-amber-500'
-                }`}>
-                  {activePhoto.graded ? 'Assessment Completed' : 'Pending Review'}
-                </span>
-              </div>
+            {/* Close button */}
+            <button
+              onClick={() => setActivePhoto(null)}
+              className="absolute top-4 right-4 z-10 p-2 bg-slate-950/60 hover:bg-slate-950 text-white rounded-full cursor-pointer transition-colors"
+            >
+              <X size={20} />
+            </button>
 
-              <div className="grow flex items-center justify-center p-4 shrink-0">
-                <div className="relative w-full h-64 sm:h-80 md:h-full md:max-h-[68vh] flex items-center justify-center group shrink-0">
+            {/* Left Column: Watermarked Zoom Preview */}
+            <div className="w-full lg:flex-1 bg-slate-950 relative overflow-hidden flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800 h-auto shrink-0">
+              <div className="grow flex items-center justify-center p-2 sm:p-4 min-h-[260px]">
+                <div className="relative w-full h-[40vh] sm:h-[50vh] lg:h-[65vh] flex items-center justify-center group shrink-0">
                   {activePhoto.mediaType === 'video' || activePhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
-                    <div className="w-full h-full max-h-[40vh] md:max-h-[68vh] flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
+                    <div className="w-full h-full flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
                       <video
                         src={getBackendUrl(activePhoto.fileUrl)}
                         controls
@@ -1579,21 +1611,39 @@ export default function JudgeDashboard() {
                         crossOrigin="anonymous"
                         referrerPolicy="no-referrer"
                         preload="metadata"
-                        className="w-full h-full max-h-[68vh] object-contain"
+                        className="w-full h-full object-contain rounded-xl"
                       />
                     </div>
                   ) : (
                     <WatermarkPreview
                       src={getBackendUrl(activePhoto.fileUrl)}
-                      className="w-full h-full max-h-[40vh] md:max-h-[68vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
+                      className="w-full h-full rounded-xl shadow-2xl"
                       enableZoom={true}
+                      objectFit="contain"
                     />
                   )}
                 </div>
               </div>
 
-              {/* Photo parameters / EXIF overlay at bottom */}
+              {/* Photo parameters & Status Badges below photo */}
               <div className="bg-slate-900/90 backdrop-blur border-t border-white/5 p-4 sm:p-5 flex flex-col gap-3 text-white">
+                {/* Status Badges Displayed Below Photo */}
+                <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-white/10">
+                  <span className="bg-slate-800 text-slate-200 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-slate-700">
+                    Online Zoom Mode
+                  </span>
+                  <span className={`text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full ${
+                    approvalStatus === 'Approved'
+                      ? 'bg-emerald-600 text-white'
+                      : approvalStatus === 'Disapproved'
+                      ? 'bg-red-600 text-white'
+                      : activePhoto.graded 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-amber-600 text-white'
+                  }`}>
+                    {approvalStatus === 'Approved' ? 'Approved' : approvalStatus === 'Disapproved' ? 'Disapproved' : activePhoto.graded ? 'Assessment Completed' : 'Pending Review'}
+                  </span>
+                </div>
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex flex-col gap-0.5">
                     <h3 className="font-display font-extrabold text-sm tracking-wide">{activePhoto.title}</h3>
@@ -1855,29 +1905,36 @@ export default function JudgeDashboard() {
 
               {/* Left Side: Photo Zoom Detailed View */}
               <div className="w-full lg:flex-1 bg-slate-950 relative overflow-hidden flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800 h-auto shrink-0">
-                <div className="absolute top-4 left-4 z-10 flex gap-2">
-                  <span className="bg-slate-900/80 backdrop-blur text-white text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
-                    Offline Zoom Mode
-                  </span>
-                  <span className={`bg-slate-900/85 backdrop-blur text-white text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm ${
-                    offlineZoomPhoto.graded ? 'text-emerald-500' : 'text-amber-500'
-                  }`}>
-                    {offlineZoomPhoto.graded ? 'Assessment Completed' : 'Pending Review'}
-                  </span>
-                </div>
-
-                <div className="grow flex items-center justify-center p-4 shrink-0">
-                  <div className="relative w-full h-64 sm:h-80 lg:h-full lg:max-h-[68vh] flex items-center justify-center group cursor-zoom-in shrink-0">
+                <div className="grow flex items-center justify-center p-2 sm:p-4 min-h-[260px]">
+                  <div className="relative w-full h-[40vh] sm:h-[50vh] lg:h-[65vh] flex items-center justify-center group cursor-zoom-in shrink-0">
                     <WatermarkPreview 
                       src={getBackendUrl(offlineZoomPhoto.fileUrl)} 
-                      className="w-full h-full max-h-[40vh] lg:max-h-[68vh] object-contain rounded-lg shadow-lg" 
+                      className="w-full h-full rounded-xl shadow-2xl" 
                       enableZoom={true} 
+                      objectFit="contain"
                     />
                   </div>
                 </div>
 
-                {/* Photo parameters / EXIF overlay at bottom */}
+                {/* Photo parameters & Status Badges below photo */}
                 <div className="bg-slate-900/90 backdrop-blur border-t border-white/5 p-4 sm:p-5 flex flex-col gap-3 text-white">
+                  {/* Status Badges Displayed Below Photo */}
+                  <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-white/10">
+                    <span className="bg-slate-800 text-slate-200 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-slate-700">
+                      Offline Zoom Mode
+                    </span>
+                    <span className={`text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full ${
+                      offlineApprovalStatus === 'Approved'
+                        ? 'bg-emerald-600 text-white'
+                        : offlineApprovalStatus === 'Disapproved'
+                        ? 'bg-red-600 text-white'
+                        : offlineZoomPhoto.graded 
+                        ? 'bg-emerald-600 text-white' 
+                        : 'bg-amber-600 text-white'
+                    }`}>
+                      {offlineApprovalStatus === 'Approved' ? 'Approved' : offlineApprovalStatus === 'Disapproved' ? 'Disapproved' : offlineZoomPhoto.graded ? 'Assessment Completed' : 'Pending Review'}
+                    </span>
+                  </div>
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex flex-col gap-0.5 text-left">
                       <h3 className="font-display font-extrabold text-sm tracking-wide">{offlineZoomPhoto.title}</h3>
@@ -2139,26 +2196,29 @@ export default function JudgeDashboard() {
         </div>
       )}
 
-      {judgeDashboardTab === "event_history" && !userSelectedEventId && (
-        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
-          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
-            <AlertTriangle size={32} />
-          </div>
-          <div>
-            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
-              Please Select an Event
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
-              Please select an assigned event from the top right dropdown menu to view event history and statistics.
-            </p>
-          </div>
-        </div>
-      )}
-
       {judgeDashboardTab === "event_history" && (() => {
-        const targetEventId = userSelectedEventId || historySelectedEventId || event?._id || events[0]?._id;
-        const selectedHistoryEvent = events.find(e => e._id === targetEventId) || event || events[0];
-        const historyPhotos = selectedHistoryEvent ? (allPhotographsByEvent[selectedHistoryEvent._id] || (selectedHistoryEvent._id === event?._id ? photographs : [])) : [];
+        const targetEventId = userSelectedEventId || historySelectedEventId;
+        const selectedHistoryEvent = targetEventId ? events.find(e => e._id === targetEventId) : null;
+
+        if (!selectedHistoryEvent) {
+          return (
+            <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
+              <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
+                  Please Select an Event
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
+                  Please select an assigned event from the top right dropdown menu to view event history and statistics.
+                </p>
+              </div>
+            </div>
+          );
+        }
+
+        const historyPhotos = allPhotographsByEvent[selectedHistoryEvent._id] || (selectedHistoryEvent._id === event?._id ? photographs : []);
         const totalHistoryPhotos = historyPhotos.length;
         const gradedHistoryPhotos = historyPhotos.filter(p => p.graded).length;
         const disapprovedHistoryPhotos = historyPhotos.filter(p => p.graded && p.score?.approvalStatus === 'Disapproved').length;
@@ -2166,7 +2226,7 @@ export default function JudgeDashboard() {
         const avgHistoryScore = totalHistoryPhotos > 0 && gradedHistoryPhotos > 0
           ? (historyPhotos.reduce((sum, p) => sum + (p.score?.averageScore || 0), 0) / gradedHistoryPhotos).toFixed(1)
           : '—';
-        const isHistorySignedOff = selectedHistoryEvent ? (selectedHistoryEvent.confirmedJudges?.includes(user?.id) || false) : false;
+        const isHistorySignedOff = selectedHistoryEvent.confirmedJudges?.includes(user?.id) || false;
 
         return (
           <div className="animate-in fade-in duration-200 flex flex-col gap-6">
@@ -2185,21 +2245,6 @@ export default function JudgeDashboard() {
                 </div>
               </div>
             </div>
-
-            {/* Empty State: No Assigned Events */}
-            {events.length === 0 || !selectedHistoryEvent ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center flex flex-col items-center gap-4 shadow-sm">
-                <div className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-full">
-                  <History size={40} />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">No Assigned Events Found</h3>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
-                    You haven't been assigned as a jury member to any events yet.
-                  </p>
-                </div>
-              </div>
-            ) : (
               <div className="flex flex-col gap-6">
                 
                 {/* 1. Status Overview & Event Metrics */}
@@ -2413,7 +2458,6 @@ export default function JudgeDashboard() {
                 </div>
 
               </div>
-            )}
           </div>
         );
       })()}
@@ -2752,6 +2796,68 @@ export default function JudgeDashboard() {
         </div>
       )}
 
+      {/* JUDGE EVALUATION & DEADLINE ALERT CENTERED MODAL POPUP */}
+      {showJudgeAlertModal && (() => {
+        const closedEvents = events.filter(e => e.deadline && new Date() >= new Date(e.deadline));
+        if (closedEvents.length === 0) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col gap-6 text-center animate-in zoom-in-95 duration-200">
+              <button
+                onClick={() => setShowJudgeAlertModal(false)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close alert"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="mx-auto p-4 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-2xl w-max shadow-sm border border-amber-200/60 dark:border-amber-800/60">
+                <Clock size={32} className="animate-pulse" />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 py-1 px-3 rounded-full w-max mx-auto border border-amber-200/50">
+                  Judges Action Required ({closedEvents.length} Contests)
+                </span>
+                <h3 className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-snug">
+                  Submission Deadlines Passed
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                  Submissions are closed for the following assigned contests. Please complete evaluation and scoring for all assigned entries:
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2.5 max-h-56 overflow-y-auto pr-1 text-left">
+                {closedEvents.map(e => (
+                  <div key={e._id} className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-xs text-slate-900 dark:text-white">{e.title}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Deadline: {new Date(e.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      Evaluation Pending
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowJudgeAlertModal(false)}
+                  className="w-full py-3 px-5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl shadow-md transition-all cursor-pointer text-xs text-center flex items-center justify-center gap-2"
+                >
+                  <span>Understood, Proceed to Evaluation</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       </div>
     </div>
   );

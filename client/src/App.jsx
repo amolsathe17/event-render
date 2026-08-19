@@ -67,7 +67,7 @@ function MainLayout() {
       <ScrollToTop />
       <GlobalTooltip />
       <Navbar />
-      <main className="flex-grow w-full max-w-full overflow-x-hidden">
+      <main className={`flex-grow w-full max-w-full overflow-x-hidden ${isLanding ? '' : 'pt-16'}`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />

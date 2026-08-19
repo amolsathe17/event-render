@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History, Building2 } from 'lucide-react';
+import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History, Building2, Info, Trophy, ShieldCheck, Award, Sparkles } from 'lucide-react';
 import { getBackendUrl } from '../utils/url';
 
 export default function Navbar() {
@@ -60,11 +60,16 @@ export default function Navbar() {
 
   // Automatically trigger Reminder Modal Popup on login when new/unread reminders exist
   useEffect(() => {
-    if (user && unreadNotifs.length > 0 && !dismissedRemindersSession) {
-      setShowReminderPopup(true);
-    } else if (!user || unreadNotifs.length === 0) {
+    if (!user) {
       setShowReminderPopup(false);
+      return;
     }
+    const timer = setTimeout(() => {
+      if (unreadNotifs.length > 0 && !dismissedRemindersSession) {
+        setShowReminderPopup(true);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [user?._id, unreadNotifs.length, dismissedRemindersSession]);
 
   const markAsRead = async (notifId, e) => {
@@ -260,12 +265,12 @@ export default function Navbar() {
           ? 'text-white font-semibold underline underline-offset-4 px-1 py-1'
           : 'text-white/90 hover:text-white px-1 py-1'
         : isActive(path)
-          ? 'bg-indigo-300 text-white font-semibold shadow-xs border border-indigo-600 px-3.5 py-1.5'
+          ? 'bg-indigo-600 text-white font-semibold shadow-xs border border-indigo-700 px-3.5 py-1.5'
           : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700 border border-slate-200/80 px-3.5 py-1.5'
     }`;
 
-  // Position: fixed on landing page so navbar overlays hero background directly; sticky elsewhere
-  const navPosition = isLandingPage ? 'fixed top-0 left-0 right-0' : 'sticky top-0';
+  // Position: fixed on top for all pages when scrolling
+  const navPosition = 'fixed top-0 left-0 right-0 w-full';
 
   // On landing: transparent at top, solid white once scrolled
   const navBg = isLandingPage
@@ -280,55 +285,92 @@ export default function Navbar() {
   return (
     <nav className={`${navPosition} z-50 transition-all duration-300 ${navBg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center h-16 transition-all duration-300 ${onHero ? 'justify-center' : 'justify-between'}`}>
-          {/* Logo — hidden on hero, visible once scrolled or on inner pages */}
-          <div className={`items-center ${onHero ? 'hidden' : 'flex'}`}>
-            <Link
-              to="/"
-              className="flex items-center gap-2 group"
-            >
-              <img
-                src="/sumbacontest.jpg"
-                alt="SumbaContest Logo"
-                className="h-9 sm:h-11 md:h-12 max-h-10 md:max-h-12 w-auto object-contain rounded-md transition-transform group-hover:scale-102"
-              />
-            </Link>
+        <div className="flex items-center justify-between h-16 transition-all duration-300">
+          {/* Logo / User Info Left Section */}
+          <div className="flex items-center">
+            {onHero ? (
+              user ? (
+                <div className="flex items-center gap-3 animate-in fade-in duration-200">
+                  <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/50 text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-md">
+                    {user.avatar ? (
+                      <img
+                        src={getBackendUrl(user.avatar)}
+                        alt={user.name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                    )}
+                  </div>
+                  <div className="flex flex-col text-left leading-tight">
+                    <span className="text-sm font-black text-white drop-shadow-xs">
+                      {user.name}
+                    </span>
+                    <span className="text-[10px] font-extrabold text-indigo-200 uppercase tracking-widest">
+                      {user.role}
+                    </span>
+                  </div>
+                </div>
+              ) : null
+            ) : (
+              <Link
+                to="/"
+                className="flex items-center gap-2 group"
+              >
+                <img
+                  src="/sumbacontest.jpg"
+                  alt="SumbaContest Logo"
+                  className="h-9 sm:h-11 md:h-12 max-h-10 md:max-h-12 w-auto object-contain rounded-md transition-transform group-hover:scale-102"
+                />
+              </Link>
+            )}
           </div>
 
           {/* Desktop Nav */}
           <div className={`hidden md:flex items-center ${onHero ? 'justify-center gap-8 sm:gap-10 w-full' : 'gap-3'}`}>
-            <Link to="/info" className={navLinkClass('/info')}>
-              Event Info
+            <Link to="/info" className={`flex items-center gap-1.5 ${navLinkClass('/info')}`}>
+              <Info size={16} />
+              <span>Event Info</span>
             </Link>
 
-            <Link to="/gallery" className={navLinkClass('/gallery')}>
-              Gallery &amp; Results
+            <Link to="/gallery" className={`flex items-center gap-1.5 ${navLinkClass('/gallery')}`}>
+              <Trophy size={16} />
+              <span>Gallery &amp; Results</span>
             </Link>
 
-            {(!user || user.role === 'Admin') && (
-              <Link to="/admin" state={{ forceAdmin: true }} onClick={handleAdminClick} className={navLinkClass('/admin')}>
-                Admin Portal
+            {!user && (
+              <Link to="/admin" state={{ forceAdmin: true }} onClick={handleAdminClick} className={`flex items-center gap-1.5 ${navLinkClass('/admin')}`}>
+                <ShieldCheck size={16} />
+                <span>Admin Portal</span>
               </Link>
             )}
 
-            {(!user || user.role === 'Judge' || user.role === 'Admin') && (
-              <Link to="/judge" state={{ forceJudge: true }} onClick={handleJudgeClick} className={navLinkClass('/judge')}>
-                Judges Portal
+            {(!user || user.role === 'Admin') && (
+              <Link to="/judge" state={{ forceJudge: true }} onClick={handleJudgeClick} className={`flex items-center gap-1.5 ${navLinkClass('/judge')}`}>
+                <Award size={16} />
+                <span>Judges Portal</span>
               </Link>
             )}
             
-            {user && user.role === 'Participant' && (
-              <Link to="/dashboard" className={`flex items-center gap-1.5 ${navLinkClass('/dashboard')}`}>
-                <LayoutDashboard size={16} />
-                Dashboard
-              </Link>
-            )}
-
-            {user && user.role === 'Judge' && (
-              <Link to="/judge" className={`flex items-center gap-1.5 ${navLinkClass('/judge')}`}>
-                <LayoutDashboard size={16} />
-                Dashboard
-              </Link>
+            {user && (
+              <>
+                <Link
+                  to={user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard'}
+                  className={`flex items-center gap-1.5 ${navLinkClass(user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard')}`}
+                >
+                  <LayoutDashboard size={16} />
+                  <span>Dashboard</span>
+                </Link>
+                {onHero && (
+                  <button
+                    onClick={handleLogout}
+                    className={`flex items-center gap-1.5 ${navLinkClass('')}`}
+                  >
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                )}
+              </>
             )}
 
             {/* Auth Buttons — Hidden on hero page load, revealed on scroll or inner pages */}
@@ -471,33 +513,94 @@ export default function Navbar() {
 
       {/* Mobile Menu Drawer */}
       {isOpen && (
-        <div className="md:hidden bg-slate-900/70 dark:bg-slate-950/75 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-white rounded-b-none overflow-hidden">
+        <div className="md:hidden bg-slate-900/90 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-white rounded-b-none overflow-hidden">
           <div className="px-4 pt-3 pb-6 space-y-2 max-h-[85vh] overflow-y-auto">
+
+            {/* Mobile Toggle Menu User Card */}
+            <div className="p-3 bg-slate-800/90 dark:bg-slate-900/90 rounded-2xl border border-slate-700/70 flex items-center justify-between gap-3 shadow-sm mb-3">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md shrink-0 uppercase border border-indigo-400/30 overflow-hidden">
+                      {user.avatar ? (
+                        <img src={getBackendUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        user.name ? user.name.charAt(0) : 'U'
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-display font-extrabold text-white text-xs truncate leading-tight">
+                        {user.name}
+                      </span>
+                      <span className="text-[10px] text-slate-300 truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 border ${
+                    user.role === 'Admin'
+                      ? 'bg-purple-500/25 text-purple-200 border-purple-400/40'
+                      : user.role === 'Judge'
+                      ? 'bg-amber-500/25 text-amber-200 border-amber-400/40'
+                      : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
+                  }`}>
+                    {user.role || 'Participant'}
+                  </span>
+                </>
+              ) : (
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <User size={16} className="text-slate-400" />
+                    <span className="text-xs font-extrabold text-slate-200">Welcome Guest</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/login"
+                      state={{ forceContestant: true }}
+                      onClick={() => setIsOpen(false)}
+                      className="text-[11px] font-bold px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-all"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="text-[11px] font-bold px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                    >
+                      Register
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
             <Link
               to="/info"
               onClick={() => setIsOpen(false)}
-              className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
                 isActive('/info')
                   ? 'bg-indigo-300 text-white shadow-md'
                   : 'text-slate-200 hover:bg-white/10 hover:text-white'
               }`}
             >
+              <Info size={16} />
               <span>Event Info</span>
             </Link>
 
             <Link
               to="/gallery"
               onClick={() => setIsOpen(false)}
-              className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
                 isActive('/gallery')
                   ? 'bg-indigo-300 text-white shadow-md'
                   : 'text-slate-200 hover:bg-white/10 hover:text-white'
               }`}
             >
+              <Trophy size={16} />
               <span>Gallery &amp; Results</span>
             </Link>
 
-            {(!user || user.role === 'Admin') && (
+            {!user && (
               <Link
                 to="/admin"
                 state={{ forceAdmin: true }}
@@ -505,17 +608,18 @@ export default function Navbar() {
                   handleAdminClick();
                   setIsOpen(false);
                 }}
-                className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
                   isActive('/admin')
                     ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-200 hover:bg-white/10 hover:text-white'
                 }`}
               >
+                <ShieldCheck size={16} />
                 <span>Admin Portal</span>
               </Link>
             )}
 
-            {(!user || user.role === 'Judge' || user.role === 'Admin') && (
+            {(!user || user.role === 'Admin') && (
               <Link
                 to="/judge"
                 state={{ forceJudge: true }}
@@ -523,12 +627,13 @@ export default function Navbar() {
                   handleJudgeClick();
                   setIsOpen(false);
                 }}
-                className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
                   isActive('/judge')
                     ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-200 hover:bg-white/10 hover:text-white'
                 }`}
               >
+                <Award size={16} />
                 <span>Judges Portal</span>
               </Link>
             )}
@@ -857,24 +962,6 @@ export default function Navbar() {
                     >
                       <CheckCheck size={14} />
                       Mark as Read
-                    </button>
-
-                    <button
-                      onClick={async (e) => {
-                        await markAsRead(notifId, e);
-                        setShowReminderPopup(false);
-                        if (user.role === 'Admin') {
-                          navigate('/admin');
-                        } else if (user.role === 'Judge') {
-                          navigate('/judge');
-                        } else {
-                          navigate('/dashboard');
-                        }
-                      }}
-                      className="px-5 py-2.5 rounded-xl text-xs font-black bg-linear-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <span>View Workspace</span>
-                      <ChevronDown size={14} className="-rotate-90" />
                     </button>
                   </div>
                 </div>

@@ -211,16 +211,16 @@ router.post('/upload', protect, upload.fields([
       mediaType = 'video';
     }
 
-    if (mediaType === 'video' && photoFile.size > 25 * 1024 * 1024) {
+    if (mediaType === 'video' && photoFile.size > 20 * 1024 * 1024) {
       if (fs.existsSync(photoFile.path)) fs.unlinkSync(photoFile.path);
       if (rawFile && fs.existsSync(rawFile.path)) fs.unlinkSync(rawFile.path);
-      return res.status(400).json({ success: false, message: 'Video file size must be below 25 MB.' });
+      return res.status(400).json({ success: false, message: 'Video file size must be below 20 MB.' });
     }
 
-    if (mediaType === 'photo' && photoFile.size > 50 * 1024 * 1024) {
+    if (mediaType === 'photo' && photoFile.size > 5 * 1024 * 1024) {
       if (fs.existsSync(photoFile.path)) fs.unlinkSync(photoFile.path);
       if (rawFile && fs.existsSync(rawFile.path)) fs.unlinkSync(rawFile.path);
-      return res.status(400).json({ success: false, message: 'Photograph file size must be below 50 MB.' });
+      return res.status(400).json({ success: false, message: 'Photograph file size must be below 5 MB.' });
     }
 
     const submission = await Submission.findOne({ userId: req.user._id.toString(), eventId });

@@ -33,8 +33,8 @@ export default function DragDropUpload({ onUpload, isUploading, mediaType = 'pho
         setError('Only video files (MP4, MOV, WEBM, AVI) are allowed for short video competitions.');
         return false;
       }
-      if (file.size > 25 * 1024 * 1024) {
-        setError('Video file size must be below 25 MB.');
+      if (file.size > 20 * 1024 * 1024) {
+        setError('Video file size must be below 20 MB.');
         return false;
       }
     } else {
@@ -44,8 +44,8 @@ export default function DragDropUpload({ onUpload, isUploading, mediaType = 'pho
         setError('Only JPEG, PNG, or TIFF files are allowed for the main photograph.');
         return false;
       }
-      if (file.size > 50 * 1024 * 1024) {
-        setError('Photograph file size must be below 50 MB.');
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Photograph file size must be below 5 MB.');
         return false;
       }
     }
@@ -163,7 +163,7 @@ export default function DragDropUpload({ onUpload, isUploading, mediaType = 'pho
             {isVideoMode ? 'Drag & Drop your short video / reel here' : 'Drag & Drop your photograph here'}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-3">
-            {isVideoMode ? 'Supports MP4, MOV, WEBM, AVI (Max size 25 MB)' : 'Supports JPEG, PNG, TIFF (Max size 50 MB)'}
+            {isVideoMode ? 'Supports MP4, MOV, WEBM, AVI (Max size 20 MB)' : 'Supports JPEG, PNG, TIFF (Max size 5 MB)'}
           </p>
           <button
             type="button"

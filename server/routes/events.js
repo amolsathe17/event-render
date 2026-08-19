@@ -4,15 +4,67 @@ const Event = require('../models/Event');
 const AuditLog = require('../models/AuditLog');
 const { protect, authorize } = require('../middleware/auth');
 
-// @desc    Get all events
-// @route   GET /api/events
-// @access  Public
+// Utility: Check if submission deadline has passed for any events, and dispatch evaluation alerts to judges
+const triggerDeadlineEvaluationAlerts = async () => {
+  try {
+    const User = require('../models/User');
+    const Event = require('../models/Event');
+    const now = new Date();
+
+    // Find events where deadline has passed
+    const expiredEvents = await Event.find({
+      deadline: { $exists: true, $ne: null, $lte: now }
+    }).lean();
+
+    if (!expiredEvents || expiredEvents.length === 0) return;
+
+    for (const ev of expiredEvents) {
+      // Find all judges assigned to this event or all active judges
+      let judgeQuery = { role: 'Judge', isSuspended: { $ne: true } };
+      if (ev.assignedJudges && ev.assignedJudges.length > 0) {
+        judgeQuery._id = { $in: ev.assignedJudges };
+      }
+
+      const assignedJudges = await User.find(judgeQuery);
+
+      for (const judge of assignedJudges) {
+        if (!judge.notifications) judge.notifications = [];
+
+        // Check if an evaluation reminder for this event's deadline was already dispatched to this judge
+        const hasNotified = judge.notifications.some(
+          n => (n.eventId === ev._id.toString() || n.eventTitle === ev.title) &&
+               n.type === 'evaluation_reminder'
+        );
+
+        if (!hasNotified) {
+          judge.notifications.push({
+            message: `Submission deadline for "${ev.title}" has closed. Please proceed with photo evaluations in your Judge Workspace.`,
+            senderName: 'System Alert',
+            senderRole: 'Admin',
+            eventTitle: ev.title,
+            eventId: ev._id.toString(),
+            type: 'evaluation_reminder',
+            isRead: false,
+            createdAt: new Date()
+          });
+          await judge.save();
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error triggering deadline evaluation alerts:', err.message);
+  }
+};
+
 // @desc    Get all events
 // @route   GET /api/events
 // @access  Public
 router.get('/', async (req, res) => {
   try {
     const { includeDrafts } = req.query;
+
+    // Trigger deadline evaluation alerts for judges
+    await triggerDeadlineEvaluationAlerts();
 
     // Auto-transition events whose start date is within 1 month (or past) to Active
     const now = new Date();

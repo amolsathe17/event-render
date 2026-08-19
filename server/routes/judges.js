@@ -19,6 +19,32 @@ router.get('/assigned-photos/:eventId', protect, authorize('Judge', 'Admin'), as
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
 
+    // Check if event submission deadline has passed, send alert to judge if not already sent
+    if (event.deadline && new Date() >= new Date(event.deadline)) {
+      const User = require('../models/User');
+      const currentJudge = await User.findById(req.user._id);
+      if (currentJudge) {
+        if (!currentJudge.notifications) currentJudge.notifications = [];
+        const hasNotified = currentJudge.notifications.some(
+          n => (n.eventId === event._id.toString() || n.eventTitle === event.title) &&
+               n.type === 'evaluation_reminder'
+        );
+        if (!hasNotified) {
+          currentJudge.notifications.push({
+            message: `Submission deadline for "${event.title}" has closed. Please proceed with photo evaluations in your Judge Workspace.`,
+            senderName: 'System Alert',
+            senderRole: 'Admin',
+            eventTitle: event.title,
+            eventId: event._id.toString(),
+            type: 'evaluation_reminder',
+            isRead: false,
+            createdAt: new Date()
+          });
+          await currentJudge.save();
+        }
+      }
+    }
+
     const isAssignedToEvent = isAdmin || (event.assignedJudges && event.assignedJudges.includes(judgeId));
 
     // Find submissions for this event (matching admin view to ensure all uploaded photos are graded)

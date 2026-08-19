@@ -57,6 +57,9 @@ import {
   FileText,
   Hash,
   Video,
+  Upload,
+  X,
+  Sparkles,
 } from "lucide-react";
 import DragDropUpload from "../components/DragDropUpload";
 import WatermarkPreview from "../components/WatermarkPreview";
@@ -99,7 +102,15 @@ export default function Dashboard() {
     return [];
   };
 
-  const [dashboardTab, setDashboardTab] = useState("entries");
+  const [dashboardTab, setDashboardTab] = useState("overview");
+  const [showParticipantGuidanceModal, setShowParticipantGuidanceModal] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowParticipantGuidanceModal(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
   const [confirmModal, setConfirmModal] = useState(null);
   const [allSubmissions, setAllSubmissions] = useState([]);
   const [eventsList, setEventsList] = useState([]);
@@ -1551,7 +1562,15 @@ export default function Dashboard() {
           <div className="flex flex-col gap-4">
             <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">Active Competitions</h3>
             {(() => {
-              const activeEvents = eventsList.filter(e => e.status === 'Active');
+              const activeEvents = eventsList.filter(e => {
+                if (e.status !== 'Active') return false;
+                const sub = allSubmissions.find(s => s.eventId === e._id || (s.eventTitle && s.eventTitle.trim().toLowerCase() === e.title.trim().toLowerCase()));
+                // If admin HAS refunded amount, do NOT display in My Contest Entries
+                if (sub && (sub.refundStatus === 'Approved' || sub.paymentStatus === 'Refunded')) {
+                  return false;
+                }
+                return true;
+              });
               if (activeEvents.length === 0) {
                 return (
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center text-slate-400 text-xs">
@@ -1599,7 +1618,12 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3">
                         {activeSub ? (
                           <div className="flex gap-1.5 items-center">
-                            {hasFinalized ? (
+                            {activeSub.refundStatus === 'Requested' || activeSub.refundRequested ? (
+                              <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase flex items-center gap-1">
+                                <Clock size={10} className="animate-pulse" />
+                                Refund Pending Admin Approval
+                              </span>
+                            ) : hasFinalized ? (
                               <span className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase">
                                 Finalized
                               </span>
@@ -1637,14 +1661,24 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           <>
-                            {submission?.paymentStatus === 'Refunded' && (
-                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-5 rounded-2xl text-amber-800 dark:text-amber-300 mb-2 animate-in slide-in-from-top-4 duration-200">
-                                <div className="flex items-start gap-3">
-                                  <RotateCcw size={24} className="shrink-0 text-amber-600 dark:text-amber-400 mt-1 md:mt-0" />
+                            {Boolean(submission?.refundStatus === 'Requested' || submission?.refundRequested) && (
+                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700/80 p-5 rounded-2xl text-amber-800 dark:text-amber-300 mb-2 animate-in slide-in-from-top-4 duration-200">
+                                <div className="flex items-start gap-3.5">
+                                  <Clock size={24} className="shrink-0 text-amber-600 dark:text-amber-400 mt-1 md:mt-0 animate-pulse" />
                                   <div>
-                                    <h4 className="font-display font-extrabold text-sm uppercase tracking-wider">Entry Payment Refunded</h4>
-                                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
-                                      Your entry submission payment has been refunded and credited back to your bank account by the administrator. All photo slots have been reset to unpaid status.
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-black uppercase tracking-wider">
+                                        Refund Pending Admin Approval
+                                      </span>
+                                      {submission.withdrawnAt && (
+                                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+                                          Requested: {new Date(submission.withdrawnAt).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="font-display font-extrabold text-sm uppercase tracking-wider mt-1">Refund Request Under Review</h4>
+                                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed font-medium">
+                                      Your request for entry withdrawal and fee refund has been submitted to the administrator. The refund amount will be credited back once approved by the admin team.
                                     </p>
                                   </div>
                                 </div>
@@ -2194,13 +2228,13 @@ export default function Dashboard() {
                                     : photo.scores?.find(s => s.approvalStatus === 'Disapproved')?.remarks;
                                   return (
                                     <div key={photo.id} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-                                      <WatermarkPreview src={getBackendUrl(photo.fileUrl)} className="aspect-video w-full" />
+                                              <WatermarkPreview src={getBackendUrl(photo.fileUrl)} className="aspect-video w-full" />
                                       <div className="p-3.5 flex flex-col gap-2.5">
                                         <div>
                                           <div className="flex justify-between items-start gap-2">
                                             <h5 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{photo.title}</h5>
                                             {isDisapproved && (
-                                              <span className="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400">
+                                              <span className="px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase shrink-0 bg-red-600 text-white shadow-xs">
                                                 Disapproved
                                               </span>
                                             )}
@@ -2665,11 +2699,15 @@ export default function Dashboard() {
                     onChange={(e) => setHistorySelectedEventId(e.target.value)}
                     className="w-full sm:w-72 md:w-80 px-4 py-2.5 bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-xs"
                   >
-                    {myEnrolledEvents.map(ev => (
-                      <option key={ev._id} value={ev._id}>
-                        {ev.title} ({ev.eventType || 'Contest'})
-                      </option>
-                    ))}
+                    {myEnrolledEvents.map(ev => {
+                      const sub = allSubmissions.find(s => s.eventId === ev._id || (s.eventTitle && s.eventTitle.trim().toLowerCase() === ev.title.trim().toLowerCase()));
+                      const statusTag = sub?.refundStatus === 'Approved' ? ' - [Refund Approved]' : sub?.refundStatus === 'Requested' || sub?.refundRequested ? ' - [Refund Requested]' : sub?.isWithdrawn || sub?.status === 'Withdrawn' ? ' - [Withdrawn]' : '';
+                      return (
+                        <option key={ev._id} value={ev._id}>
+                          {ev.title} ({ev.eventType || 'Contest'}){statusTag}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
@@ -2697,61 +2735,92 @@ export default function Dashboard() {
             ) : (
               <div className="flex flex-col gap-6">
                 
-                {/* 1. Certificates Received Section - Light Amber Card */}
-                <div className="bg-amber-50/60 dark:bg-amber-950/25 border-2 border-amber-300 dark:border-amber-700 rounded-3xl p-6 shadow-xs flex flex-col gap-4">
-                  <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                    <Award size={18} className="text-amber-500" />
-                    Certificates & Accolades
-                  </h4>
+                {/* 1. Certificates Received Section - Only shown for active, non-withdrawn entries */}
+                {!Boolean(selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus || selectedHistorySub?.refundRequested || selectedHistorySub?.paymentStatus === 'Refunded') && (
+                  <div className="bg-amber-50/60 dark:bg-amber-950/25 border-2 border-amber-300 dark:border-amber-700 rounded-3xl p-6 shadow-xs flex flex-col gap-4">
+                    <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <Award size={18} className="text-amber-500" />
+                      Certificates & Accolades
+                    </h4>
 
-                  {isWinner ? (
-                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="p-3 bg-amber-500 text-white rounded-2xl font-black text-lg">
-                          🏆
-                        </div>
-                        <div>
-                          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-[9px] font-black uppercase tracking-wider">
-                            Winner - {winnerInfo?.rank}
-                          </span>
-                          <h5 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">
-                            Official Winner Certificate Granted
-                          </h5>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Congratulations! You earned {winnerInfo?.rank} place in {selectedHistoryEvent?.title}.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : selectedHistoryEvent?.winnersPublished ? (
-                    <div className="bg-white/80 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-2xl font-black text-lg">
-                          🎖️
-                        </div>
-                        <div>
-                          <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-[9px] font-black uppercase tracking-wider">
-                            Participant Certificate
-                          </span>
-                          <h5 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">
-                            Certificate of Participation Available
-                          </h5>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Thank you for competing in {selectedHistoryEvent?.title}.
-                          </p>
+                    {isWinner ? (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                          <div className="p-3 bg-amber-500 text-white rounded-2xl font-black text-lg">
+                            🏆
+                          </div>
+                          <div>
+                            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-[9px] font-black uppercase tracking-wider">
+                              Winner - {winnerInfo?.rank}
+                            </span>
+                            <h5 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">
+                              Official Winner Certificate Granted
+                            </h5>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Congratulations! You earned {winnerInfo?.rank} place in {selectedHistoryEvent?.title}.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-black/10 dark:bg-slate-950/40 border border-dashed border-amber-200/80 dark:border-amber-900/40 rounded-2xl text-center text-slate-800 dark:text-slate-600 text-md">
-                      ⏳ Certificates will be generated automatically once final results are published by the judging panel.
-                    </div>
-                  )}
-                </div>
+                    ) : selectedHistoryEvent?.winnersPublished ? (
+                      <div className="bg-white/80 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-2xl font-black text-lg">
+                            🎖️
+                          </div>
+                          <div>
+                            <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-[9px] font-black uppercase tracking-wider">
+                              Participant Certificate
+                            </span>
+                            <h5 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">
+                              Certificate of Participation Available
+                            </h5>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Thank you for competing in {selectedHistoryEvent?.title}.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-black/10 dark:bg-slate-950/40 border border-dashed border-amber-200/80 dark:border-amber-900/40 rounded-2xl text-center text-slate-800 dark:text-slate-600 text-md">
+                        ⏳ Certificates will be generated automatically once final results are published by the judging panel.
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 2. Status Overview & Event Banner - Light Indigo Card */}
                 <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border-2 border-indigo-300 dark:border-indigo-700 rounded-3xl p-6 shadow-xs flex flex-col gap-6">
                   
+                  {/* Withdrawal / Refund Details Banner in Event History */}
+                  {Boolean(selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus || selectedHistorySub?.refundRequested || selectedHistorySub?.paymentStatus === 'Refunded') && (
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700/80 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+                      <div className="flex items-start gap-3.5">
+                        <div className="p-3 bg-amber-500 text-white rounded-2xl shrink-0 mt-0.5 shadow-xs">
+                          <Clock size={22} className="animate-pulse" />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-2xs">
+                              {selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded' ? 'Refund Approved' : 'Refund Pending Admin Approval'}
+                            </span>
+                            {selectedHistorySub.withdrawnAt && (
+                              <span className="text-[10px] text-amber-800 dark:text-amber-300 font-bold">
+                                Requested: {new Date(selectedHistorySub.withdrawnAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white mt-1">
+                            Refund Request Under Review
+                          </h4>
+                          <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 leading-relaxed font-medium">
+                            "Your request for entry withdrawal and fee refund has been submitted to the administrator. The refund amount will be credited back once approved by the admin team."
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Event Title Banner */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-indigo-100 dark:border-indigo-900/30 pb-5">
                     <div>
@@ -2832,20 +2901,50 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* 3. Withdrawal Status */}
-                    <div className="p-4 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/30 rounded-2xl flex flex-col justify-between gap-2">
+                    {/* 3. Withdrawal & Refund Status */}
+                    <div className={`p-4 rounded-2xl flex flex-col justify-between gap-2 border ${
+                      selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus || selectedHistorySub?.refundRequested
+                        ? 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/40'
+                        : 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900/30'
+                    }`}>
                       <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-900/70 dark:text-blue-300">Withdrawal Status</span>
-                        <ShieldCheck size={14} className="text-blue-500" />
+                        <span className={`text-[9px] font-extrabold uppercase tracking-wider ${
+                          selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus || selectedHistorySub?.refundRequested
+                            ? 'text-rose-900/80 dark:text-rose-300'
+                            : 'text-blue-900/70 dark:text-blue-300'
+                        }`}>
+                          Withdrawal & Refund
+                        </span>
+                        <ShieldCheck size={14} className={selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus ? 'text-rose-500' : 'text-blue-500'} />
                       </div>
                       <div>
                         <span className={`text-xs font-black block ${
-                          selectedHistorySub?.isWithdrawn ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'
+                          selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus === 'Approved'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : selectedHistorySub?.refundStatus === 'Requested' || selectedHistorySub?.refundRequested
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-blue-600 dark:text-blue-400'
                         }`}>
-                          {selectedHistorySub?.isWithdrawn ? 'Withdrawn' : 'Active (Not Withdrawn)'}
+                          {selectedHistorySub?.refundStatus === 'Approved'
+                            ? 'Refund Approved & Withdrawn'
+                            : selectedHistorySub?.refundStatus === 'Requested' || selectedHistorySub?.refundRequested
+                            ? 'Refund Requested & Withdrawn'
+                            : selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn'
+                            ? 'Withdrawn by Participant'
+                            : 'Active (Not Withdrawn)'}
                         </span>
-                        <span className="text-[10px] text-blue-600/70 dark:text-blue-400/70 block mt-0.5">
-                          {selectedHistorySub?.isWithdrawn ? 'Entry withdrawn by participant' : 'Entry eligible for judging'}
+                        <span className={`text-[10px] block mt-0.5 ${
+                          selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus
+                            ? 'text-rose-600/80 dark:text-rose-400/80'
+                            : 'text-blue-600/70 dark:text-blue-400/70'
+                        }`}>
+                          {selectedHistorySub?.refundStatus === 'Approved'
+                            ? 'Fee refunded by admin'
+                            : selectedHistorySub?.refundStatus === 'Requested' || selectedHistorySub?.refundRequested
+                            ? 'Refund request registered with admin'
+                            : selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn'
+                            ? 'Entry withdrawn'
+                            : 'Entry eligible for judging'}
                         </span>
                       </div>
                     </div>
@@ -3076,6 +3175,89 @@ export default function Dashboard() {
       })()}
 
       </div>
+
+      {/* PARTICIPANT CONTEST SUBMISSION GUIDANCE CENTED MODAL POPUP */}
+      {showParticipantGuidanceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col gap-6 text-center animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowParticipantGuidanceModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Close guidance"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="mx-auto p-4 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-2xl w-max shadow-sm border border-indigo-200/60 dark:border-indigo-800/60">
+              <Camera size={32} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 py-1 px-3 rounded-full w-max mx-auto border border-indigo-200/50">
+                Action Required for Active Contests
+              </span>
+              <h3 className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-snug">
+                Complete Your Contest Entry
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                To participate in active events, please complete the following steps:
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 text-left">
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-3">
+                <div className="p-2 bg-indigo-600 text-white rounded-xl shrink-0 mt-0.5 shadow-2xs">
+                  <Upload size={16} />
+                </div>
+                <div className="flex flex-col text-xs">
+                  <span className="font-extrabold text-slate-900 dark:text-white">1. Upload Photos / Videos</span>
+                  <span className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                    Upload your high-resolution photographs, videos, or artwork as per the contest type requirements.
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-3">
+                <div className="p-2 bg-emerald-600 text-white rounded-xl shrink-0 mt-0.5 shadow-2xs">
+                  <CreditCard size={16} />
+                </div>
+                <div className="flex flex-col text-xs">
+                  <span className="font-extrabold text-slate-900 dark:text-white">2. Complete Online Payment</span>
+                  <span className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                    Complete the online payment for your chosen package (if applicable for active events).
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-3">
+                <div className="p-2 bg-amber-600 text-white rounded-xl shrink-0 mt-0.5 shadow-2xs">
+                  <CheckCircle size={16} />
+                </div>
+                <div className="flex flex-col text-xs">
+                  <span className="font-extrabold text-slate-900 dark:text-white">3. Finalize & Submit Entry</span>
+                  <span className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                    Finalize and submit your entry before the contest deadline for evaluation.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowParticipantGuidanceModal(false);
+                  setDashboardTab("entries");
+                }}
+                className="w-full py-3 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-md transition-all cursor-pointer text-xs text-center flex items-center justify-center gap-2"
+              >
+                <span>Go to My Submissions</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

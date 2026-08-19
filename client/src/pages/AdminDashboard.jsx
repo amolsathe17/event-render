@@ -171,6 +171,19 @@ export default function AdminDashboard() {
   const [selectedEventCategories, setSelectedEventCategories] = useState([]);
   const [newEventCertificates, setNewEventCertificates] = useState({ firstPrize: '', secondPrize: '', thirdPrize: '', participation: '' });
   const [uploadingCert, setUploadingCert] = useState({ firstPrize: false, secondPrize: false, thirdPrize: false, participation: false });
+  const [showIncompleteGradingModal, setShowIncompleteGradingModal] = useState(false);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      const incompleteEvents = events.filter(e => !e.winnersPublished && e.status !== 'Completed' && e.status !== 'Results Published');
+      if (incompleteEvents.length > 0) {
+        const timer = setTimeout(() => {
+          setShowIncompleteGradingModal(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [events.length]);
 
   // Edit Event states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1116,11 +1129,8 @@ export default function AdminDashboard() {
         setEventHistory(data.history || []);
         if (data.history && data.history.length > 0) {
           setActiveHistoryEvent(data.history[0]);
-          // Open ONLY ONE panel by default (first event in history)
-          const firstId = data.history[0].id || data.history[0]._id;
-          if (firstId) {
-            setOpenHistoryEventIds(new Set([firstId]));
-          }
+          // Keep all panels closed by default when page loads
+          setOpenHistoryEventIds(new Set());
         }
       }
     } catch (e) {
@@ -2188,7 +2198,7 @@ export default function AdminDashboard() {
               </option>
               {allEvents.map(ev => (
                 <option key={ev._id || ev.id} value={ev._id || ev.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
-                  {ev.title}
+                  {ev.title} {ev.status ? `(${ev.status})` : ''}
                 </option>
               ))}
             </select>
@@ -2213,6 +2223,9 @@ export default function AdminDashboard() {
                 setActiveTab(newTab);
                 if (newTab === 'overview') {
                   setSelectedEventId('');
+                }
+                if (newTab === 'judges') {
+                  setShowIncompleteGradingModal(true);
                 }
                 if (newTab === 'event_history') fetchEventHistory();
               }}
@@ -2261,6 +2274,9 @@ export default function AdminDashboard() {
                   setActiveTab(t.id);
                   if (t.id === 'overview') {
                     setSelectedEventId('');
+                  }
+                  if (t.id === 'judges') {
+                    setShowIncompleteGradingModal(true);
                   }
                   if (t.id === 'event_history') fetchEventHistory();
                 }}
@@ -3091,15 +3107,17 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex flex-col gap-6 mt-4">
-                {/* Render ONLY the selected contest card */}
+                {/* Render contest cards: if All Events selected, render all Completed and Results Published events */}
                 {(() => {
-                  const targetEvent = events.find(e => e._id === selectedEventId) || events[0];
-                  const eventsToDisplay = targetEvent ? [targetEvent] : [];
+                  const isAllEvents = !selectedEventId || selectedEventId === 'all';
+                  const eventsToDisplay = isAllEvents
+                    ? events.filter(e => e.winnersPublished || e.status === 'Completed' || e.status === 'Results Published')
+                    : (events.find(e => e._id === selectedEventId) ? [events.find(e => e._id === selectedEventId)] : []);
 
                   if (eventsToDisplay.length === 0) {
                     return (
-                      <div className="p-8 text-center text-slate-400 text-xs">
-                        No assigned events found.
+                      <div className="p-8 text-center text-slate-400 text-xs font-semibold bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                        {isAllEvents ? 'No completed or results published events found.' : 'No assigned event found.'}
                       </div>
                     );
                   }
@@ -5485,7 +5503,7 @@ export default function AdminDashboard() {
                       <option value="">--Select--</option>
                       <option value="all">All Events</option>
                       {events.map(ev => (
-                        <option key={ev._id} value={ev._id}>{ev.title}</option>
+                        <option key={ev._id} value={ev._id}>{ev.title} {ev.status ? `(${ev.status})` : ''}</option>
                       ))}
                     </select>
                   </div>
@@ -7413,6 +7431,173 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* INCOMPLETE GRADING PROGRESS MODAL POPUP (Appears when admin clicks on Judges & Results tab) */}
+      {activeTab === 'judges' && showIncompleteGradingModal && (() => {
+        const incompleteItems = events.filter(e => !e.winnersPublished && e.status !== 'Completed' && e.status !== 'Results Published').map(e => {
+          const eventPhotos = photographs.filter(p => p.eventId === e._id);
+          const assignedJudges = e.assignedJudges || [];
+          const totalRequiredReviews = eventPhotos.length * assignedJudges.length;
+          let completedReviews = 0;
+          eventPhotos.forEach(p => {
+            (p.scores || []).forEach(s => {
+              if (assignedJudges.includes(s.judgeId)) {
+                completedReviews++;
+              }
+            });
+          });
+
+          const confirmedJudgesList = e.confirmedJudges || [];
+          const allConfirmed = assignedJudges.length > 0 && assignedJudges.every(jId => confirmedJudgesList.includes(jId));
+          const isIncomplete = !allConfirmed || (totalRequiredReviews > 0 && completedReviews < totalRequiredReviews);
+
+          const pendingJudges = [];
+          if (assignedJudges.length > 0) {
+            assignedJudges.forEach(jId => {
+              const judgeObj = judges.find(j => j._id === jId);
+              if (judgeObj) {
+                let gradedCount = 0;
+                eventPhotos.forEach(p => {
+                  if ((p.scores || []).some(s => s.judgeId === jId)) {
+                    gradedCount++;
+                  }
+                });
+                const isConfirmed = confirmedJudgesList.includes(jId);
+                if (gradedCount < eventPhotos.length) {
+                  pendingJudges.push({
+                    name: judgeObj.name,
+                    statusText: `${eventPhotos.length - gradedCount} left`
+                  });
+                } else if (!isConfirmed) {
+                  pendingJudges.push({
+                    name: judgeObj.name,
+                    statusText: 'Awaiting Confirmation'
+                  });
+                }
+              }
+            });
+          }
+
+          return {
+            event: e,
+            isIncomplete,
+            totalRequiredReviews,
+            completedReviews,
+            progressPercentage: totalRequiredReviews > 0 ? Math.round((completedReviews / totalRequiredReviews) * 100) : 0,
+            pendingJudges
+          };
+        }).filter(item => item.isIncomplete);
+
+        if (incompleteItems.length === 0) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl flex flex-col gap-6 relative animate-in zoom-in-95 duration-200 my-auto">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowIncompleteGradingModal(false)}
+                className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+
+              {/* Header */}
+              <div className="flex items-center gap-3.5 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl shrink-0">
+                  <Clock size={24} className="animate-pulse" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-widest block">
+                    Grading Status Alert
+                  </span>
+                  <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">
+                    Incomplete Grading Progress Events ({incompleteItems.length})
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    The following assigned contests have pending photo evaluations or unconfirmed jury sign-offs:
+                  </p>
+                </div>
+              </div>
+
+              {/* List of Incomplete Events */}
+              <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1">
+                {incompleteItems.map(({ event: ev, totalRequiredReviews, completedReviews, progressPercentage, pendingJudges }) => (
+                  <div
+                    key={ev._id}
+                    className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 p-4 rounded-2xl flex flex-col gap-3 text-left"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">
+                          {ev.title}
+                        </h4>
+                        <span className="text-[10px] text-slate-400">
+                          Deadline: {ev.deadline ? new Date(ev.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 shrink-0">
+                        Grading Incomplete
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="flex flex-col gap-1.5 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                      <div className="flex justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        <span>Grading Progress:</span>
+                        <span>{completedReviews} / {totalRequiredReviews} Reviews ({progressPercentage}%)</span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-amber-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${progressPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pending Judges list */}
+                    {pendingJudges.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                        <span className="font-bold text-slate-500">Pending Jury:</span>
+                        {pendingJudges.map((pj, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/30 rounded-md font-semibold"
+                          >
+                            {pj.name} ({pj.statusText})
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Action: Select Event */}
+                    <div className="flex justify-end pt-1">
+                      <button
+                        onClick={() => {
+                          setSelectedEventId(ev._id);
+                          setShowIncompleteGradingModal(false);
+                        }}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+                      >
+                        Inspect & Manage Event
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => setShowIncompleteGradingModal(false)}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Acknowledge & Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       </div>
     </div>
