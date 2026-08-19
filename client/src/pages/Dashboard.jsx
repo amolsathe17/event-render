@@ -28,6 +28,7 @@ const CustomPieTooltip = ({ active, payload }) => {
 import {
   Camera,
   CheckCircle,
+  CheckCircle2,
   FileCheck,
   CreditCard,
   Download,
@@ -858,6 +859,32 @@ export default function Dashboard() {
     }
   };
 
+  const handleReEnrollEvent = async (targetEvent) => {
+    if (!targetEvent) return;
+    if (targetEvent.deadline && new Date() >= new Date(targetEvent.deadline)) {
+      setConfirmModal({
+        message: "Registration for this contest is closed. The submission deadline has passed, so re-enrollment is no longer available.",
+        isAlert: true
+      });
+      return;
+    }
+
+    setDashboardTab("entries");
+    setEvent(targetEvent);
+    setExpandedActiveEvents({ [targetEvent._id]: true });
+
+    try {
+      const subData = await apiFetch(`/api/submissions/my-submission/${targetEvent._id}`);
+      if (subData.success && subData.submission && (subData.submission.paymentStatus === 'Refunded' || subData.submission.refundStatus === 'Approved')) {
+        setSubmission(null);
+      } else if (subData.success) {
+        setSubmission(subData.submission);
+      }
+    } catch (err) {
+      console.error('Error fetching submission for re-enrollment:', err);
+    }
+  };
+
   if (loading && !submission && !event) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center">
@@ -1301,27 +1328,51 @@ export default function Dashboard() {
                         </div>
                       ) : (
                         <div className="flex flex-col gap-3 h-52 sm:h-56 overflow-y-auto pr-1">
-                          {refundedSubs.map((sub, idx) => (
-                            <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl flex flex-col gap-1.5 text-xs">
-                              <div className="flex justify-between items-center">
-                                <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-30">{sub.eventTitle}</span>
-                                <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded-full ${
-                                  sub.paymentStatus === 'Refunded' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                }`}>
-                                  {sub.paymentStatus === 'Refunded' ? 'Refunded' : 'Pending'}
-                                </span>
+                          {refundedSubs.map((sub, idx) => {
+                            const targetEv = eventsList.find(e => e._id === sub.eventId || (e.title && sub.eventTitle && e.title.trim().toLowerCase() === sub.eventTitle.trim().toLowerCase()));
+                            const isDeadlinePassed = targetEv?.deadline && new Date() >= new Date(targetEv.deadline);
+                            const isRefunded = sub.paymentStatus === 'Refunded' || sub.refundStatus === 'Approved';
+
+                            return (
+                              <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl flex flex-col gap-1.5 text-xs">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-30">{sub.eventTitle}</span>
+                                  <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded-full ${
+                                    isRefunded ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                  }`}>
+                                    {isRefunded ? 'Refunded' : 'Pending'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                  <span>ID: #{sub.entryNumber}</span>
+                                  <span className="font-bold text-indigo-600 dark:text-indigo-400">INR {sub.amount}</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 italic line-clamp-2">
+                                  {isRefunded
+                                    ? 'Registration fees reverted back to bank account.'
+                                    : 'Withdrawal request registered; pending admin approval.'}
+                                </p>
+                                {isRefunded && targetEv && targetEv.status === 'Active' && (
+                                  !isDeadlinePassed ? (
+                                    <div className="flex items-center justify-between pt-1.5 mt-0.5 border-t border-slate-200/60 dark:border-slate-800">
+                                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold">Open for Re-enrollment</span>
+                                      <button
+                                        onClick={() => handleReEnrollEvent(targetEv)}
+                                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
+                                      >
+                                        <RotateCcw size={10} />
+                                        <span>Re-Enroll</span>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 font-semibold italic pt-1.5 mt-0.5 border-t border-slate-200/60 dark:border-slate-800 block">
+                                      🔒 Re-enrollment Closed (Deadline Passed)
+                                    </span>
+                                  )
+                                )}
                               </div>
-                              <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                                <span>ID: #{sub.entryNumber}</span>
-                                <span className="font-bold text-indigo-600 dark:text-indigo-400">INR {sub.amount}</span>
-                              </div>
-                              <p className="text-[10px] text-slate-400 italic line-clamp-2">
-                                {sub.paymentStatus === 'Refunded'
-                                  ? 'Registration fees reverted back to bank account.'
-                                  : 'Withdrawal request registered; pending admin approval.'}
-                              </p>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -1565,9 +1616,11 @@ export default function Dashboard() {
               const activeEvents = eventsList.filter(e => {
                 if (e.status !== 'Active') return false;
                 const sub = allSubmissions.find(s => s.eventId === e._id || (s.eventTitle && s.eventTitle.trim().toLowerCase() === e.title.trim().toLowerCase()));
-                // If admin HAS refunded amount, do NOT display in My Contest Entries
                 if (sub && (sub.refundStatus === 'Approved' || sub.paymentStatus === 'Refunded')) {
-                  return false;
+                  // Hide from My Contest Entries ONLY if submission deadline has passed
+                  if (e.deadline && new Date() >= new Date(e.deadline)) {
+                    return false;
+                  }
                 }
                 return true;
               });
@@ -1618,7 +1671,11 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3">
                         {activeSub ? (
                           <div className="flex gap-1.5 items-center">
-                            {activeSub.refundStatus === 'Requested' || activeSub.refundRequested ? (
+                            {activeSub.paymentStatus === 'Refunded' || activeSub.refundStatus === 'Approved' ? (
+                              <span className="bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase">
+                                Refunded (Re-enrollment Open)
+                              </span>
+                            ) : activeSub.refundStatus === 'Requested' || activeSub.refundRequested ? (
                               <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase flex items-center gap-1">
                                 <Clock size={10} className="animate-pulse" />
                                 Refund Pending Admin Approval
@@ -1661,14 +1718,14 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           <>
-                            {Boolean(submission?.refundStatus === 'Requested' || submission?.refundRequested) && (
+                            {Boolean(submission?.isWithdrawn || submission?.status === 'Withdrawn' || submission?.refundStatus === 'Requested' || submission?.refundRequested) && (
                               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700/80 p-5 rounded-2xl text-amber-800 dark:text-amber-300 mb-2 animate-in slide-in-from-top-4 duration-200">
                                 <div className="flex items-start gap-3.5">
                                   <Clock size={24} className="shrink-0 text-amber-600 dark:text-amber-400 mt-1 md:mt-0 animate-pulse" />
                                   <div>
                                     <div className="flex items-center gap-2">
-                                      <span className="px-2 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-black uppercase tracking-wider">
-                                        Refund Pending Admin Approval
+                                      <span className="px-2.5 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-black uppercase tracking-wider">
+                                        Refund Request Under Review
                                       </span>
                                       {submission.withdrawnAt && (
                                         <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
@@ -1676,9 +1733,11 @@ export default function Dashboard() {
                                         </span>
                                       )}
                                     </div>
-                                    <h4 className="font-display font-extrabold text-sm uppercase tracking-wider mt-1">Refund Request Under Review</h4>
-                                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed font-medium">
-                                      Your request for entry withdrawal and fee refund has been submitted to the administrator. The refund amount will be credited back once approved by the admin team.
+                                    <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider mt-1">
+                                      Refund Request Under Review
+                                    </h4>
+                                    <p className="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed font-semibold">
+                                      Your event withdrawal and refund request has been submitted to the administrator. The refund amount will be credited back to you once it is approved and processed by the admin team.
                                     </p>
                                   </div>
                                 </div>
@@ -1717,12 +1776,22 @@ export default function Dashboard() {
                                   </p>
                                 </div>
                               </div>
-                            ) : submission && (submission.paymentStatus === 'Withdrawn' || submission.paymentStatus === 'Refunded') ? (
-                              null
+                            ) : submission && (submission.paymentStatus === 'Withdrawn' || submission.paymentStatus === 'Refunded' || submission.refundStatus === 'Approved') && (e.deadline && new Date() >= new Date(e.deadline)) ? (
+                              <div className="max-w-xl mx-auto bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-3xl flex flex-col items-center gap-4 text-center my-6">
+                                <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
+                                  <Lock size={28} />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  <h3 className="font-display font-black text-sm text-slate-900 dark:text-white">Registration Closed</h3>
+                                  <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                                    The submission deadline for {e.title} passed on {new Date(e.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Re-enrollment is no longer available.
+                                  </p>
+                                </div>
+                              </div>
                             ) : (
                               <>
-                                {/* STEP 1: Not started yet */}
-                                {!submission ? (
+                                {/* STEP 1: Not started yet or re-enrolling */}
+                                {!submission || submission.paymentStatus === 'Refunded' || submission.refundStatus === 'Approved' || submission.paymentStatus === 'Withdrawn' ? (
                               <div className="max-w-4xl mx-auto flex flex-col gap-6 py-2">
                                 <div className="text-center flex flex-col gap-1.5">
                                   <h1 className="font-display font-black text-2xl text-slate-900 dark:text-white">
@@ -2794,27 +2863,47 @@ export default function Dashboard() {
                   
                   {/* Withdrawal / Refund Details Banner in Event History */}
                   {Boolean(selectedHistorySub?.isWithdrawn || selectedHistorySub?.status === 'Withdrawn' || selectedHistorySub?.refundStatus || selectedHistorySub?.refundRequested || selectedHistorySub?.paymentStatus === 'Refunded') && (
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700/80 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+                    <div className={`border-2 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs ${
+                      selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700/80'
+                        : 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700/80'
+                    }`}>
                       <div className="flex items-start gap-3.5">
-                        <div className="p-3 bg-amber-500 text-white rounded-2xl shrink-0 mt-0.5 shadow-xs">
-                          <Clock size={22} className="animate-pulse" />
+                        <div className={`p-3 text-white rounded-2xl shrink-0 mt-0.5 shadow-xs ${
+                          selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded'
+                            ? 'bg-emerald-600'
+                            : 'bg-amber-500'
+                        }`}>
+                          {selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded' ? (
+                            <CheckCircle size={22} />
+                          ) : (
+                            <Clock size={22} className="animate-pulse" />
+                          )}
                         </div>
                         <div className="flex flex-col text-left">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-2xs">
-                              {selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded' ? 'Refund Approved' : 'Refund Pending Admin Approval'}
+                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white shadow-2xs ${
+                              selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded'
+                                ? 'bg-emerald-600'
+                                : 'bg-amber-500'
+                            }`}>
+                              {selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded' ? 'Refund Approved & Processed' : 'Refund Request Under Review'}
                             </span>
                             {selectedHistorySub.withdrawnAt && (
-                              <span className="text-[10px] text-amber-800 dark:text-amber-300 font-bold">
-                                Requested: {new Date(selectedHistorySub.withdrawnAt).toLocaleDateString()}
+                              <span className="text-[10px] font-bold opacity-80">
+                                Date: {new Date(selectedHistorySub.withdrawnAt).toLocaleDateString()}
                               </span>
                             )}
                           </div>
                           <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white mt-1">
-                            Refund Request Under Review
+                            {selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded'
+                              ? 'Refund Approved & Fee Credited'
+                              : 'Refund Request Under Review'}
                           </h4>
-                          <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 leading-relaxed font-medium">
-                            "Your request for entry withdrawal and fee refund has been submitted to the administrator. The refund amount will be credited back once approved by the admin team."
+                          <p className="text-xs mt-0.5 leading-relaxed font-semibold">
+                            {selectedHistorySub.refundStatus === 'Approved' || selectedHistorySub.paymentStatus === 'Refunded'
+                              ? 'Your event withdrawal and refund request has been approved and processed by the admin team. The refund amount has been credited back to your payment method.'
+                              : 'Your event withdrawal and refund request has been submitted to the administrator. The refund amount will be credited back to you once it is approved and processed by the admin team.'}
                           </p>
                         </div>
                       </div>

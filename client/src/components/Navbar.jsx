@@ -517,63 +517,37 @@ export default function Navbar() {
           <div className="px-4 pt-3 pb-6 space-y-2 max-h-[85vh] overflow-y-auto">
 
             {/* Mobile Toggle Menu User Card */}
-            <div className="p-3 bg-slate-800/90 dark:bg-slate-900/90 rounded-2xl border border-slate-700/70 flex items-center justify-between gap-3 shadow-sm mb-3">
-              {user ? (
-                <>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md shrink-0 uppercase border border-indigo-400/30 overflow-hidden">
-                      {user.avatar ? (
-                        <img src={getBackendUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
-                      ) : (
-                        user.name ? user.name.charAt(0) : 'U'
-                      )}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-display font-extrabold text-white text-xs truncate leading-tight">
-                        {user.name}
-                      </span>
-                      <span className="text-[10px] text-slate-300 truncate">
-                        {user.email}
-                      </span>
-                    </div>
+            {user && (
+              <div className="p-3 bg-slate-800/90 dark:bg-slate-900/90 rounded-2xl border border-slate-700/70 flex items-center justify-between gap-3 shadow-sm mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md shrink-0 uppercase border border-indigo-400/30 overflow-hidden">
+                    {user.avatar ? (
+                      <img src={getBackendUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      user.name ? user.name.charAt(0) : 'U'
+                    )}
                   </div>
-
-                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 border ${
-                    user.role === 'Admin'
-                      ? 'bg-purple-500/25 text-purple-200 border-purple-400/40'
-                      : user.role === 'Judge'
-                      ? 'bg-amber-500/25 text-amber-200 border-amber-400/40'
-                      : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
-                  }`}>
-                    {user.role || 'Participant'}
-                  </span>
-                </>
-              ) : (
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <User size={16} className="text-slate-400" />
-                    <span className="text-xs font-extrabold text-slate-200">Welcome Guest</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to="/login"
-                      state={{ forceContestant: true }}
-                      onClick={() => setIsOpen(false)}
-                      className="text-[11px] font-bold px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-all"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setIsOpen(false)}
-                      className="text-[11px] font-bold px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
-                    >
-                      Register
-                    </Link>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-display font-extrabold text-white text-xs truncate leading-tight">
+                      {user.name}
+                    </span>
+                    <span className="text-[10px] text-slate-300 truncate">
+                      {user.email}
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
+
+                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 border ${
+                  user.role === 'Admin'
+                    ? 'bg-purple-500/25 text-purple-200 border-purple-400/40'
+                    : user.role === 'Judge'
+                    ? 'bg-amber-500/25 text-amber-200 border-amber-400/40'
+                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
+                }`}>
+                  {user.role || 'Participant'}
+                </span>
+              </div>
+            )}
             <Link
               to="/info"
               onClick={() => setIsOpen(false)}

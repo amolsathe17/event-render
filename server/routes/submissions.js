@@ -111,6 +111,14 @@ router.post('/start', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
 
+    // Check if event submission deadline has passed before allowing enrollment / re-enrollment
+    if (event.deadline && new Date() >= new Date(event.deadline)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Registration closed. Submission deadline has passed. Re-enrollment is no longer permitted.' 
+      });
+    }
+
     if (!eligibilityAccepted) {
       return res.status(400).json({ success: false, message: 'You must accept the DSLR Eligibility Declaration' });
     }
@@ -135,14 +143,30 @@ router.post('/start', protect, async (req, res) => {
       : 'ENT-' + Math.floor(100000 + Math.random() * 900000);
 
     if (submission) {
-      if (submission.isFinalSubmitted) {
+      if (submission.paymentStatus === 'Refunded' || submission.refundStatus === 'Approved') {
+        // Reset refunded submission to allow fresh re-enrollment before deadline
+        submission.packageId = plan.packageId;
+        submission.amount = plan.amount;
+        submission.photoLimit = plan.limit;
+        submission.eligibilityAccepted = eligibilityAccepted;
+        submission.paymentStatus = 'Unpaid';
+        submission.entryStatus = 'Draft';
+        submission.status = 'Draft';
+        submission.isWithdrawn = false;
+        submission.refundStatus = null;
+        submission.refundRequested = false;
+        submission.isFinalSubmitted = false;
+        submission.photographs = [];
+        await submission.save();
+      } else if (submission.isFinalSubmitted) {
         return res.status(400).json({ success: false, message: 'Entry has already been finalized' });
+      } else {
+        submission.packageId = plan.packageId;
+        submission.amount = plan.amount;
+        submission.photoLimit = plan.limit;
+        submission.eligibilityAccepted = eligibilityAccepted;
+        await submission.save();
       }
-      submission.packageId = plan.packageId;
-      submission.amount = plan.amount;
-      submission.photoLimit = plan.limit;
-      submission.eligibilityAccepted = eligibilityAccepted;
-      await submission.save();
     } else {
       submission = await Submission.create({
         userId: req.user._id.toString(),
