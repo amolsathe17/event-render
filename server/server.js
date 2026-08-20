@@ -20,6 +20,7 @@ const reportRoutes = require("./routes/reports");
 const contestTypeRoutes = require("./routes/contestTypes");
 const expenseRoutes = require("./routes/expenses");
 const sponsorshipRoutes = require("./routes/sponsorships");
+const chatbotRoutes = require("./routes/chatbot");
 
 const app = express();
 
@@ -112,6 +113,9 @@ app.use("/expenses", expenseRoutes);
 
 app.use("/api/sponsorships", sponsorshipRoutes);
 app.use("/sponsorships", sponsorshipRoutes);
+
+app.use("/api/chatbot", chatbotRoutes);
+app.use("/chatbot", chatbotRoutes);
 
 // Image proxy route to eliminate cross-origin third-party Tracking Prevention browser warnings permanently
 app.get("/api/image-proxy", (req, res) => {

@@ -18,6 +18,7 @@ import Gallery from './pages/Gallery';
 import About from './pages/About';
 import ScrollToTop from './components/ScrollToTop';
 import GlobalTooltip from './components/GlobalTooltip';
+import ChatbotWidget from './components/ChatbotWidget';
 
 // Route Guard for authenticated users
 function ProtectedRoute({ children }) {
@@ -130,6 +131,7 @@ function MainLayout() {
         </Routes>
       </main>
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 }
