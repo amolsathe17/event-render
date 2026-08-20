@@ -3724,7 +3724,13 @@ export default function AdminDashboard() {
                 <div key={e._id} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                   <div className="w-full">
                     <h4 className="font-display font-bold text-slate-900 dark:text-white text-sm leading-snug">{e.title}</h4>
-                    <p className="text-xs sm:text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Theme: "{e.theme}" • Deadline: {new Date(e.deadline).toLocaleDateString()}</p>
+                    <div className="text-xs sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                      <span><strong className="font-semibold text-slate-700 dark:text-slate-300">Submission Deadline:</strong> {e.deadline ? new Date(e.deadline).toLocaleDateString('en-IN') : 'N/A'}</span>
+                      <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                      <span><strong className="font-semibold text-slate-700 dark:text-slate-300">Venue:</strong> {e.venue || 'N/A'}</span>
+                      <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                      <span><strong className="font-semibold text-slate-700 dark:text-slate-300">Exhibition Date:</strong> {e.exhibitionFromDate ? new Date(e.exhibitionFromDate).toLocaleDateString('en-IN') : (e.exhibitionDate ? new Date(e.exhibitionDate).toLocaleDateString('en-IN') : (e.eventDate ? new Date(e.eventDate).toLocaleDateString('en-IN') : 'N/A'))}</span>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 dark:border-slate-800">
                     {e.status === 'Draft' ? (

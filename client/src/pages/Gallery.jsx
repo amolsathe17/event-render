@@ -101,19 +101,47 @@ export default function Gallery() {
   }
 
   return (
-    <div className="bg-slate-100/90 dark:bg-slate-950 min-h-screen text-slate-800 dark:text-slate-200 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="text-center flex flex-col gap-2 mb-10">
-          <h1 className="font-display font-black text-3xl sm:text-4xl text-slate-900 dark:text-white">
-            Gallery & Results
+    <div className="bg-slate-100/90 dark:bg-slate-950 min-h-screen text-slate-800 dark:text-slate-200">
+      
+      {/* ══════════════════════════ PAGE HEADER with event-bg.jpg (Identical to EventInfo.jsx) ══════════════ */}
+      <section className="text-white py-10 relative overflow-hidden">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: "url('/event-bg.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 z-10 bg-slate-900/75" />
+        {/* Subtle dot grid */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-10"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, #818cf8 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center gap-5">
+          <h1 className="font-display font-black text-4xl sm:text-5xl leading-tight tracking-tight">
+            Gallery &amp; Exhibition
+            <br />
+            <span className="bg-linear-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+              Results Showcase
+            </span>
           </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
-            Browse through event-wise approved Photographs / Videos, disapproved entries, or view the champions' leaderboard.
+          <p className="text-slate-300 text-sm max-w-xl leading-relaxed">
+            Explore event-wise approved photography &amp; video submissions, winner leaderboards, exhibition highlights, and official competition scorecards across all Sumbaran Art Society events.
           </p>
-        </div>
 
+        </div>
+      </section>
+
+      {/* ══════════════════════════ MAIN CONTENT (Container) ══════════════ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* EVENT ACCORDION PANELS */}
         {eventsList.length === 0 ? (
           <div className="text-center text-slate-400 py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
@@ -121,7 +149,7 @@ export default function Gallery() {
             <p className="text-sm font-semibold">No events found.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-5">
+          <div id="events-accordion" className="flex flex-col gap-5">
             {eventsList.map(ev => {
               const isOpen = openEventIds.has(ev._id);
               const activeTab = getEventTab(ev);
@@ -663,7 +691,7 @@ export default function Gallery() {
               <X size={20} />
             </button>
             <div className="grid grid-cols-1 lg:grid-cols-12">
-              <div className="lg:col-span-8 bg-slate-950 flex items-center justify-center relative p-3 min-h-[320px] lg:min-h-[480px]">
+              <div className="lg:col-span-8 bg-slate-950 flex items-center justify-center relative p-3 min-h-80 lg:min-h-120">
                 {selectedPhoto.mediaType === 'video' || selectedPhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) || selectedPhoto.fileUrl?.includes('/video/upload/') ? (
                   <video 
                     src={getBackendUrl(selectedPhoto.fileUrl)} 

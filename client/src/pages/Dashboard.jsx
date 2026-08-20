@@ -1018,8 +1018,7 @@ export default function Dashboard() {
           </div>
 
           {/* 4 Overview Cards Row */}
-          {allSubmissions.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               
               {/* Card 1: Donut Chart for Submission Status */}
               {(() => {
@@ -1385,7 +1384,6 @@ export default function Dashboard() {
               })()}
 
             </div>
-          )}
         </div>
       )}
 
@@ -1399,36 +1397,48 @@ export default function Dashboard() {
           </div>
 
           {(() => {
-            const eligibleSubs = allSubmissions.filter(sub => sub.isFinalSubmitted);
-
-            // Collect all certificate credential cards
+            // Collect all certificate credential cards based on strict enrollment + payment + upload + results published rules
             const allCards = [];
 
-            eligibleSubs.forEach(sub => {
-              const evDetails = eventsList.find(e => e._id === sub.eventId);
-              if (evDetails?.status === 'Completed') {
-                const winInfo = evDetails?.winners?.find(w => w.userId === user?._id || w.userId === user?.id);
-                if (winInfo && winInfo.certificatePdfUrl) {
-                  allCards.push({ sub, evDetails, winInfo, isWinner: true });
-                } else {
-                  allCards.push({ sub, evDetails, isWinner: false });
-                }
+            allSubmissions.forEach(sub => {
+              // 1. Exclude withdrawn or refunded entries
+              const isWithdrawnOrRefunded = Boolean(sub.isWithdrawn || sub.status === 'Withdrawn' || sub.refundStatus || sub.refundRequested || sub.paymentStatus === 'Refunded');
+              if (isWithdrawnOrRefunded) return;
+
+              // 2. Check participant enrollment eligibility: Payment done + Media uploaded
+              const hasPaid = sub.paymentStatus === 'Paid' || !!sub.paymentId;
+              const hasUploads = Array.isArray(sub.photographs) && sub.photographs.length > 0;
+              const evDetails = eventsList.find(e => e._id === sub.eventId || (e.title && sub.eventTitle && e.title.trim().toLowerCase() === sub.eventTitle.trim().toLowerCase()));
+
+              if (!evDetails) return;
+
+              // 3. Admin completed & published results check
+              const isResultsPublished = Boolean(evDetails.resultsPublished || evDetails.status === 'Completed' || evDetails.winnersPublished);
+              const winInfo = evDetails.winners?.find(w => w.userId === user?._id || w.userId === user?.id || w.userEmail === user?.email);
+
+              if (winInfo && isResultsPublished) {
+                // Winner Certificate
+                allCards.push({ sub, evDetails, winInfo, isWinner: true });
+              } else if (hasPaid && hasUploads && isResultsPublished) {
+                // Participation Certificate ONLY displayed when enrolled + uploaded photos/videos + done payment + results published by admin!
+                allCards.push({ sub, evDetails, isWinner: false });
               }
             });
 
-            // Demo cards fallback for portal preview
             if (allCards.length === 0) {
-              allCards.push({
-                isWinner: true,
-                winInfo: { rank: '3rd Prize', prizeAmount: '₹20,000', photoTitle: 'fdfsdf', score: 8 },
-                sub: { eventTitle: 'National Painting Competition 2027', entryNumber: 'ENT-491079' },
-                evDetails: { title: 'National Painting Competition 2027' }
-              });
-              allCards.push({
-                isWinner: false,
-                sub: { eventTitle: 'National Short Video & Reels Championship 2026', entryNumber: 'ENT-491079' },
-                evDetails: { title: 'National Short Video & Reels Championship 2026' }
-              });
+              return (
+                <div className="bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 my-4 shadow-xs">
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-2xl">
+                    <Award size={32} />
+                  </div>
+                  <h3 className="font-display font-black text-slate-900 dark:text-white text-base">
+                    No Digital Certificates Available
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed font-medium">
+                    Participation certificates will automatically appear here once you complete your contest entry (upload photos & pay fee) and final results are published by the admin.
+                  </p>
+                </div>
+              );
             }
 
             return (
@@ -2831,25 +2841,31 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </div>
-                    ) : selectedHistoryEvent?.winnersPublished ? (
-                      <div className="bg-white/80 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5">
-                          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-2xl font-black text-lg">
-                            🎖️
-                          </div>
-                          <div>
-                            <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-[9px] font-black uppercase tracking-wider">
-                              Participant Certificate
-                            </span>
-                            <h5 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">
-                              Certificate of Participation Available
-                            </h5>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              Thank you for competing in {selectedHistoryEvent?.title}.
-                            </p>
+                    ) : (selectedHistoryEvent?.resultsPublished || selectedHistoryEvent?.status === 'Completed' || selectedHistoryEvent?.winnersPublished) ? (
+                      (selectedHistorySub?.paymentStatus === 'Paid' || selectedHistorySub?.paymentId) && selectedHistorySub?.photographs?.length > 0 ? (
+                        <div className="bg-white/80 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-3.5">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-2xl font-black text-lg">
+                              🎖️
+                            </div>
+                            <div>
+                              <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                Participant Certificate
+                              </span>
+                              <h5 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">
+                                Certificate of Participation Available
+                              </h5>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Thank you for competing in {selectedHistoryEvent?.title}.
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="p-4 bg-black/10 dark:bg-slate-950/40 border border-dashed border-amber-200/80 dark:border-amber-900/40 rounded-2xl text-center text-slate-800 dark:text-slate-600 text-xs font-semibold">
+                          ⚠️ Participation certificate requires completed entry (fee payment & media uploads).
+                        </div>
+                      )
                     ) : (
                       <div className="p-4 bg-black/10 dark:bg-slate-950/40 border border-dashed border-amber-200/80 dark:border-amber-900/40 rounded-2xl text-center text-slate-800 dark:text-slate-600 text-md">
                         ⏳ Certificates will be generated automatically once final results are published by the judging panel.

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import {
   IndianRupee,
   Plus,
@@ -25,7 +27,10 @@ import {
   Building,
   ExternalLink,
   ShieldAlert,
-  ChevronDown
+  ChevronDown,
+  FileSpreadsheet,
+  Download,
+  Printer
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getBackendUrl } from '../utils/url';
@@ -207,6 +212,246 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
   useEffect(() => {
     refreshData();
   }, [selectedEventId, search, categoryFilter, statusFilter]);
+
+  const handleExportCSV = (extension = 'csv') => {
+    const listToExport = Array.isArray(expenses) ? expenses : [];
+    if (listToExport.length === 0) {
+      alert('No expense records available to export.');
+      return;
+    }
+
+    const activeEv = allEvents.find(e => e._id === selectedEventId);
+    const eventTitle = activeEv ? activeEv.title : 'All Events Combined';
+
+    const headers = ['Sr No', 'Expense Item Name', 'Category', 'Sub-Category', 'Amount (INR)', 'Vendor / Paid To', 'Payment Status', 'Logged Date'];
+    const rows = listToExport.map((exp, idx) => [
+      idx + 1,
+      `"${(exp.title || exp.name || '').replace(/"/g, '""')}"`,
+      `"${(exp.category || '').replace(/"/g, '""')}"`,
+      `"${(exp.subcategory || exp.subCategory || '').replace(/"/g, '""')}"`,
+      Number(exp.amount || 0),
+      `"${(exp.paidTo || exp.vendor || 'Vendor Payout').replace(/"/g, '""')}"`,
+      `"${(exp.paymentStatus || exp.status || 'Paid').replace(/"/g, '""')}"`,
+      `"${exp.date ? new Date(exp.date).toLocaleDateString('en-IN') : (exp.createdAt ? new Date(exp.createdAt).toLocaleDateString('en-IN') : 'N/A')}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `Event_Expenses_${eventTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.${extension}`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportExcel = () => {
+    handleExportCSV('csv');
+  };
+
+  const getLogoBase64 = () => new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const cvs = document.createElement('canvas');
+      cvs.width = img.width;
+      cvs.height = img.height;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(cvs.toDataURL('image/jpeg'));
+    };
+    img.onerror = () => resolve('/sumbacontest.jpg');
+    img.src = '/sumbacontest.jpg';
+  });
+
+  const generateOfficialAuditReport = async () => {
+    const logoBase64 = await getLogoBase64();
+    const listToPrint = Array.isArray(expenses) ? expenses : [];
+    const activeEv = allEvents.find(e => e._id === selectedEventId);
+    const eventTitle = activeEv ? activeEv.title : 'All Events Combined';
+    const totalExpenses = summary?.totalExpenses || listToPrint.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalFunding = summary?.totalFunding || 0;
+    const totalRevenue = summary?.totalRevenue || 0;
+    const netProfitLoss = summary?.netProfitLoss || (totalRevenue + totalFunding - totalExpenses);
+    const generatedDateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    const badgeBase = 'display: inline-block; vertical-align: middle; text-align: center; line-height: 1.3; box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif;';
+
+    const rowsHtml = listToPrint.map((exp, idx) => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 8px 10px; font-weight: bold; color: #64748b; text-align: left;">${idx + 1}</td>
+        <td style="padding: 8px 10px; font-weight: bold; color: #0f172a; text-align: left;">${exp.title || exp.name || 'Expense Item'}</td>
+        <td style="padding: 8px 10px; color: #334155; text-align: left;">${exp.category || 'General'}</td>
+        <td style="padding: 8px 10px; color: #475569; text-align: left;">${exp.subcategory || exp.subCategory || '—'}</td>
+        <td style="padding: 8px 10px; color: #475569; text-align: left;">${exp.paidTo || exp.vendor || 'Vendor Payout'}</td>
+        <td style="padding: 8px 10px; text-align: right; font-weight: 900; color: #e11d48;">₹${(Number(exp.amount) || 0).toLocaleString('en-IN')}</td>
+        <td style="padding: 8px 10px; text-align: center;">
+          <span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">
+            ${exp.paymentStatus || exp.status || 'Paid'}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Official Audit Report - ${eventTitle}</title>
+          <style>
+            @page { size: A4 portrait; margin: 0; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+            .page-container { width: 210mm; min-height: 297mm; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto; background: #fff; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th { background-color: #f1f5f9; color: #0f172a; font-weight: 800; text-transform: uppercase; padding: 8px 10px; text-align: left; border-bottom: 2px solid #64748b; font-size: 10px; }
+            td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+          </style>
+        </head>
+        <body>
+          <div class="page-container">
+            <div>
+              <div style="width: 100%; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <img src="${logoBase64}" style="height: 44px; width: auto; object-fit: contain; display: block; border-radius: 4px;" alt="Sumbaran Art Society Logo" />
+                  <div>
+                    <h1 style="font-size: 18px; font-weight: 900; margin: 0; color: #0f172a; line-height: 1.2;">SUMBARAN ART SOCIETY</h1>
+                    <p style="font-size: 9px; color: #475569; margin: 3px 0 0 0; line-height: 1.3;">Address: 1414/1A, Trio Chambers, Nr. Renuka Swaroop Girls High School, Sadashiv Peth, Pune - 411030.</p>
+                    <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; line-height: 1.3;">Phone: +91 98765 43210 • Email: support@sumbaranartsociety.com • Website: https://sumbaranartsociety.com</p>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="${badgeBase} border: 2px solid #0f172a; color: #0f172a; padding: 5px 12px; border-radius: 6px; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">OFFICIAL AUDIT REPORT</span>
+                  <p style="font-size: 9px; color: #475569; margin: 6px 0 0 0; font-weight: 600; line-height: 1.2;">Generated: ${generatedDateStr}</p>
+                </div>
+              </div>
+
+              <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; background-color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; line-height: 1.2;">NAME OF CONTEST</span>
+                  <h2 style="font-size: 16px; font-weight: 900; color: #0f172a; margin: 2px 0 0 0; line-height: 1.2;">${eventTitle}</h2>
+                  <p style="font-size: 11px; color: #4338ca; margin: 2px 0 0 0; font-weight: 800; line-height: 1.3;">Event Expenses & Outflows Report</p>
+                </div>
+                <div style="text-align: right;">
+                  <span style="${badgeBase} border: 1.5px solid #4338ca; color: #4338ca; background-color: #eef2ff; padding: 5px 14px; border-radius: 20px; font-size: 10px; font-weight: 800;">
+                    ${listToPrint.length} records found
+                  </span>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+                <div style="padding: 10px; background-color: #ecfdf5; border: 2px solid #6ee7b7; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #065f46; text-transform: uppercase;">REGISTRATION REVENUE</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #047857; margin: 3px 0 0 0;">₹${totalRevenue.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #047857; font-weight: 500;">Participant entry fees</span>
+                </div>
+                <div style="padding: 10px; background-color: #faf5ff; border: 2px solid #d8b4fe; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #6b21a8; text-transform: uppercase;">SPONSORSHIPS & GRANTS</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #7e22ce; margin: 3px 0 0 0;">₹${totalFunding.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #7e22ce; font-weight: 500;">Corporate, CSR & Donations</span>
+                </div>
+                <div style="padding: 10px; background-color: #fff1f2; border: 2px solid #fca5a5; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #9f1239; text-transform: uppercase;">TOTAL EXPENSES</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #be123c; margin: 3px 0 0 0;">₹${totalExpenses.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #be123c; font-weight: 500;">Operational line items</span>
+                </div>
+                <div style="padding: 10px; background-color: ${netProfitLoss >= 0 ? '#eef2ff' : '#fff1f2'}; border: 2px solid ${netProfitLoss >= 0 ? '#a5b4fc' : '#fca5a5'}; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: ${netProfitLoss >= 0 ? '#3730a3' : '#9f1239'}; text-transform: uppercase;">NET PROFIT / LOSS</span>
+                  <p style="font-size: 18px; font-weight: 900; color: ${netProfitLoss >= 0 ? '#4338ca' : '#be123c'}; margin: 3px 0 0 0;">₹${netProfitLoss.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: ${netProfitLoss >= 0 ? '#4338ca' : '#be123c'}; font-weight: 500;">${netProfitLoss >= 0 ? 'Surplus balance' : 'Deficit shortfall'}</span>
+                </div>
+              </div>
+
+              <div style="overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 12px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                  <thead>
+                    <tr style="background-color: #f1f5f9; color: #0f172a; font-weight: bold; border-bottom: 2px solid #64748b;">
+                      <th style="padding: 8px 10px; text-align: left;">#</th>
+                      <th style="padding: 8px 10px; text-align: left;">Record Title / Description</th>
+                      <th style="padding: 8px 10px; text-align: left;">Category / Module</th>
+                      <th style="padding: 8px 10px; text-align: left;">Sub-Category</th>
+                      <th style="padding: 8px 10px; text-align: left;">Vendor / Paid To</th>
+                      <th style="padding: 8px 10px; text-align: right;">Amount (₹)</th>
+                      <th style="padding: 8px 10px; text-align: center;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml || '<tr><td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">No expense records logged for this event.</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 9px; font-weight: 600;">
+              <div style="vertical-align: middle; line-height: 1;">DSLR Photography Contest & Event Portal — Sumbaran Art Society Confidential Report</div>
+              <div style="${badgeBase} background-color: #0f172a; color: #ffffff; padding: 5px 12px; border-radius: 6px; font-size: 9px; font-weight: 800;">
+                Page 1 of 1
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const handlePrint = async () => {
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Please allow popups to print/export the expenses report.');
+      return;
+    }
+    const html = await generateOfficialAuditReport();
+    printWin.document.write(html);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => {
+      printWin.print();
+    }, 500);
+  };
+
+  const handleExportPDF = async () => {
+    const listToPrint = Array.isArray(expenses) ? expenses : [];
+    if (listToPrint.length === 0) {
+      alert('No expense records available to export.');
+      return;
+    }
+
+    const activeEv = allEvents.find(e => e._id === selectedEventId);
+    const eventTitle = activeEv ? activeEv.title : 'All Events Combined';
+    const fileName = `Event_Expenses_${eventTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    try {
+      const htmlContent = await generateOfficialAuditReport();
+      const pageContainer = document.createElement('div');
+      pageContainer.style.position = 'absolute';
+      pageContainer.style.top = '-9999px';
+      pageContainer.style.left = '-9999px';
+      pageContainer.style.width = '210mm';
+      pageContainer.style.backgroundColor = '#ffffff';
+      pageContainer.innerHTML = htmlContent;
+      document.body.appendChild(pageContainer);
+
+      const elementToRender = pageContainer.querySelector('.page-container') || pageContainer;
+
+      const canvas = await html2canvas(elementToRender, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      document.body.removeChild(pageContainer);
+
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      doc.save(fileName);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Failed to generate downloadable PDF. Triggering print fallback.');
+      handlePrint();
+    }
+  };
 
   const handleOpenAddModal = () => {
     setEditingExpense(null);
@@ -457,13 +702,56 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
           </p>
         </div>
 
-        <div className="relative z-10 flex flex-wrap items-center gap-3 self-start sm:self-center">
-          <button
-            onClick={handleOpenAddModal}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 border border-emerald-400/30"
-          >
-            <Plus size={16} /> Add New Expense
-          </button>
+        <div className="relative z-10 flex flex-col items-end gap-2.5 self-start sm:self-center shrink-0">
+          {/* Top Row: Export Action Buttons (Excel, CSV, PDF, Print) */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+              title="Export Excel"
+            >
+              <FileSpreadsheet size={14} /> Excel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+              title="Export CSV"
+            >
+              <Download size={14} /> CSV
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+              title="Export PDF"
+            >
+              <FileText size={14} /> PDF
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+              title="Print Event Expenses Report"
+            >
+              <Printer size={14} /> Print
+            </button>
+          </div>
+
+          {/* Bottom Row: Add New Expense Button (Right Aligned Under Export Group) */}
+          <div className="flex justify-end w-full">
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center gap-2 shrink-0 border border-emerald-400/30"
+            >
+              <Plus size={16} /> Add New Expense
+            </button>
+          </div>
         </div>
       </div>
 

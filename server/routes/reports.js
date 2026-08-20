@@ -441,6 +441,7 @@ router.get('/data/:type', protect, authorize('Admin'), async (req, res) => {
           _id: p._id,
           name: p.name,
           email: p.email,
+          mobile: p.mobile || p.phone || '—',
           category: p.city || 'Participant',
           amount: amount > 0 ? amount : null,
           score: score ? `${score}/10` : '—',

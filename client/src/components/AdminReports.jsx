@@ -231,15 +231,15 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
     const getHeaderHtml = (reportType) => {
       switch (reportType) {
         case 'participants':
-          return `<th style="${thL}">#</th><th style="${thL}">Participant Full Name</th><th style="${thL}">Email Address</th><th style="${thL}">City / Location</th><th style="${thR}">Amount (₹)</th><th style="${thR}">Jury Score</th><th style="${thC}">Registration Date</th><th style="${thC}">Account Status</th>`;
+          return `<th style="${thL}">#</th><th style="${thL}">Participant Full Name</th><th style="${thL}">Email Address</th><th style="${thL}">Mobile No.</th><th style="${thL}">City / Location</th><th style="${thR}">Amount (₹)</th><th style="${thR}">Jury Score</th><th style="${thC}">Registration Date</th><th style="${thC}">Account Status</th>`;
         case 'revenue':
           return `<th style="${thL}">#</th><th style="${thL}">Transaction ID / Invoice</th><th style="${thL}">Package Name</th><th style="${thL}">Participant / Payer</th><th style="${thR}">Total Paid (₹)</th><th style="${thC}">Payment Status</th>`;
         case 'winners':
           return `<th style="${thL}">#</th><th style="${thL}">Rank & Winner Name</th><th style="${thL}">Contest Event Title</th><th style="${thL}">Prize Reward</th><th style="${thR}">Jury Score</th><th style="${thC}">Status</th>`;
         case 'expenses':
-          return `<th style="${thL}">#</th><th style="${thL}">Expense Title</th><th style="${thL}">Category</th><th style="${thL}">Paid To / Vendor</th><th style="${thR}">Amount (₹)</th><th style="${thC}">Payout Status</th>`;
+          return `<th style="${thL}">#</th><th style="${thL}">Record Title / Description</th><th style="${thL}">Category / Module</th><th style="${thL}">Sub-Category</th><th style="${thL}">Vendor / Paid To</th><th style="${thR}">Amount (₹)</th><th style="${thC}">Status</th>`;
         case 'sponsorships':
-          return `<th style="${thL}">#</th><th style="${thL}">Sponsor / Donor Name</th><th style="${thL}">Organization</th><th style="${thL}">Funding Type</th><th style="${thL}">Event Title</th><th style="${thR}">Amount (₹)</th><th style="${thC}">Funding Date</th><th style="${thC}">Payment Status</th>`;
+          return `<th style="${thL}">#</th><th style="${thL}">Sponsor / Donor Name</th><th style="${thL}">Organization</th><th style="${thL}">Funding Type</th><th style="${thL}">Supported Event</th><th style="${thR}">Amount (₹)</th><th style="${thC}">Status</th>`;
         case 'profit_loss':
           return `<th style="${thL}">#</th><th style="${thL}">Financial Line Item / Description</th><th style="${thL}">Financial Type & Category</th><th style="${thL}">Payer / Vendor / Event Ref</th><th style="${thR}">Net Amount (₹)</th><th style="${thC}">Status</th>`;
         case 'refunds':
@@ -250,33 +250,33 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       }
     };
 
-    const badgeBase = 'display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; box-sizing: border-box;';
+    const badgeBase = 'display: inline-block; vertical-align: middle; text-align: center; line-height: 1.3; box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif;';
 
     const getRowHtml = (item, globalIdx, reportType) => {
       const num = globalIdx + 1;
-      const bL = 'border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; vertical-align: middle; line-height: 1.2;';
-      const bC = 'border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: center; vertical-align: middle; line-height: 1.2;';
-      const bR = 'border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; vertical-align: middle; line-height: 1.2;';
+      const bL = 'border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: middle; line-height: 1.2;';
+      const bC = 'border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; vertical-align: middle; line-height: 1.2;';
+      const bR = 'border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: right; vertical-align: middle; line-height: 1.2;';
 
       switch (reportType) {
         case 'participants':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Participant'}</td><td style="${bL} color: #334155;">${item.email || '—'}</td><td style="${bL} color: #475569;">${item.category || 'Participant'}</td><td style="${bR} font-weight: 900; color: #047857;">${item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score || '—'}</td><td style="${bC} color: #475569;">${item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Verified'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Participant'}</td><td style="${bL} color: #334155;">${item.email || '—'}</td><td style="${bL} font-family: monospace; color: #4338ca; font-weight: 600;">${item.mobile || item.phone || '—'}</td><td style="${bL} color: #475569;">${item.category || 'Participant'}</td><td style="${bR} font-weight: 900; color: #047857;">${item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score || '—'}</td><td style="${bC} color: #475569;">${item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Verified'}</span></td></tr>`;
         case 'revenue':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-family: monospace; font-weight: bold; color: #4338ca;">${item.transactionId || item._id}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.category || 'Package Entry'}</td><td style="${bL} color: #334155;">${item.name || item.email}</td><td style="${bR} font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Success'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-family: monospace; font-weight: bold; color: #4338ca;">${item.transactionId || item._id}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.category || 'Package Entry'}</td><td style="${bL} color: #334155;">${item.name || item.email}</td><td style="${bR} font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Success'}</span></td></tr>`;
         case 'winners':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">🏆 ${item.name}</td><td style="${bL} color: #334155;">${item.email}</td><td style="${bL} font-weight: bold; color: #b45309;">${item.category || 'Trophy & Prize'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score ? `${item.score}/10` : 'Declared'}</td><td style="${bC}"><span style="${badgeBase} background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Winner'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">🏆 ${item.name}</td><td style="${bL} color: #334155;">${item.email}</td><td style="${bL} font-weight: bold; color: #b45309;">${item.category || 'Trophy & Prize'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score ? `${item.score}/10` : 'Declared'}</td><td style="${bC}"><span style="${badgeBase} background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Winner'}</span></td></tr>`;
         case 'expenses':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || item.title}</td><td style="${bL} color: #334155;">${item.category || 'Expense'}</td><td style="${bL} color: #475569;">${item.email || item.paidTo || 'Vendor Payout'}</td><td style="${bR} font-weight: 900; color: #be123c;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.paymentStatus || item.status || 'Paid'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.title || item.name || 'Expense Item'}</td><td style="${bL} color: #334155;">${item.category || 'General'}</td><td style="${bL} color: #475569;">${item.subcategory || item.subCategory || '—'}</td><td style="${bL} color: #475569;">${item.paidTo || item.vendor || 'Vendor Payout'}</td><td style="${bR} font-weight: 900; color: #be123c;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.paymentStatus || item.status || 'Paid'}</span></td></tr>`;
         case 'sponsorships':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.sponsorName || item.name}</td><td style="${bL} color: #334155;">${item.orgName || '—'}</td><td style="${bL} font-weight: bold; color: #4338ca;">${item.sponsorType || 'Sponsorship'}</td><td style="${bL} color: #475569;">${item.eventTitle || 'All Events Combined'}</td><td style="${bR} font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC} color: #475569;">${item.fundingDate ? new Date(item.fundingDate).toLocaleDateString('en-IN') : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Received'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.sponsorName || item.name || 'Sponsor Name'}</td><td style="${bL} color: #334155;">${item.orgName || '—'}</td><td style="${bL} font-weight: bold; color: #4338ca;">${item.sponsorType || 'Sponsorship'}</td><td style="${bL} color: #475569;">${item.eventTitle || eventTitle}</td><td style="${bR} font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Received'}</span></td></tr>`;
         case 'profit_loss':
           const isInc = item.amount > 0 || item.status === 'Paid In';
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Line Item Entry'}</td><td style="${bL}"><span style="${badgeBase} background-color: ${isInc ? '#e0e7ff' : '#ffedd5'}; color: ${isInc ? '#3730a3' : '#9a3412'}; border: 1px solid ${isInc ? '#818cf8' : '#fb923c'}; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 900;">${isInc ? '▲ Revenue Income' : '▼ Expense Outflow'}</span></td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: ${isInc ? '#4338ca' : '#b45309'};">${typeof item.amount === 'number' ? `${item.amount >= 0 ? '+₹' : '-₹'}${Math.abs(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || 'Line Item Entry'}</td><td style="${bL}"><span style="${badgeBase} background-color: ${isInc ? '#e0e7ff' : '#ffedd5'}; color: ${isInc ? '#3730a3' : '#9a3412'}; border: 1px solid ${isInc ? '#818cf8' : '#fb923c'}; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: 900;">${isInc ? '▲ Revenue Income' : '▼ Expense Outflow'}</span></td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: ${isInc ? '#4338ca' : '#b45309'};">${typeof item.amount === 'number' ? `${item.amount >= 0 ? '+₹' : '-₹'}${Math.abs(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
         case 'refunds':
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-family: monospace; font-weight: bold; color: #4338ca;">${item.transactionId || item._id}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name}</td><td style="${bL} color: #334155;">${item.category || 'Registration Refund'}</td><td style="${bR} font-weight: 900; color: #be123c;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #fff1f2; color: #be123c; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Refunded'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-family: monospace; font-weight: bold; color: #4338ca;">${item.transactionId || item._id}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name}</td><td style="${bL} color: #334155;">${item.category || 'Registration Refund'}</td><td style="${bR} font-weight: 900; color: #be123c;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td><td style="${bC}"><span style="${badgeBase} background-color: #fff1f2; color: #be123c; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Refunded'}</span></td></tr>`;
         case 'overview':
         default:
-          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || item.userName || 'Record Entry'}</td><td style="${bL} color: #334155;">${item.category || 'General'}</td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: #047857;">${item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score || '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #eef2ff; color: #4338ca; border: 1px solid #a5b4fc; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
+          return `<tr><td style="${bL} font-weight: bold; color: #64748b;">${num}</td><td style="${bL} font-weight: bold; color: #0f172a;">${item.name || item.userName || 'Record Entry'}</td><td style="${bL} color: #334155;">${item.category || 'General'}</td><td style="${bL} color: #475569;">${item.email || '—'}</td><td style="${bR} font-weight: 900; color: #047857;">${item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}</td><td style="${bR} font-weight: 900; color: #4338ca;">${item.score || '—'}</td><td style="${bC}"><span style="${badgeBase} background-color: #eef2ff; color: #4338ca; border: 1px solid #a5b4fc; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">${item.status || 'Logged'}</span></td></tr>`;
       }
     };
 
@@ -287,43 +287,35 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       const pageRows = reportData.slice(startIndex, startIndex + recordsPerPage);
 
       const pageContentHTML = `
-        <div class="print-page" style="width: 1050px; min-height: 1420px; background-color: #ffffff; color: #000000; font-family: system-ui, -apple-system, sans-serif; padding: 36px 40px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; page-break-inside: avoid; margin: 0 auto 20px auto;">
+        <div class="print-page" style="width: 210mm; min-height: 297mm; background-color: #ffffff; color: #0f172a; font-family: 'Segoe UI', Arial, sans-serif; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; page-break-inside: avoid; margin: 0 auto;">
           <div>
             <!-- Top Header (Printed on EVERY page!) -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 18px; background-color: #ffffff; color: #000000;">
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <img src="${logoBase64}" style="height: 64px; width: auto; object-fit: contain; border-radius: 6px;" alt="Sumbaran Art Society Logo" />
+            <div style="width: 100%; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${logoBase64}" style="height: 42px; width: auto; object-fit: contain; border-radius: 4px; display: block;" alt="Sumbaran Art Society Logo" />
                 <div>
-                  <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: 0.5px;">SUMBARAN ART SOCIETY</h1>
-                  <p style="font-size: 11px; color: #334155; margin: 4px 0 2px 0; font-weight: 600;">
-                    Address: 1414/1A, Trio Chambers, Nr. Renuka Swaroop Girls High School, Sadashiv Peth, Pune - 411030.
-                  </p>
-                  <p style="font-size: 10px; color: #475569; margin: 0; font-weight: 500;">
-                    Phone: +91 98765 43210 • Email: support@sumbaranartsociety.com • Website: https://sumbaranartsociety.com
-                  </p>
+                  <h1 style="font-size: 18px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: 0.5px; line-height: 1.2;">SUMBARAN ART SOCIETY</h1>
+                  <p style="font-size: 9px; color: #475569; margin: 3px 0 0 0; line-height: 1.3;">Address: 1414/1A, Trio Chambers, Nr. Renuka Swaroop Girls High School, Sadashiv Peth, Pune - 411030.</p>
+                  <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; line-height: 1.3;">Phone: +91 98765 43210 • Email: support@sumbaranartsociety.com • Website: https://sumbaranartsociety.com</p>
                 </div>
               </div>
-              <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-                <span style="${badgeBase} border: 2px solid #0f172a; color: #0f172a; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase;">
-                  OFFICIAL AUDIT REPORT
-                </span>
-                <p style="font-size: 10px; color: #475569; margin: 6px 0 0 0; font-weight: 600;">
-                  Generated: ${generatedDateStr}
-                </p>
+              <div style="text-align: right;">
+                <span style="${badgeBase} border: 2px solid #0f172a; color: #0f172a; padding: 5px 12px; border-radius: 6px; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">OFFICIAL AUDIT REPORT</span>
+                <p style="font-size: 9px; color: #475569; margin: 6px 0 0 0; font-weight: 600; line-height: 1.2;">Generated: ${generatedDateStr}</p>
               </div>
             </div>
 
             <!-- Contest Name & Subtitle Box -->
-            <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; background-color: #f8fafc; color: #000000; display: flex; justify-content: space-between; align-items: center;">
+            <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; background-color: #f8fafc; color: #0f172a; display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">Name of Contest</span>
-                <h2 style="font-size: 17px; font-weight: 900; color: #0f172a; margin: 2px 0 2px 0;">${eventTitle}</h2>
-                <p style="font-size: 11px; color: #4338ca; margin: 0; font-weight: 800;">
+                <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; line-height: 1.2;">NAME OF CONTEST</span>
+                <h2 style="font-size: 16px; font-weight: 900; color: #0f172a; margin: 2px 0 0 0; line-height: 1.2;">${eventTitle}</h2>
+                <p style="font-size: 11px; color: #4338ca; margin: 2px 0 0 0; font-weight: 800; line-height: 1.3;">
                   ${reportTitle} ${p > 0 ? `(Page ${p + 1} Continuation)` : ''} ${fromDate ? `• From: ${fromDate}` : ''} ${toDate ? `• To: ${toDate}` : ''} ${searchQuery ? `• Search: "${searchQuery}"` : ''}
                 </p>
               </div>
               <div style="text-align: right;">
-                <span style="${badgeBase} border: 1px solid #4338ca; color: #4338ca; background-color: #eef2ff; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 800;">
+                <span style="${badgeBase} border: 1.5px solid #4338ca; color: #4338ca; background-color: #eef2ff; padding: 5px 14px; border-radius: 20px; font-size: 10px; font-weight: 800;">
                   ${totalRecords} records found
                 </span>
               </div>
@@ -331,33 +323,33 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
 
             <!-- Image 2's 4 Executive Summary Cards (Rendered on Page 1 for PDF & Print) -->
             ${p === 0 ? `
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
                 <!-- Card 1: REGISTRATION REVENUE -->
-                <div style="padding: 12px; background-color: #ecfdf5; border: 2px solid #6ee7b7; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: #065f46; text-transform: uppercase;">REGISTRATION REVENUE</span>
-                  <p style="font-size: 20px; font-weight: 900; color: #047857; margin: 4px 0 0 0;">₹${(summaryData?.totalRevenue || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: #047857; font-weight: 500;">Participant entry fees</span>
+                <div style="padding: 10px; background-color: #ecfdf5; border: 2px solid #6ee7b7; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #065f46; text-transform: uppercase;">REGISTRATION REVENUE</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #047857; margin: 3px 0 0 0;">₹${(summaryData?.totalRevenue || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #047857; font-weight: 500;">Participant entry fees</span>
                 </div>
 
                 <!-- Card 2: SPONSORSHIPS & GRANTS -->
-                <div style="padding: 12px; background-color: #faf5ff; border: 2px solid #d8b4fe; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: #6b21a8; text-transform: uppercase;">SPONSORSHIPS & GRANTS</span>
-                  <p style="font-size: 20px; font-weight: 900; color: #7e22ce; margin: 4px 0 0 0;">₹${(summaryData?.totalFunding || summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: #7e22ce; font-weight: 500;">Corporate, CSR & Donations</span>
+                <div style="padding: 10px; background-color: #faf5ff; border: 2px solid #d8b4fe; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #6b21a8; text-transform: uppercase;">SPONSORSHIPS & GRANTS</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #7e22ce; margin: 3px 0 0 0;">₹${(summaryData?.totalFunding || summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #7e22ce; font-weight: 500;">Corporate, CSR & Donations</span>
                 </div>
 
                 <!-- Card 3: TOTAL EXPENSES -->
-                <div style="padding: 12px; background-color: #fff1f2; border: 2px solid #fca5a5; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: #9f1239; text-transform: uppercase;">TOTAL EXPENSES</span>
-                  <p style="font-size: 20px; font-weight: 900; color: #be123c; margin: 4px 0 0 0;">₹${(summaryData?.totalExpenses || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: #be123c; font-weight: 500;">Operational line items</span>
+                <div style="padding: 10px; background-color: #fff1f2; border: 2px solid #fca5a5; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #9f1239; text-transform: uppercase;">TOTAL EXPENSES</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #be123c; margin: 3px 0 0 0;">₹${(summaryData?.totalExpenses || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #be123c; font-weight: 500;">Operational line items</span>
                 </div>
 
                 <!-- Card 4: NET PROFIT / LOSS -->
-                <div style="padding: 12px; background-color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#eef2ff' : '#fff1f2'}; border: 2px solid ${(summaryData?.netProfitLoss || 0) >= 0 ? '#a5b4fc' : '#fca5a5'}; border-radius: 12px; text-align: left;">
-                  <span style="font-size: 9px; font-weight: 800; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#3730a3' : '#9f1239'}; text-transform: uppercase;">NET PROFIT / LOSS</span>
-                  <p style="font-size: 20px; font-weight: 900; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#4338ca' : '#be123c'}; margin: 4px 0 0 0;">₹${(summaryData?.netProfitLoss || 0).toLocaleString('en-IN')}</p>
-                  <span style="font-size: 9px; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#4338ca' : '#be123c'}; font-weight: 500;">${(summaryData?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}</span>
+                <div style="padding: 10px; background-color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#eef2ff' : '#fff1f2'}; border: 2px solid ${(summaryData?.netProfitLoss || 0) >= 0 ? '#a5b4fc' : '#fca5a5'}; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#3730a3' : '#9f1239'}; text-transform: uppercase;">NET PROFIT / LOSS</span>
+                  <p style="font-size: 18px; font-weight: 900; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#4338ca' : '#be123c'}; margin: 3px 0 0 0;">₹${(summaryData?.netProfitLoss || 0).toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: ${(summaryData?.netProfitLoss || 0) >= 0 ? '#4338ca' : '#be123c'}; font-weight: 500;">${(summaryData?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}</span>
                 </div>
               </div>
             ` : ''}
@@ -373,8 +365,8 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                 <tbody>
                   ${pageRows.length === 0 ? `
                     <tr>
-                      <td colSpan="6" style="padding: 32px; text-align: center; vertical-align: middle; color: #94a3b8; font-weight: bold;">
-                        No matching report records logged for this query filter.
+                      <td colSpan="8" style="padding: 24px; text-align: center; vertical-align: middle; color: #94a3b8; font-weight: bold;">
+                        ${activeReport === 'sponsorships' ? 'No donation or sponsorship for this event' : 'No matching report records logged for this query filter.'}
                       </td>
                     </tr>
                   ` : pageRows.map((item, idx) => getRowHtml(item, startIndex + idx, activeReport)).join('')}
@@ -384,9 +376,9 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
           </div>
 
           <!-- Footer (Printed on EVERY page!) -->
-          <div style="border-top: 1px solid #cbd5e1; padding-top: 12px; margin-top: 24px; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 10px; font-weight: 600;">
+          <div style="border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 9px; font-weight: 600;">
             <div style="vertical-align: middle; line-height: 1;">DSLR Photography Contest & Event Portal — Sumbaran Art Society Confidential Report</div>
-            <div style="${badgeBase} background-color: #0f172a; color: #ffffff; padding: 6px 14px; border-radius: 6px; font-weight: 800;">
+            <div style="${badgeBase} background-color: #0f172a; color: #ffffff; padding: 5px 12px; border-radius: 6px; font-size: 9px; font-weight: 800;">
               Page ${p + 1} of ${totalPages}
             </div>
           </div>
@@ -515,6 +507,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             <th className="py-3 px-4">#</th>
             <th className="py-3 px-4">Participant Full Name</th>
             <th className="py-3 px-4">Email Address</th>
+            <th className="py-3 px-4">Mobile No.</th>
             <th className="py-3 px-4">City / Location</th>
             <th className="py-3 px-4 text-right">Amount (₹)</th>
             <th className="py-3 px-4 text-right">Score</th>
@@ -612,21 +605,22 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       case 'participants':
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name || 'Participant'}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.email}</td>
-            <td className="py-3 px-4 text-slate-500 font-medium">{item.category || 'City N/A'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-emerald-600 dark:text-emerald-400">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{item.name || 'Participant'}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">{item.email}</td>
+            <td className="py-2.5 px-3 font-mono font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{item.mobile || item.phone || '—'}</td>
+            <td className="py-2.5 px-3 text-slate-500 font-medium whitespace-nowrap">{item.category || 'City N/A'}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
               {item.amount ? `₹${Number(item.amount).toLocaleString('en-IN')}` : '—'}
             </td>
-            <td className="py-3 px-4 text-right font-display font-black text-indigo-600 dark:text-indigo-400">
+            <td className="py-2.5 px-3 text-right font-display font-black text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
               {item.score || '—'}
             </td>
-            <td className="py-3 px-4 text-center text-slate-500 font-medium">
+            <td className="py-2.5 px-3 text-center text-slate-500 font-medium whitespace-nowrap">
               {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold ${
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold whitespace-nowrap ${
                 item.status === 'Verified' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200' :
                 item.status === 'Suspended' ? 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200' :
                 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200'
@@ -639,15 +633,15 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       case 'revenue':
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{item.transactionId || item.email || item._id}</td>
-            <td className="py-3 px-4 text-slate-800 dark:text-slate-200 font-bold">{item.category || 'Package Entry'}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-medium">{item.name}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-sm text-emerald-600 dark:text-emerald-400">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{item.transactionId || item.email || item._id}</td>
+            <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 font-bold whitespace-nowrap">{item.category || 'Package Entry'}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">{item.name}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
               ₹{(Number(item.amount) || 0).toLocaleString('en-IN')}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 rounded-xl text-[10px] font-extrabold">
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 rounded-xl text-[10px] font-extrabold whitespace-nowrap">
                 {item.status || 'Success'}
               </span>
             </td>
@@ -656,19 +650,19 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       case 'winners':
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white flex items-center gap-1.5 whitespace-nowrap">
               <Trophy size={14} className="text-amber-500 shrink-0" />
               {item.name}
             </td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.email}</td>
-            <td className="py-3 px-4 text-amber-700 dark:text-amber-400 font-bold">{item.category || 'Trophy & Certificate'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-sm text-indigo-600 dark:text-indigo-400">
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">{item.email}</td>
+            <td className="py-2.5 px-3 text-amber-700 dark:text-amber-400 font-bold whitespace-nowrap">{item.category || 'Trophy & Certificate'}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-sm text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
               {item.score ? `${item.score}/10` : 'Declared'}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className="px-2.5 py-1 bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 rounded-xl text-[10px] font-extrabold">
-                {item.status || 'Winner'}
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className="px-2.5 py-1 bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 rounded-xl text-[10px] font-extrabold whitespace-nowrap">
+                {item.status || 'Winner Declared'}
               </span>
             </td>
           </tr>
@@ -676,15 +670,15 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       case 'expenses':
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name || item.title}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.category}</td>
-            <td className="py-3 px-4 text-slate-500 font-medium">{item.email || item.paidTo || 'Vendor Payout'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-sm text-rose-600 dark:text-rose-400">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{item.name || item.title}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">{item.category}</td>
+            <td className="py-2.5 px-3 text-slate-500 font-medium whitespace-nowrap">{item.email || item.paidTo || 'Vendor Payout'}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-sm text-rose-600 dark:text-rose-400 whitespace-nowrap">
               ₹{(Number(item.amount) || 0).toLocaleString('en-IN')}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold ${
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold whitespace-nowrap ${
                 item.paymentStatus === 'Paid' || item.status === 'Paid' || item.status === 'Paid Out'
                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200'
                   : 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200'
@@ -697,23 +691,23 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       case 'sponsorships':
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.sponsorName || item.name}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.orgName || '—'}</td>
-            <td className="py-3 px-4">
-              <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{item.sponsorName || item.name}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">{item.orgName || '—'}</td>
+            <td className="py-2.5 px-3 whitespace-nowrap">
+              <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 whitespace-nowrap">
                 {item.sponsorType || 'Sponsorship'}
               </span>
             </td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-medium">{item.eventTitle || 'All Events Combined'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-emerald-600 dark:text-emerald-400">
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">{item.eventTitle || 'All Events Combined'}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
               ₹{(Number(item.amount) || 0).toLocaleString('en-IN')}
             </td>
-            <td className="py-3 px-4 text-center text-slate-500 font-medium">
+            <td className="py-2.5 px-3 text-center text-slate-500 font-medium whitespace-nowrap">
               {item.fundingDate ? new Date(item.fundingDate).toLocaleDateString('en-IN') : '—'}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 rounded-xl text-[10px] font-extrabold">
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 rounded-xl text-[10px] font-extrabold whitespace-nowrap">
                 {item.status || 'Received'}
               </span>
             </td>
@@ -723,10 +717,10 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         const isIncome = item.amount > 0 || item.status === 'Paid In';
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name || 'Line Item Entry'}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">
-              <span className={`income-badge inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-black border ${
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{item.name || 'Line Item Entry'}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">
+              <span className={`income-badge inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-black border whitespace-nowrap ${
                 isIncome
                   ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950/80 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700'
                   : 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border-amber-300 dark:border-amber-700'
@@ -734,12 +728,12 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                 {isIncome ? '▲ Revenue Income' : '▼ Expense Outflow'}
               </span>
             </td>
-            <td className="py-3 px-4 text-slate-500 font-medium">{item.email || '—'}</td>
-            <td className={`py-3 px-4 text-right font-display font-black text-sm ${isIncome ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-700 dark:text-amber-400'}`}>
+            <td className="py-2.5 px-3 text-slate-500 font-medium whitespace-nowrap">{item.email || '—'}</td>
+            <td className={`py-2.5 px-3 text-right font-display font-black text-sm whitespace-nowrap ${isIncome ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-700 dark:text-amber-400'}`}>
               {typeof item.amount === 'number' ? `${item.amount >= 0 ? '+₹' : '-₹'}${Math.abs(item.amount).toLocaleString('en-IN')}` : '—'}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold ${
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold whitespace-nowrap ${
                 item.status === 'Paid In' || item.status === 'Paid Out' || item.status === 'Success'
                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200'
                   : 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200'
@@ -752,15 +746,15 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       case 'refunds':
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">{item.transactionId || item._id}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-medium">{item.category || 'Participant Refund'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-sm text-rose-600 dark:text-rose-400">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-mono font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{item.transactionId || item._id}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{item.name}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">{item.category || 'Participant Refund'}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-sm text-rose-600 dark:text-rose-400 whitespace-nowrap">
               ₹{(Number(item.amount) || 0).toLocaleString('en-IN')}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className="px-2.5 py-1 bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 rounded-xl text-[10px] font-extrabold">
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className="px-2.5 py-1 bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 rounded-xl text-[10px] font-extrabold whitespace-nowrap">
                 {item.status || 'Refunded'}
               </span>
             </td>
@@ -770,18 +764,18 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       default:
         return (
           <tr key={item._id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
-            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
-            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{item.name || item.userName || 'Record Entry'}</td>
-            <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">{item.category || 'General'}</td>
-            <td className="py-3 px-4 text-slate-500 font-medium">{item.email || '—'}</td>
-            <td className="py-3 px-4 text-right font-display font-black text-emerald-600 dark:text-emerald-400">
+            <td className="py-2.5 px-3 font-bold text-slate-400 whitespace-nowrap">{idx + 1}</td>
+            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{item.name || item.userName || 'Record Entry'}</td>
+            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">{item.category || 'General'}</td>
+            <td className="py-2.5 px-3 text-slate-500 font-medium whitespace-nowrap">{item.email || '—'}</td>
+            <td className="py-2.5 px-3 text-right font-display font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
               {item.amount ? `₹${item.amount.toLocaleString('en-IN')}` : '—'}
             </td>
-            <td className="py-3 px-4 text-right font-display font-black text-indigo-600 dark:text-indigo-400">
+            <td className="py-2.5 px-3 text-right font-display font-black text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
               {item.score || '—'}
             </td>
-            <td className="py-3 px-4 text-center">
-              <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 rounded-xl text-[10px] font-bold">
+            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+              <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 rounded-xl text-[10px] font-bold whitespace-nowrap">
                 {item.status || 'Logged'}
               </span>
             </td>
@@ -805,7 +799,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         />
         
         {/* Dark Gradient Overlay for optimal text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-indigo-950/80 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950 via-slate-900/90 to-indigo-950/80 pointer-events-none" />
         
         {/* Ambient Glow accents */}
         <div className="absolute -right-16 -top-16 w-72 h-72 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
@@ -863,7 +857,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 sm:gap-3 w-full">
           
           {/* 1. Search Input - FULL WIDTH AT TOP ON MOBILE */}
-          <div className="relative w-full lg:flex-1 lg:min-w-[200px]">
+          <div className="relative w-full lg:flex-1 lg:min-w-50">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400" />
             <input
               type="text"
@@ -875,26 +869,26 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
           </div>
 
           {/* 2 & 3. Date Pickers (From Date, To Date) */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 shrink-0 w-full lg:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 shrink-0 w-full lg:w-auto">
             {/* From Date Picker */}
-            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
+            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-1.5 sm:px-3 py-1.5 rounded-2xl shadow-xs w-full">
               <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">From:</span>
               <input
                 type="date"
                 value={fromDate}
                 onChange={e => setFromDate(e.target.value)}
-                className="w-full bg-transparent text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0"
+                className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
               />
             </div>
 
             {/* To Date Picker */}
-            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
+            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-1.5 sm:px-3 py-1.5 rounded-2xl shadow-xs w-full">
               <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">To:</span>
               <input
                 type="date"
                 value={toDate}
                 onChange={e => setToDate(e.target.value)}
-                className="w-full bg-transparent text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0"
+                className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
               />
             </div>
           </div>
@@ -951,8 +945,8 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         </div>
       </div>
 
-      {/* Main Report Render Content Card (700px height on mobile, 500px on desktop) */}
-      <div ref={reportCardRef} className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm h-[700px] sm:h-[500px] overflow-y-auto flex flex-col gap-4">
+      {/* Main Report Render Content Card (580px min height on mobile, 500px on desktop) */}
+      <div ref={reportCardRef} className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm min-h-145 sm:h-125 overflow-y-auto flex flex-col gap-4">
         
         {loading ? (
           <div className="py-20 text-center text-slate-400 font-bold text-xs flex flex-col items-center gap-2">
@@ -962,12 +956,11 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         ) : (
           <>
             {/* Report Header Info */}
-            <div id="report-card-header" className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
+            <div id="report-card-header" className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 w-full">
+              <div className="w-full sm:w-auto">
                 {/* Selected Event Name displayed over Report Title in Blue color */}
-                <div className="text-blue-600 dark:text-blue-400 font-extrabold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1.5 mb-0.5">
-                  <span>Event:</span>
-                  <span>{allEvents.find(e => e._id === filterEventId)?.title || 'All Events Combined'}</span>
+                <div className="text-blue-600 dark:text-blue-400 font-extrabold text-xs sm:text-sm uppercase tracking-wide mb-0.5 w-full wrap-break-word leading-snug">
+                  {allEvents.find(e => e._id === filterEventId)?.title || 'All Events Combined'}
                 </div>
 
                 <h3 className="font-display font-black text-slate-900 dark:text-white text-base sm:text-lg">
@@ -978,7 +971,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                 </p>
               </div>
 
-              <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-extrabold">
+              <span className="hidden sm:inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-extrabold shrink-0">
                 {Array.isArray(reportData) ? `${reportData.length} records found` : 'Executive Statement'}
               </span>
             </div>
@@ -991,7 +984,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                     REGISTERED CONTESTS
                   </span>
-                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-purple-600 dark:text-purple-400">
                     {filterEventId && filterEventId !== 'all' ? 1 : (allEvents?.length || 0)}
                   </p>
                   <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Total events registered</span>
@@ -1002,7 +995,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                     TOTAL UPLOADS
                   </span>
-                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-emerald-600 dark:text-emerald-400">
                     {reportStats ? (reportStats.totalPhotos + reportStats.totalVideos) : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (curr.totalUploaded || curr.photographsCount || curr.uploads || 1), 0) : 0)}
                   </p>
                   <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified submissions</span>
@@ -1013,7 +1006,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
                     FEES PAID
                   </span>
-                  <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-amber-600 dark:text-amber-500">
                     INR {(reportStats?.totalRevenue !== undefined ? reportStats.totalRevenue : (summaryData?.totalRevenue || 0)).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Successful payments</span>
@@ -1024,7 +1017,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-teal-900 dark:text-teal-300 font-extrabold uppercase tracking-wider">
                     ACCOUNT STATUS
                   </span>
-                  <p className="font-display font-black text-2xl text-teal-600 dark:text-teal-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-teal-600 dark:text-teal-400">
                     Active
                   </p>
                   <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Participant privileges</span>
@@ -1037,7 +1030,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
                     WINNERS DECLARED
                   </span>
-                  <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-amber-600 dark:text-amber-500">
                     {Array.isArray(reportData) ? reportData.length : 0}
                   </p>
                   <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Ranked contest winners</span>
@@ -1048,7 +1041,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                     TOTAL PRIZE REWARD
                   </span>
-                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-purple-600 dark:text-purple-400">
                     INR {(summaryData?.totalPrizePool || (filterEventId && filterEventId !== 'all' ? 50000 : ((allEvents?.length || 1) * 50000))).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Trophies & cash prizes</span>
@@ -1059,7 +1052,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-indigo-900 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
                     HIGHEST JURY SCORE
                   </span>
-                  <p className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-indigo-600 dark:text-indigo-400">
                     {Array.isArray(reportData) && reportData.length > 0 && reportData[0]?.score ? `${reportData[0].score}/10` : '9.8/10'}
                   </p>
                   <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Peak evaluation grade</span>
@@ -1070,21 +1063,21 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                     VERIFIED RESULTS
                   </span>
-                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-emerald-600 dark:text-emerald-400">
                     Finalized
                   </p>
                   <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Jury approved standings</span>
                 </div>
               </div>
             ) : activeReport === 'revenue' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
                 {/* Payments Done Card */}
                 <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
                   <span className="text-[10px] text-indigo-900 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
                     PAYMENTS DONE
                   </span>
                   <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
-                    <p className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">
+                    <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-indigo-600 dark:text-indigo-400">
                       INR {(summaryData?.totalRevenue !== undefined ? summaryData.totalRevenue : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) : 0)).toLocaleString('en-IN')}
                     </p>
                     <span className="text-xs font-bold text-indigo-800 dark:text-indigo-300 bg-indigo-200/80 dark:bg-indigo-900/60 px-2 py-0.5 rounded-lg border border-indigo-300 dark:border-indigo-700">
@@ -1099,7 +1092,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                     REVENUE GENERATED
                   </span>
-                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-emerald-600 dark:text-emerald-400">
                     INR {(summaryData?.totalRevenue !== undefined ? summaryData.totalRevenue : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) : 0)).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Gross registration fees</span>
@@ -1110,7 +1103,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                     TOTAL SPONSORSHIP
                   </span>
-                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-purple-600 dark:text-purple-400">
                     INR {(summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Corporate & CSR grants</span>
@@ -1121,20 +1114,20 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-cyan-900 dark:text-cyan-300 font-extrabold uppercase tracking-wider">
                     TOTAL DONATIONS
                   </span>
-                  <p className="font-display font-black text-2xl text-cyan-600 dark:text-cyan-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-cyan-600 dark:text-cyan-400">
                     INR {(summaryData?.totalDonations || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">Individual & Trust funds</span>
                 </div>
               </div>
             ) : activeReport === 'expenses' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
                 {/* Total Expenses Card */}
                 <div className="p-4 bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
                   <span className="text-[10px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
                     TOTAL EXPENSES
                   </span>
-                  <p className="font-display font-black text-2xl text-rose-600 dark:text-rose-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-rose-600 dark:text-rose-400">
                     ₹{(summaryData?.totalExpenses || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">
@@ -1147,7 +1140,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-teal-900 dark:text-teal-300 font-extrabold uppercase tracking-wider">
                     PAID EXPENSES
                   </span>
-                  <p className="font-display font-black text-2xl text-teal-600 dark:text-teal-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-teal-600 dark:text-teal-400">
                     ₹{(summaryData?.paidExpenses || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
@@ -1158,7 +1151,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
                     PENDING EXPENSES
                   </span>
-                  <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-amber-600 dark:text-amber-500">
                     ₹{(summaryData?.pendingExpenses || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Unsettled accounts</span>
@@ -1169,20 +1162,20 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-indigo-900 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
                     FUNDING SUPPORT
                   </span>
-                  <p className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-indigo-600 dark:text-indigo-400">
                     ₹{(summaryData?.totalFunding || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Sponsorships & CSR grants</span>
                 </div>
               </div>
             ) : activeReport === 'sponsorships' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
                 {/* Total Sponsorship Card */}
                 <div className="p-4 bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
                   <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                     TOTAL SPONSORSHIP
                   </span>
-                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-purple-600 dark:text-purple-400">
                     ₹{(summaryData?.totalSponsorship || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Corporate partners</span>
@@ -1193,7 +1186,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                     TOTAL DONATIONS
                   </span>
-                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-emerald-600 dark:text-emerald-400">
                     ₹{(summaryData?.totalDonations || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Individual & Trust funds</span>
@@ -1204,7 +1197,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-cyan-900 dark:text-cyan-300 font-extrabold uppercase tracking-wider">
                     CSR FUNDING
                   </span>
-                  <p className="font-display font-black text-2xl text-cyan-600 dark:text-cyan-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-cyan-600 dark:text-cyan-400">
                     ₹{(summaryData?.csrFunding || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">Corporate Social Responsibility</span>
@@ -1215,20 +1208,20 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
                     GOVERNMENT FUNDING
                   </span>
-                  <p className="font-display font-black text-2xl text-sky-600 dark:text-sky-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-sky-600 dark:text-sky-400">
                     ₹{(summaryData?.govtFunding || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 font-medium">Govt grants & schemes</span>
                 </div>
               </div>
             ) : activeReport === 'refunds' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 my-2">
                 {/* Refunds Card */}
                 <div className="p-4 bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl flex flex-col gap-1 text-left shadow-2xs">
                   <span className="text-[10px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
                     REFUNDS
                   </span>
-                  <p className="font-display font-black text-2xl text-rose-600 dark:text-rose-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-rose-600 dark:text-rose-400">
                     INR {(Array.isArray(reportData) ? (reportData.filter(i => String(i.status).toLowerCase().includes('refund')).reduce((s, i) => s + (Number(i.amount) || 0), 0) || reportData.reduce((s, i) => s + (Number(i.amount) || 0), 0)) : 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Processed refunds volume</span>
@@ -1240,7 +1233,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                     CANCELLATIONS
                   </span>
                   <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
-                    <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-500">
+                    <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-amber-600 dark:text-amber-500">
                       INR {(Array.isArray(reportData) ? (reportData.filter(i => String(i.status).toLowerCase().includes('cancel') || String(i.status).toLowerCase().includes('fail')).reduce((s, i) => s + (Number(i.amount) || 0), 0) || reportData.reduce((s, i) => s + (Number(i.amount) || 0), 0)) : 0).toLocaleString('en-IN')}
                     </p>
                     <span className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-200/80 dark:bg-amber-900/60 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-700">
@@ -1257,7 +1250,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                     REGISTRATION REVENUE
                   </span>
-                  <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-emerald-600 dark:text-emerald-400">
                     ₹{(summaryData.totalRevenue || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Participant entry fees</span>
@@ -1268,7 +1261,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                     SPONSORSHIPS & GRANTS
                   </span>
-                  <p className="font-display font-black text-2xl text-purple-600 dark:text-purple-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-purple-600 dark:text-purple-400">
                     ₹{(summaryData.totalFunding || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Corporate, CSR & Donations</span>
@@ -1279,7 +1272,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
                     TOTAL EXPENSES
                   </span>
-                  <p className="font-display font-black text-2xl text-rose-600 dark:text-rose-400">
+                  <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-rose-600 dark:text-rose-400">
                     ₹{(summaryData.totalExpenses || 0).toLocaleString('en-IN')}
                   </p>
                   <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Operational line items</span>
@@ -1294,7 +1287,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <span className="text-[10px] text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider">
                     NET PROFIT / LOSS
                   </span>
-                  <p className={`font-display font-black text-2xl ${
+                  <p className={`font-display font-black text-base min-[380px]:text-lg sm:text-2xl ${
                     (summaryData.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
                   }`}>
                     ₹{(summaryData.netProfitLoss || 0).toLocaleString('en-IN')}
@@ -1307,7 +1300,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
             ) : null}
 
             {/* Dynamic Data Table with Custom Headings for All Reports */}
-            <div className="overflow-x-auto border border-slate-200/80 dark:border-slate-800 rounded-2xl">
+            <div className="overflow-x-auto border border-slate-200/80 dark:border-slate-800 rounded-2xl min-h-55">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-100 dark:bg-slate-950 text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
@@ -1317,9 +1310,13 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {!Array.isArray(reportData) || reportData.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="py-12 text-center text-slate-400">
+                      <td colSpan="8" className="py-12 text-center text-slate-400">
                         <AlertCircle size={28} className="mx-auto mb-2 opacity-50" />
-                        <p className="font-bold text-xs">No matching report records logged for this query filter.</p>
+                        <p className="font-bold text-xs">
+                          {activeReport === 'sponsorships'
+                            ? 'No donation or sponsorship for this event'
+                            : 'No matching report records logged for this query filter.'}
+                        </p>
                       </td>
                     </tr>
                   ) : (

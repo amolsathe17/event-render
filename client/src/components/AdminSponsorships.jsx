@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { useAuth } from '../context/AuthContext';
 import { getBackendUrl } from '../utils/url';
 import {
@@ -21,7 +23,10 @@ import {
   Sparkles,
   ChevronRight,
   ChevronDown,
-  X
+  X,
+  FileSpreadsheet,
+  Download,
+  Printer
 } from 'lucide-react';
 
 const SPONSOR_TYPES = [
@@ -131,6 +136,246 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
     fetchSponsorships();
     fetchSummary();
   }, [selectedEventId, search, typeFilter, statusFilter]);
+
+  const handleExportCSV = (extension = 'csv') => {
+    const listToExport = Array.isArray(sponsorships) ? sponsorships : [];
+    if (listToExport.length === 0) {
+      alert('No donation or sponsorship records available to export.');
+      return;
+    }
+
+    const activeEv = allEvents.find(e => e._id === selectedEventId);
+    const eventTitle = activeEv ? activeEv.title : 'All Events Combined';
+
+    const headers = ['Sr No', 'Sponsor / Donor Name', 'Organization', 'Funding Type', 'Supported Event', 'Amount (INR)', 'Funding Date', 'Status'];
+    const rows = listToExport.map((item, idx) => [
+      idx + 1,
+      `"${(item.sponsorName || item.name || '').replace(/"/g, '""')}"`,
+      `"${(item.orgName || '—').replace(/"/g, '""')}"`,
+      `"${(item.sponsorType || 'Sponsorship').replace(/"/g, '""')}"`,
+      `"${(item.eventTitle || eventTitle).replace(/"/g, '""')}"`,
+      Number(item.amount || 0),
+      `"${item.fundingDate ? new Date(item.fundingDate).toLocaleDateString('en-IN') : 'N/A'}"`,
+      `"${(item.status || 'Received').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `Donation_Sponsorship_${eventTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.${extension}`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportExcel = () => {
+    handleExportCSV('csv');
+  };
+
+  const getLogoBase64 = () => new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const cvs = document.createElement('canvas');
+      cvs.width = img.width;
+      cvs.height = img.height;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(cvs.toDataURL('image/jpeg'));
+    };
+    img.onerror = () => resolve('/sumbacontest.jpg');
+    img.src = '/sumbacontest.jpg';
+  });
+
+  const generateOfficialAuditReport = async () => {
+    const logoBase64 = await getLogoBase64();
+    const listToPrint = Array.isArray(sponsorships) ? sponsorships : [];
+    const activeEv = allEvents.find(e => e._id === selectedEventId);
+    const eventTitle = activeEv ? activeEv.title : 'All Events Combined';
+    const totalFunding = summary?.totalFunding || listToPrint.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalExpenses = summary?.totalExpenses || 0;
+    const totalRevenue = summary?.totalRevenue || 0;
+    const netProfitLoss = summary?.netProfitLoss || (totalRevenue + totalFunding - totalExpenses);
+    const generatedDateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    const badgeBase = 'display: inline-block; vertical-align: middle; text-align: center; line-height: 1.3; box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif;';
+
+    const rowsHtml = listToPrint.map((item, idx) => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 8px 10px; font-weight: bold; color: #64748b; text-align: left;">${idx + 1}</td>
+        <td style="padding: 8px 10px; font-weight: bold; color: #0f172a; text-align: left;">${item.sponsorName || item.name || 'Sponsor Name'}</td>
+        <td style="padding: 8px 10px; color: #334155; text-align: left;">${item.orgName || '—'}</td>
+        <td style="padding: 8px 10px; font-weight: bold; color: #4338ca; text-align: left;">${item.sponsorType || 'Sponsorship'}</td>
+        <td style="padding: 8px 10px; color: #475569; text-align: left;">${item.eventTitle || eventTitle}</td>
+        <td style="padding: 8px 10px; text-align: right; font-weight: 900; color: #047857;">₹${(Number(item.amount) || 0).toLocaleString('en-IN')}</td>
+        <td style="padding: 8px 10px; text-align: center;">
+          <span style="${badgeBase} background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: bold;">
+            ${item.status || 'Received'}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Official Audit Report - ${eventTitle}</title>
+          <style>
+            @page { size: A4 portrait; margin: 0; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+            .page-container { width: 210mm; min-height: 297mm; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto; background: #fff; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th { background-color: #f1f5f9; color: #0f172a; font-weight: 800; text-transform: uppercase; padding: 8px 10px; text-align: left; border-bottom: 2px solid #64748b; font-size: 10px; }
+            td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+          </style>
+        </head>
+        <body>
+          <div class="page-container">
+            <div>
+              <div style="width: 100%; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <img src="${logoBase64}" style="height: 44px; width: auto; object-fit: contain; display: block; border-radius: 4px;" alt="Sumbaran Art Society Logo" />
+                  <div>
+                    <h1 style="font-size: 18px; font-weight: 900; margin: 0; color: #0f172a; line-height: 1.2;">SUMBARAN ART SOCIETY</h1>
+                    <p style="font-size: 9px; color: #475569; margin: 3px 0 0 0; line-height: 1.3;">Address: 1414/1A, Trio Chambers, Nr. Renuka Swaroop Girls High School, Sadashiv Peth, Pune - 411030.</p>
+                    <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; line-height: 1.3;">Phone: +91 98765 43210 • Email: support@sumbaranartsociety.com • Website: https://sumbaranartsociety.com</p>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="${badgeBase} border: 2px solid #0f172a; color: #0f172a; padding: 5px 12px; border-radius: 6px; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">OFFICIAL AUDIT REPORT</span>
+                  <p style="font-size: 9px; color: #475569; margin: 6px 0 0 0; font-weight: 600; line-height: 1.2;">Generated: ${generatedDateStr}</p>
+                </div>
+              </div>
+
+              <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; background-color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; line-height: 1.2;">NAME OF CONTEST</span>
+                  <h2 style="font-size: 16px; font-weight: 900; color: #0f172a; margin: 2px 0 0 0; line-height: 1.2;">${eventTitle}</h2>
+                  <p style="font-size: 11px; color: #4338ca; margin: 2px 0 0 0; font-weight: 800; line-height: 1.3;">Donation & Sponsorship Report</p>
+                </div>
+                <div style="text-align: right;">
+                  <span style="${badgeBase} border: 1.5px solid #4338ca; color: #4338ca; background-color: #eef2ff; padding: 5px 14px; border-radius: 20px; font-size: 10px; font-weight: 800;">
+                    ${listToPrint.length} records found
+                  </span>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+                <div style="padding: 10px; background-color: #ecfdf5; border: 2px solid #6ee7b7; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #065f46; text-transform: uppercase;">REGISTRATION REVENUE</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #047857; margin: 3px 0 0 0;">₹${totalRevenue.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #047857; font-weight: 500;">Participant entry fees</span>
+                </div>
+                <div style="padding: 10px; background-color: #faf5ff; border: 2px solid #d8b4fe; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #6b21a8; text-transform: uppercase;">SPONSORSHIPS & GRANTS</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #7e22ce; margin: 3px 0 0 0;">₹${totalFunding.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #7e22ce; font-weight: 500;">Corporate, CSR & Donations</span>
+                </div>
+                <div style="padding: 10px; background-color: #fff1f2; border: 2px solid #fca5a5; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: #9f1239; text-transform: uppercase;">TOTAL EXPENSES</span>
+                  <p style="font-size: 18px; font-weight: 900; color: #be123c; margin: 3px 0 0 0;">₹${totalExpenses.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: #be123c; font-weight: 500;">Operational line items</span>
+                </div>
+                <div style="padding: 10px; background-color: ${netProfitLoss >= 0 ? '#eef2ff' : '#fff1f2'}; border: 2px solid ${netProfitLoss >= 0 ? '#a5b4fc' : '#fca5a5'}; border-radius: 12px; text-align: left;">
+                  <span style="font-size: 8px; font-weight: 800; color: ${netProfitLoss >= 0 ? '#3730a3' : '#9f1239'}; text-transform: uppercase;">NET PROFIT / LOSS</span>
+                  <p style="font-size: 18px; font-weight: 900; color: ${netProfitLoss >= 0 ? '#4338ca' : '#be123c'}; margin: 3px 0 0 0;">₹${netProfitLoss.toLocaleString('en-IN')}</p>
+                  <span style="font-size: 8px; color: ${netProfitLoss >= 0 ? '#4338ca' : '#be123c'}; font-weight: 500;">${netProfitLoss >= 0 ? 'Surplus balance' : 'Deficit shortfall'}</span>
+                </div>
+              </div>
+
+              <div style="overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 12px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                  <thead>
+                    <tr style="background-color: #f1f5f9; color: #0f172a; font-weight: bold; border-bottom: 2px solid #64748b;">
+                      <th style="padding: 8px 10px; text-align: left;">#</th>
+                      <th style="padding: 8px 10px; text-align: left;">Sponsor / Donor Name</th>
+                      <th style="padding: 8px 10px; text-align: left;">Organization</th>
+                      <th style="padding: 8px 10px; text-align: left;">Funding Type</th>
+                      <th style="padding: 8px 10px; text-align: left;">Supported Event</th>
+                      <th style="padding: 8px 10px; text-align: right;">Amount (₹)</th>
+                      <th style="padding: 8px 10px; text-align: center;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml || '<tr><td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">No donation or sponsorship for this event.</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 9px; font-weight: 600;">
+              <div style="vertical-align: middle; line-height: 1;">DSLR Photography Contest & Event Portal — Sumbaran Art Society Confidential Report</div>
+              <div style="${badgeBase} background-color: #0f172a; color: #ffffff; padding: 5px 12px; border-radius: 6px; font-size: 9px; font-weight: 800;">
+                Page 1 of 1
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const handlePrint = async () => {
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Please allow popups to print/export the donation and sponsorship report.');
+      return;
+    }
+    const html = await generateOfficialAuditReport();
+    printWin.document.write(html);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => {
+      printWin.print();
+    }, 500);
+  };
+
+  const handleExportPDF = async () => {
+    const listToPrint = Array.isArray(sponsorships) ? sponsorships : [];
+    if (listToPrint.length === 0) {
+      alert('No donation or sponsorship records available to export.');
+      return;
+    }
+
+    const activeEv = allEvents.find(e => e._id === selectedEventId);
+    const eventTitle = activeEv ? activeEv.title : 'All Events Combined';
+    const fileName = `Donation_Sponsorship_${eventTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    try {
+      const htmlContent = await generateOfficialAuditReport();
+      const pageContainer = document.createElement('div');
+      pageContainer.style.position = 'absolute';
+      pageContainer.style.top = '-9999px';
+      pageContainer.style.left = '-9999px';
+      pageContainer.style.width = '210mm';
+      pageContainer.style.backgroundColor = '#ffffff';
+      pageContainer.innerHTML = htmlContent;
+      document.body.appendChild(pageContainer);
+
+      const elementToRender = pageContainer.querySelector('.page-container') || pageContainer;
+
+      const canvas = await html2canvas(elementToRender, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      document.body.removeChild(pageContainer);
+
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      doc.save(fileName);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Failed to generate downloadable PDF. Triggering print fallback.');
+      handlePrint();
+    }
+  };
 
   const handleOpenAddModal = () => {
     setEditingRecord(null);
@@ -265,7 +510,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
   return (
     <div className="space-y-6">
       {/* Page Header Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20">
+      <div className="relative overflow-hidden bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-2">
@@ -287,20 +532,65 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
             </p>
           </div>
 
-          <button
-            onClick={handleOpenAddModal}
-            className="px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg hover:shadow-indigo-500/25 transition-all flex items-center gap-2 shrink-0 cursor-pointer border border-indigo-400/30"
-          >
-            <Plus size={18} />
-            <span>Add Sponsorship / Donation</span>
-          </button>
+          <div className="relative z-10 flex flex-col items-end gap-2.5 self-start sm:self-center shrink-0">
+            {/* Top Row: Export Action Buttons (Excel, CSV, PDF, Print) */}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+                title="Export Excel"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+                title="Export CSV"
+              >
+                <Download size={14} /> CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportPDF}
+                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+                title="Export PDF"
+              >
+                <FileText size={14} /> PDF
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+                title="Print Donation & Sponsorship Report"
+              >
+                <Printer size={14} /> Print
+              </button>
+            </div>
+
+            {/* Bottom Row: Add Sponsorship / Donation Button (Right Aligned Under Export Group) */}
+            <div className="flex justify-end w-full">
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="px-5 py-2.5 bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs sm:text-xs rounded-xl shadow-lg hover:shadow-indigo-500/25 transition-all flex items-center gap-2 shrink-0 cursor-pointer border border-indigo-400/30"
+              >
+                <Plus size={16} />
+                <span>Add Sponsorship / Donation</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* 3 Summary Cards in 1 Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {/* Card 1: Total Sponsorship / Donations */}
-        <div className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="p-4 bg-linear-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">
               TOTAL SPONSORSHIP / DONATIONS
@@ -316,7 +606,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
         </div>
 
         {/* Card 2: Pending Funding */}
-        <div className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-slate-900 border border-amber-200 dark:border-amber-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="p-4 bg-linear-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-slate-900 border border-amber-200 dark:border-amber-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider">
               PENDING FUNDING
@@ -332,7 +622,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
         </div>
 
         {/* Card 3: Total No. of Sponsors / Donors */}
-        <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/40 dark:to-slate-900 border border-purple-200 dark:border-purple-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="p-4 bg-linear-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/40 dark:to-slate-900 border border-purple-200 dark:border-purple-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-purple-900 dark:text-purple-300 uppercase tracking-wider">
               TOTAL NO. OF SPONSORS / DONORS
@@ -393,7 +683,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
       {/* Funding Records Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[900px]">
+          <table className="w-full text-left border-collapse min-w-225">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 <th className="py-3.5 px-4">Sponsor / Donor</th>
