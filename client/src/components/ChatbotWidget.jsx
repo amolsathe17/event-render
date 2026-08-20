@@ -190,33 +190,36 @@ export default function ChatbotWidget() {
   if (!user) return null;
 
   return (
-    <div className="fixed bottom-20 right-5 z-50 font-sans">
+    <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 z-50 font-sans">
       {/* Floating Launcher Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-2.5 px-4 py-3 bg-linear-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-full shadow-2xl hover:shadow-indigo-500/40 transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer border border-indigo-400/30"
+          className="group relative flex items-center justify-center p-3 bg-linear-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-full shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 ease-out cursor-pointer border border-indigo-400/30 overflow-hidden"
           aria-label="Open Event Assistant"
+          title="Event Assistant AI"
         >
-          <div className="relative">
-            <Bot size={22} className="text-white animate-bounce-subtle" />
+          <div className="relative shrink-0 flex items-center justify-center">
+            <Bot size={22} className="text-white" />
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 border-2 border-indigo-600 rounded-full animate-ping"></span>
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 border-2 border-indigo-600 rounded-full"></span>
           </div>
 
-          <span className="font-display font-black text-xs sm:text-sm tracking-wide">
-            Event Assistant
-          </span>
+          <div className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2.5 flex items-center gap-2 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden">
+            <span className="font-display font-black text-xs sm:text-sm tracking-wide">
+              Event Assistant
+            </span>
 
-          <span className="hidden sm:inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
-            AI
-          </span>
+            <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
+              AI
+            </span>
+          </div>
         </button>
       )}
 
       {/* Expanded Chat Window */}
       {isOpen && (
-        <div className="w-[calc(100vw-2.5rem)] sm:w-96 h-[520px] max-h-[82vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
+        <div className="w-[calc(100vw-2.5rem)] sm:w-96 h-[520px] max-h-[82vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in zoom-in-95">
           {/* Header */}
           <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-3.5 border-b border-indigo-900/50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
