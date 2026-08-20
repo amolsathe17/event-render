@@ -142,8 +142,14 @@ export default function ChatbotWidget() {
     }
   };
 
-  const handleClearHistory = async () => {
-    if (!window.confirm('Clear active chat history?')) return;
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const handleRequestClear = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearHistory = async () => {
+    setShowClearConfirm(false);
     try {
       await apiFetch('/api/chatbot/clear', { method: 'POST' });
     } catch (err) {
@@ -248,7 +254,7 @@ export default function ChatbotWidget() {
 
             <div className="flex items-center gap-1">
               <button
-                onClick={handleClearHistory}
+                onClick={handleRequestClear}
                 title="Clear Chat"
                 className="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
               >
@@ -263,6 +269,35 @@ export default function ChatbotWidget() {
               </button>
             </div>
           </div>
+
+          {/* Inline Clear History Confirmation Card inside Chat Box */}
+          {showClearConfirm && (
+            <div className="mx-3.5 my-2 p-3 bg-amber-50 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/80 rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 shrink-0 shadow-xs">
+              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-extrabold text-xs">
+                <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Clear active chat history?</span>
+              </div>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300/80 font-medium">
+                This will clear all messages in your current conversation.
+              </p>
+              <div className="flex items-center justify-end gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-3 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmClearHistory}
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                >
+                  Yes, Clear
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Quick Question Pills */}
           <div className="px-3 py-2 bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 shrink-0 overflow-x-auto scrollbar-none flex items-center gap-1.5">
