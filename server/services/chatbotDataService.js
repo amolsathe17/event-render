@@ -289,6 +289,47 @@ const getAdminContext = async (eventId) => {
     if (ev) selectedEventTitle = ev.title;
   }
 
+  // 6. Event-Wise Judge Evaluation Status
+  const allEventsList = await Event.find({}).populate('assignedJudges', 'name email');
+  const allSubmissionsList = await Submission.find({});
+
+  const eventWiseJudgeEvaluations = allEventsList.map(ev => {
+    const evSubs = allSubmissionsList.filter(s => String(s.eventId) === String(ev._id));
+    let totalPhotos = 0;
+    let evaluatedPhotos = 0;
+    let pendingPhotos = 0;
+
+    evSubs.forEach(sub => {
+      if (Array.isArray(sub.photographs)) {
+        sub.photographs.forEach(photo => {
+          totalPhotos++;
+          if (Array.isArray(photo.scores) && photo.scores.length > 0) {
+            evaluatedPhotos++;
+          } else {
+            pendingPhotos++;
+          }
+        });
+      }
+    });
+
+    const completionRate = totalPhotos > 0 ? Math.round((evaluatedPhotos / totalPhotos) * 100) : 0;
+    const judgeNames = Array.isArray(ev.assignedJudges) && ev.assignedJudges.length > 0
+      ? ev.assignedJudges.map(j => j.name || 'Judge').join(', ')
+      : 'None Assigned';
+
+    return {
+      eventId: String(ev._id),
+      eventTitle: ev.title,
+      status: ev.status,
+      assignedJudgesCount: Array.isArray(ev.assignedJudges) ? ev.assignedJudges.length : 0,
+      assignedJudgeNames: judgeNames,
+      totalPhotos,
+      evaluatedPhotos,
+      pendingPhotos,
+      completionRate
+    };
+  });
+
   return {
     eventTitle: selectedEventTitle,
     stats: {
@@ -318,6 +359,7 @@ const getAdminContext = async (eventId) => {
       individualDonations,
       totalSponsorship
     },
+    eventWiseJudgeEvaluations,
     sponsorsList: sponsorships.map(s => ({
       name: s.sponsorName || s.name,
       org: s.orgName || 'N/A',

@@ -35,15 +35,8 @@ export const EventProvider = ({ children }) => {
         }
         setAllEvents(events);
 
-        const key = getStorageKey(currentUser);
-        const saved = localStorage.getItem(key);
-        const savedValid = (saved === 'all' || (saved && events.find(e => e._id === saved)));
-
-        if (savedValid) {
-          setSelectedEventIdState(saved);
-        } else {
-          setSelectedEventIdState('all');
-        }
+        // Always default to 'all' (All Events Combined) on load
+        setSelectedEventIdState('all');
       }
     } catch (err) {
       console.error('EventContext: could not load events', err);

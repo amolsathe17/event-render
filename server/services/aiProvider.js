@@ -80,22 +80,31 @@ const generateVerifiedFactResponse = ({ intent, role, eventInfo, participantData
 
   // 2. JUDGE RESPONSES
   if (role === 'Judge') {
-    if (intent === 'JUDGE_ASSIGNED_EVENTS' || queryLower.includes('assigned event')) {
+    if (intent === 'JUDGE_ASSIGNED_EVENTS' || queryLower.includes('assigned')) {
       const count = judgeData?.assignedEventsCount || 0;
       if (count === 0) return `You currently have no events assigned for evaluation.`;
-      const evList = judgeData.assignedEvents.map(e => `• **${e.title}** (${e.status})`).join('\n');
-      return `⚖️ **Your Assigned Events (${count})**:\n\n${evList}`;
+      const evList = (judgeData.assignedEvents || []).map(e => `• **${e.title}** (Status: ${e.status || 'Active'})`).join('\n');
+      return `⚖️ **Your Assigned Events (${count})**:\n\n${evList}\n\n📌 **Next Action**: Navigate to **Judge Evaluation Desk** in your navigation menu to view assigned entries and submit scores.`;
     }
 
-    if (intent === 'JUDGE_PENDING_EVALUATIONS' || queryLower.includes('pending') || queryLower.includes('how many')) {
+    if (intent === 'JUDGE_PENDING_EVALUATIONS' || queryLower.includes('pending') || queryLower.includes('evaluat')) {
       const stats = judgeData?.evaluationStats;
       if (!stats) return `No evaluation statistics available.`;
-      return `📊 **Your Evaluation Summary for ${eventTitle}**:\n\n• **Total Assigned**: ${stats.totalAssigned} submissions\n• **Completed**: ${stats.evaluated}\n• **Pending Review**: ${stats.pending}\n\nPlease visit your Judge Dashboard to grade pending entries.`;
+      const pendingCount = stats.pending || 0;
+      const nextActionStr = pendingCount > 0
+        ? `📌 **Next Action**: You have **${pendingCount} pending submission(s)** requiring scores. Please navigate to **Judge Evaluation Desk** in your navigation menu to review and submit grades.`
+        : `✅ **Next Action**: All assigned entries are fully evaluated! No pending items.`;
+
+      return `📊 **Your Evaluation Summary (${eventTitle})**:\n\n` +
+        `• **Total Assigned**: ${stats.totalAssigned || 0} submission(s)\n` +
+        `• **Completed & Graded**: ${stats.evaluated || 0}\n` +
+        `• **Pending Review**: **${pendingCount} remaining**\n\n` +
+        nextActionStr;
     }
 
     if (intent === 'JUDGE_CRITERIA' || queryLower.includes('criteria') || queryLower.includes('grade') || queryLower.includes('scale')) {
       const criteria = (judgeData?.judgingCriteria || []).join('\n');
-      return `📝 **Official Judging & Scoring Criteria**:\n\n${criteria}\n\nEach criteria is scored from 1 to 10 for a max total score of 50 per submission.`;
+      return `📝 **Official Judging & Scoring Criteria**:\n\n${criteria}\n\nEach criteria is scored from 1 to 10 for a max total score of 50 per submission.\n\n📌 **Next Action**: Use these standard criteria when evaluating entries in your Judge Evaluation Desk.`;
     }
   }
 
@@ -136,6 +145,40 @@ const generateVerifiedFactResponse = ({ intent, role, eventInfo, participantData
         `• **Active Contests**: ${s.activeEventsCount}\n` +
         `• **Event Submissions**: ${s.totalSubmissions}\n` +
         `• **Uploaded Media Files**: ${s.totalUploadedMedia} (DSLR Verified: ${s.verifiedMedia})`;
+    }
+
+    if (intent === 'ADMIN_JUDGE_EVALUATIONS' || queryLower.includes('judge evaluation') || queryLower.includes('evaluation status') || queryLower.includes('event wise') || (queryLower.includes('judge') && queryLower.includes('status'))) {
+      const evList = adminData?.eventWiseJudgeEvaluations || [];
+      if (!evList || evList.length === 0) {
+        return `No event-wise judge evaluation data is currently available.`;
+      }
+
+      let text = `⚖️ **Event-Wise Judge Evaluation Status**:\n\n`;
+      let totalAllPhotos = 0;
+      let totalAllEvaluated = 0;
+      let totalAllPending = 0;
+
+      evList.forEach(e => {
+        totalAllPhotos += e.totalPhotos;
+        totalAllEvaluated += e.evaluatedPhotos;
+        totalAllPending += e.pendingPhotos;
+
+        text += `🏆 **${e.eventTitle}** (${e.status || 'Active'})\n` +
+          `• **Assigned Judges**: ${e.assignedJudgeNames} (${e.assignedJudgesCount})\n` +
+          `• **Total Submissions**: ${e.totalPhotos} entries\n` +
+          `• **Evaluated & Graded**: ${e.evaluatedPhotos}\n` +
+          `• **Pending Review**: **${e.pendingPhotos} remaining**\n` +
+          `• **Progress**: **${e.completionRate}% Completed**\n\n`;
+      });
+
+      const overallProgress = totalAllPhotos > 0 ? Math.round((totalAllEvaluated / totalAllPhotos) * 100) : 0;
+      text += `📊 **Overall Evaluation Summary (All Contests Combined)**:\n` +
+        `• **Total Submissions**: ${totalAllPhotos}\n` +
+        `• **Total Evaluated**: ${totalAllEvaluated}\n` +
+        `• **Total Pending**: **${totalAllPending} remaining**\n` +
+        `• **Overall Progress**: **${overallProgress}% Completed**`;
+
+      return text;
     }
   }
 

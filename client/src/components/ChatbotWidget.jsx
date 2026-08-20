@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, MessageSquare, X, Send, Trash2, Sparkles, AlertCircle, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Bot, MessageSquare, X, Send, Trash2, Sparkles, AlertCircle, ChevronDown, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, FileDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEvent } from '../context/EventContext';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function ChatbotWidget() {
   const { user, apiFetch } = useAuth();
-  const { selectedEventId, selectedEvent, allEvents } = useEvent();
+  const { selectedEventId, setSelectedEventId, selectedEvent, allEvents } = useEvent();
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -13,6 +15,14 @@ export default function ChatbotWidget() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const messagesEndRef = useRef(null);
+  const quickScrollRef = useRef(null);
+
+  const scrollQuickQuestions = (direction) => {
+    if (quickScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -150 : 150;
+      quickScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   // Role-based quick questions
   const getQuickQuestions = () => {
@@ -87,9 +97,18 @@ export default function ChatbotWidget() {
     }
   };
 
-  const handleSendMessage = async (textToSend) => {
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleSelectEventAndAsk = (eventId, questionText) => {
+    setSelectedEventId(eventId);
+    handleSendMessage(questionText, eventId);
+  };
+
+  const handleSendMessage = async (textToSend, overrideEventId) => {
     const text = (textToSend || inputMessage).trim();
     if (!text || loading) return;
+
+    const currentEventId = overrideEventId || selectedEventId || 'all';
 
     setErrorMsg('');
     const userMsgObj = {
@@ -103,12 +122,50 @@ export default function ChatbotWidget() {
     setInputMessage('');
     setLoading(true);
 
+    // If 'all' events is selected and user asks event-dependent question, prompt event selection
+    // (Judge and Admin quick role queries bypass event selection prompt to return exact status for selected/combined events)
+    const isEventSpecificQuery = [
+      'rule', 'fee', 'payment', 'submission', 'result', 'certificate', 'pending', 'financial', 'sponsor', 'csr', 'assigned'
+    ].some(k => text.toLowerCase().includes(k));
+
+    const isJudgeQuery = user?.role === 'Judge' && (
+      text.toLowerCase().includes('assigned') || 
+      text.toLowerCase().includes('pending') || 
+      text.toLowerCase().includes('evaluat')
+    );
+
+    const isAdminQuery = user?.role === 'Admin' && (
+      text.toLowerCase().includes('financial') || 
+      text.toLowerCase().includes('sponsor') || 
+      text.toLowerCase().includes('csr') || 
+      text.toLowerCase().includes('overview') || 
+      text.toLowerCase().includes('stat')
+    );
+
+    if (!isJudgeQuery && !isAdminQuery && currentEventId === 'all' && isEventSpecificQuery && Array.isArray(allEvents) && allEvents.length > 0) {
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            sender: 'assistant',
+            text: `⚠️ **Event Selection Required**\n\nTo view exact details for **"${text}"**, please select a specific contest from the **Event Context** dropdown above, or click one of the contests below:`,
+            isEventPrompt: true,
+            pendingQuestion: text,
+            timestamp: new Date()
+          }
+        ]);
+        setLoading(false);
+      }, 300);
+      return;
+    }
+
     try {
       const response = await apiFetch('/api/chatbot/message', {
         method: 'POST',
         body: JSON.stringify({
           message: text,
-          eventId: selectedEventId || 'all'
+          eventId: currentEventId
         })
       });
 
@@ -163,6 +220,209 @@ export default function ChatbotWidget() {
         timestamp: new Date()
       }
     ]);
+  };
+
+  const parseMarkdownForPDF = (text) => {
+    if (!text) return '';
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\*\*(.*?)\*\*/g, '<span style="font-weight: 600; color: #000000;">$1</span>')
+      .replace(/\*(.*?)\*/g, '<em style="font-style: italic; color: #000000;">$1</em>')
+      .replace(/`(.*?)`/g, '<code style="background-color: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 11px; color: #000000;">$1</code>');
+
+    const lines = html.split('\n');
+    return lines.map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+        return `<div style="margin-top: 2px; margin-bottom: 2px; padding-left: 8px; color: #000000; font-weight: 400;">${trimmed}</div>`;
+      }
+      return `<div style="margin-top: 2px; margin-bottom: 2px; color: #000000; font-weight: 400;">${line}</div>`;
+    }).join('');
+  };
+
+  const handleSavePDF = async () => {
+    if (!messages || messages.length === 0) {
+      alert('No messages to save.');
+      return;
+    }
+
+    const eventTitle = selectedEvent ? selectedEvent.title : 'All Events Combined';
+    const fileName = `Event_Assistant_Chat_${eventTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    const generatedDateStr = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    let logoBase64 = '/sumbacontest.jpg';
+    try {
+      const logoRes = await fetch('/sumbacontest.jpg');
+      if (logoRes.ok) {
+        const logoBlob = await logoRes.blob();
+        logoBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve('/sumbacontest.jpg');
+          reader.readAsDataURL(logoBlob);
+        });
+      }
+    } catch (e) {
+      console.warn('Logo load error:', e);
+    }
+
+    const msgsPerPage = 8;
+    const totalPages = Math.max(1, Math.ceil(messages.length / msgsPerPage));
+    const pagesHtml = [];
+
+    for (let p = 0; p < totalPages; p++) {
+      const pageMsgs = messages.slice(p * msgsPerPage, (p + 1) * msgsPerPage);
+
+      const pageMsgsHtml = pageMsgs.map(msg => {
+        const isUser = msg.sender === 'user';
+        const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const parsedContent = parseMarkdownForPDF(msg.text);
+
+        const promptContestsHtml = msg.isEventPrompt && Array.isArray(allEvents) && allEvents.length > 0 ? `
+          <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 11px; color: #000000;">
+            <div style="font-weight: 600; margin-bottom: 3px; color: #000000;">Available Contests:</div>
+            ${allEvents.map(ev => `<div style="margin-top: 2px; font-weight: 400; color: #000000;">• ${ev.title}</div>`).join('')}
+          </div>
+        ` : '';
+
+        return `
+          <div style="margin-bottom: 14px; padding: 10px 14px; background-color: #ffffff; border-left: 3px solid ${isUser ? '#4338ca' : '#0f172a'}; border-bottom: 1px solid #f1f5f9;">
+            <div style="font-size: 10.5px; font-weight: 700; color: ${isUser ? '#4338ca' : '#0f172a'}; margin-bottom: 4px;">
+              ${isUser ? `${user?.name || 'User'} (${user?.role || 'User'})` : 'Event Assistant (AI)'} • ${time}
+            </div>
+            <div style="font-size: 11.5px; color: #000000; font-weight: 400; line-height: 1.5; font-family: 'Segoe UI', Arial, sans-serif;">
+              ${parsedContent}
+              ${promptContestsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const headerHtml = `
+        <div style="width: 100%; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="${logoBase64}" style="height: 52px; width: auto; object-fit: contain; display: block; border-radius: 4px;" alt="Logo" />
+            <div>
+              <h1 style="font-size: 20px; font-weight: 900; margin: 0; color: #0f172a; letter-spacing: -0.5px; line-height: 1.2;">SUMBARAN ART SOCIETY</h1>
+              <p style="font-size: 10px; color: #475569; margin: 3px 0 0 0; font-weight: 600;">Official AI Event Assistant Chat Transcript</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="display: inline-block; border: 2px solid #0f172a; color: #0f172a; padding: 6px 14px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase;">CHAT TRANSCRIPT</span>
+            <p style="font-size: 9.5px; color: #475569; margin: 6px 0 0 0; font-weight: 600;">Generated: ${generatedDateStr}</p>
+          </div>
+        </div>
+      `;
+
+      const metadataHtml = p === 0 ? `
+        <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; background-color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">EVENT CONTEXT</span>
+            <h2 style="font-size: 16px; font-weight: 900; color: #0f172a; margin: 3px 0 0 0;">${eventTitle}</h2>
+            <p style="font-size: 11.5px; color: #4338ca; margin: 3px 0 0 0; font-weight: 800;">User: ${user?.name || 'User'} (${user?.role || 'User'})</p>
+          </div>
+          <div style="text-align: right;">
+            <span style="display: inline-block; border: 1.5px solid #4338ca; color: #4338ca; background-color: #eef2ff; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 800;">
+              ${messages.length} Messages
+            </span>
+          </div>
+        </div>
+      ` : '';
+
+      const footerHtml = `
+        <div style="border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 9.5px; font-weight: 600;">
+          <div>DSLR Photography Contest & Event Portal — Sumbaran Art Society Official Transcript</div>
+          <div style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 5px 12px; border-radius: 6px; font-size: 9.5px; font-weight: 800;">
+            Page ${p + 1} of ${totalPages}
+          </div>
+        </div>
+      `;
+
+      pagesHtml.push(`
+        <div class="pdf-page-sheet" style="width: 210mm; min-height: 297mm; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; page-break-after: ${p < totalPages - 1 ? 'always' : 'auto'};">
+          <div>
+            ${headerHtml}
+            ${metadataHtml}
+            <div style="margin-top: 10px;">
+              ${pageMsgsHtml}
+            </div>
+          </div>
+          ${footerHtml}
+        </div>
+      `);
+    }
+
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '210mm';
+    container.style.zIndex = '-9999';
+    container.style.opacity = '0.01';
+    container.style.pointerEvents = 'none';
+    container.style.backgroundColor = '#ffffff';
+    container.style.fontFamily = "'Segoe UI', Arial, sans-serif";
+    container.style.color = '#0f172a';
+    container.style.boxSizing = 'border-box';
+    container.innerHTML = pagesHtml.join('');
+
+    document.body.appendChild(container);
+
+    try {
+      setExportingPdf(true);
+      const pageElements = container.querySelectorAll('.pdf-page-sheet');
+      const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      for (let i = 0; i < pageElements.length; i++) {
+        if (i > 0) doc.addPage();
+        const canvas = await html2canvas(pageElements[i], {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      }
+
+      document.body.removeChild(container);
+
+      // Trigger direct download via Blob URL for universal browser compatibility
+      const pdfBlob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
+      alert('Could not export PDF transcript: ' + (err.message || 'Unknown error'));
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   // Render markdown-like bold and code formatting cleanly
@@ -228,31 +488,25 @@ export default function ChatbotWidget() {
         <div className="w-[calc(100vw-2.5rem)] sm:w-96 h-[520px] max-h-[82vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in zoom-in-95">
           {/* Header */}
           <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-3.5 border-b border-indigo-900/50 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="relative w-9 h-9 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md border border-indigo-400/30">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative w-9 h-9 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md border border-indigo-400/30 shrink-0">
                 <Bot size={20} className="text-white" />
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-display font-black text-sm text-white tracking-tight">Event Assistant</h3>
-                  <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-md text-[9px] font-extrabold uppercase">
+                  <h3 className="font-display font-black text-sm text-white tracking-tight truncate">Event Assistant</h3>
+                  <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-md text-[9px] font-extrabold uppercase shrink-0">
                     Online
                   </span>
                 </div>
-                <div className="flex items-center gap-1 mt-0.5 text-[10px] text-slate-300">
-                  <span className="truncate max-w-[170px] font-semibold text-indigo-200">
-                    {selectedEvent ? selectedEvent.title : 'All Events Combined'}
-                  </span>
-                  <span className="text-slate-500">•</span>
-                  <span className="px-1.5 py-0.2 bg-indigo-500/30 text-indigo-200 rounded-full font-bold">
-                    {user.role}
-                  </span>
+                <div className="text-[10px] text-indigo-200/80 font-bold truncate mt-0.5">
+                  Role: <span className="text-white font-extrabold">{user.role}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handleRequestClear}
                 title="Clear Chat"
@@ -260,6 +514,7 @@ export default function ChatbotWidget() {
               >
                 <Trash2 size={16} />
               </button>
+
               <button
                 onClick={() => setIsOpen(false)}
                 title="Close Chat"
@@ -270,50 +525,109 @@ export default function ChatbotWidget() {
             </div>
           </div>
 
+          {/* Event Context Selector Sub-Bar */}
+          <div className="px-3.5 py-1.5 bg-slate-900/90 dark:bg-slate-950 text-white border-b border-slate-800 flex items-center justify-between shrink-0 text-xs">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0">Event Context:</span>
+            <select
+              value={selectedEventId || 'all'}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              aria-label="Select Event Context"
+              className="bg-indigo-950/80 hover:bg-indigo-900 text-indigo-100 text-[11px] font-bold py-1 px-2.5 rounded-xl border border-indigo-500/40 focus:outline-none cursor-pointer max-w-[210px] truncate shadow-2xs"
+            >
+              <option value="all" className="bg-slate-900 text-white">All Events Combined</option>
+              {allEvents.map((ev) => (
+                <option key={ev._id} value={ev._id} className="bg-slate-900 text-white">
+                  {ev.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Inline Clear History Confirmation Card inside Chat Box */}
           {showClearConfirm && (
-            <div className="mx-3.5 my-2 p-3 bg-amber-50 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700/80 rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 shrink-0 shadow-xs">
-              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-extrabold text-xs">
-                <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Clear active chat history?</span>
-              </div>
-              <p className="text-[11px] text-amber-800 dark:text-amber-300/80 font-medium">
-                This will clear all messages in your current conversation.
-              </p>
-              <div className="flex items-center justify-end gap-2 mt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowClearConfirm(false)}
-                  className="px-3 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmClearHistory}
-                  className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer"
-                >
-                  Yes, Clear
-                </button>
+            <div className="mx-3.5 my-2 p-3.5 bg-amber-50 dark:bg-amber-950/90 border border-amber-300 dark:border-amber-700 rounded-2xl flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-2 shrink-0 shadow-md">
+              {/* Entire Purple Pill is a Clickable Button to Save Chat as PDF */}
+              <button
+                type="button"
+                onClick={handleSavePDF}
+                disabled={exportingPdf}
+                className="w-full p-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl flex items-center justify-between transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2 text-xs font-black">
+                  <FileDown size={17} className="text-indigo-200 shrink-0" />
+                  <span>Save Chat History as PDF</span>
+                </div>
+                <span className="px-3 py-1 bg-white text-indigo-700 hover:bg-indigo-50 rounded-lg text-xs font-extrabold shadow-2xs transition-colors shrink-0">
+                  {exportingPdf ? 'Exporting...' : 'Download PDF'}
+                </span>
+              </button>
+
+              <div className="border-t border-amber-200 dark:border-amber-800/80 pt-2 flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-extrabold text-xs">
+                  <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Clear active chat history?</span>
+                </div>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300/80 font-medium">
+                  This will permanently clear all messages in your current conversation.
+                </p>
+                <div className="flex items-center justify-end gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowClearConfirm(false)}
+                    className="px-3 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmClearHistory}
+                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                  >
+                    Yes, Clear
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Quick Question Pills */}
-          <div className="px-3 py-2 bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 shrink-0 overflow-x-auto scrollbar-none flex items-center gap-1.5">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0 mr-0.5">
-              Quick:
-            </span>
-            {getQuickQuestions().map((q, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSendMessage(q)}
-                disabled={loading}
-                className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer shadow-2xs disabled:opacity-50"
-              >
-                {q}
-              </button>
-            ))}
+          {/* Quick Question Pills with Back and Forward Navigation Arrows */}
+          <div className="px-2 py-2 bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 shrink-0 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => scrollQuickQuestions('left')}
+              title="Scroll left"
+              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg transition-colors shrink-0 cursor-pointer"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <div
+              ref={quickScrollRef}
+              className="flex-1 overflow-x-auto scrollbar-none flex items-center gap-1.5 scroll-smooth"
+            >
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0 mr-0.5">
+                Quick:
+              </span>
+              {getQuickQuestions().map((q, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSendMessage(q)}
+                  disabled={loading}
+                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer shadow-2xs disabled:opacity-50"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => scrollQuickQuestions('right')}
+              title="Scroll right"
+              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg transition-colors shrink-0 cursor-pointer"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
 
           {/* Messages Conversation Area */}
@@ -338,6 +652,23 @@ export default function ChatbotWidget() {
                 >
                   {renderFormattedText(msg.text)}
 
+                  {/* Interactive Contest Pills if Event Selection Required (Left-aligned) */}
+                  {msg.isEventPrompt && Array.isArray(allEvents) && allEvents.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-1.5 w-full">
+                      {allEvents.map((ev) => (
+                        <button
+                          key={ev._id}
+                          type="button"
+                          onClick={() => handleSelectEventAndAsk(ev._id, msg.pendingQuestion || 'Rules & Regulations')}
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 bg-indigo-50/90 dark:bg-indigo-950/80 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer shadow-2xs"
+                        >
+                          <span className="shrink-0 text-sm">🏆</span>
+                          <span className="text-left font-bold">{ev.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <div
                     className={`mt-1.5 text-[9px] font-semibold text-right ${
                       msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'
@@ -348,6 +679,14 @@ export default function ChatbotWidget() {
                 </div>
               </div>
             ))}
+
+            {/* PDF Exporting Indicator */}
+            {exportingPdf && (
+              <div className="mx-3 my-2 p-2.5 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-300 dark:border-indigo-700/80 rounded-2xl flex items-center gap-2.5 animate-pulse text-indigo-900 dark:text-indigo-200 text-xs font-bold shrink-0">
+                <FileDown size={18} className="text-indigo-600 dark:text-indigo-400 animate-bounce" />
+                <span>Generating official PDF transcript download...</span>
+              </div>
+            )}
 
             {/* Typing Loader Indicator */}
             {loading && (
