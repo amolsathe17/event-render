@@ -16,6 +16,11 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, mobile, password, city, role } = req.body;
 
+    const cleanMobile = mobile ? String(mobile).replace(/\D/g, '') : '';
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Mobile number must be exactly 10 digits' });
+    }
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
@@ -499,8 +504,9 @@ router.post('/mobile-otp-request', async (req, res) => {
   try {
     const { mobile, isSignup, name, city, role } = req.body;
 
-    if (!mobile) {
-      return res.status(400).json({ success: false, message: 'Mobile number is required' });
+    const cleanMobile = mobile ? String(mobile).replace(/\D/g, '') : '';
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Mobile number must be exactly 10 digits' });
     }
 
     let user = await User.findOne({ mobile });

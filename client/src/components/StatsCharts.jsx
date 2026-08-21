@@ -168,7 +168,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
         {/* Chart Render Area */}
         <div className="w-full h-80">
           {(selectedEventId || chartMode === 'cumulative') && dailyStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
               <ComposedChart
                 data={dailyStats}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
@@ -229,7 +229,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
           )}
 
           {chartMode === 'separate' && dailyStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
               <ComposedChart
                 data={dailyStats}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
@@ -285,7 +285,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
           )}
 
           {chartMode === 'sponsorships' && dailyStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
               <ComposedChart
                 data={dailyStats}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
@@ -338,7 +338,7 @@ export default function StatsCharts({ dailyStats = [], categoryStats = [], event
           )}
 
           {chartMode === 'event_comparison' && eventStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
               <BarChart
                 data={eventStats}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, MessageSquare, X, Send, Trash2, Sparkles, AlertCircle, ChevronDown, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, FileDown } from 'lucide-react';
+import { Bot, MessageSquare, X, Send, Trash2, Sparkles, AlertCircle, ChevronDown, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, FileDown, Maximize2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useEvent } from '../context/EventContext';
 import { jsPDF } from 'jspdf';
@@ -22,6 +22,65 @@ export default function ChatbotWidget() {
       const scrollAmount = direction === 'left' ? -150 : 150;
       quickScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
+  };
+
+  // Resizable Chat Window State & Drag Handlers
+  const [dimensions, setDimensions] = useState(() => {
+    try {
+      const saved = localStorage.getItem('chatbot_dimensions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.width >= 320 && parsed.height >= 400) return parsed;
+      }
+    } catch (e) {}
+    return { width: 385, height: 520 };
+  });
+
+  const [isResizing, setIsResizing] = useState(false);
+  const dimsRef = useRef(dimensions);
+  dimsRef.current = dimensions;
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+
+    const startX = e.clientX || (e.touches && e.touches[0].clientX);
+    const startY = e.clientY || (e.touches && e.touches[0].clientY);
+    const startWidth = dimsRef.current.width;
+    const startHeight = dimsRef.current.height;
+
+    const handleMove = (moveEvent) => {
+      const currentX = moveEvent.clientX || (moveEvent.touches && moveEvent.touches[0].clientX);
+      const currentY = moveEvent.clientY || (moveEvent.touches && moveEvent.touches[0].clientY);
+      
+      if (currentX === undefined || currentY === undefined) return;
+
+      const deltaX = startX - currentX;
+      const deltaY = startY - currentY;
+
+      const newWidth = Math.min(Math.max(320, startWidth + deltaX), window.innerWidth - 24);
+      const newHeight = Math.min(Math.max(400, startHeight + deltaY), window.innerHeight - 24);
+
+      setDimensions({ width: newWidth, height: newHeight });
+    };
+
+    const handleStop = () => {
+      setIsResizing(false);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleStop);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleStop);
+      
+      try {
+        localStorage.setItem('chatbot_dimensions', JSON.stringify(dimsRef.current));
+      } catch (err) {}
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleStop);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleStop);
   };
 
   // Role-based quick questions
@@ -122,18 +181,19 @@ export default function ChatbotWidget() {
     setInputMessage('');
     setLoading(true);
 
-    // If 'all' events is selected and user asks event-dependent question, prompt event selection
-    // (Judge and Admin quick role queries bypass event selection prompt to return exact status for selected/combined events)
-    const isEventSpecificQuery = [
-      'rule', 'fee', 'payment', 'submission', 'result', 'certificate', 'pending', 'financial', 'sponsor', 'csr', 'assigned'
+    // Restricted financial topics bypass event selection prompt for non-admins so backend security can refuse politely
+    const isRestrictedFinancialTopic = [
+      'sponsor', 'csr', 'donation', 'donor', 'revenue', 'expense', 'profit', 'loss', 'grant', 'govt', 'government', 'ngo', 'institute', 'payout'
     ].some(k => text.toLowerCase().includes(k));
 
+    // Judge role queries for assigned events / evaluations bypass event selection prompt
     const isJudgeQuery = user?.role === 'Judge' && (
       text.toLowerCase().includes('assigned') || 
       text.toLowerCase().includes('pending') || 
       text.toLowerCase().includes('evaluat')
     );
 
+    // Admin role executive queries bypass event selection prompt
     const isAdminQuery = user?.role === 'Admin' && (
       text.toLowerCase().includes('financial') || 
       text.toLowerCase().includes('sponsor') || 
@@ -142,7 +202,21 @@ export default function ChatbotWidget() {
       text.toLowerCase().includes('stat')
     );
 
-    if (!isJudgeQuery && !isAdminQuery && currentEventId === 'all' && isEventSpecificQuery && Array.isArray(allEvents) && allEvents.length > 0) {
+    // Allowed participant queries that require selecting a specific contest when 'all' is selected
+    const isParticipantEventSpecificQuery = [
+      'rule', 'fee', 'package', 'submission', 'result', 'my payment'
+    ].some(k => text.toLowerCase().includes(k));
+
+    const shouldPromptEventSelection = 
+      !isRestrictedFinancialTopic && 
+      !isJudgeQuery && 
+      !isAdminQuery && 
+      currentEventId === 'all' && 
+      isParticipantEventSpecificQuery && 
+      Array.isArray(allEvents) && 
+      allEvents.length > 0;
+
+    if (shouldPromptEventSelection) {
       setTimeout(() => {
         setMessages(prev => [
           ...prev,
@@ -485,7 +559,40 @@ export default function ChatbotWidget() {
 
       {/* Expanded Chat Window */}
       {isOpen && (
-        <div className="w-[calc(100vw-2.5rem)] sm:w-96 h-[520px] max-h-[82vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in zoom-in-95">
+        <div 
+          style={{
+            width: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(100vw - 2.5rem)' : `${dimensions.width}px`,
+            height: typeof window !== 'undefined' && window.innerWidth < 640 ? '520px' : `${dimensions.height}px`,
+            maxWidth: 'calc(100vw - 1rem)',
+            maxHeight: 'calc(100vh - 2rem)'
+          }}
+          className={`relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all ${isResizing ? 'select-none transition-none shadow-indigo-500/30 ring-2 ring-indigo-500/50' : 'duration-300 animate-in fade-in zoom-in-95'}`}
+        >
+          {/* Top-Left Drag Resize Corner Handle */}
+          <div
+            onMouseDown={startResizing}
+            onTouchStart={startResizing}
+            title="Drag to resize chatbot height and width"
+            className="absolute top-0 left-0 w-7 h-7 z-50 cursor-nwse-resize flex items-center justify-center bg-slate-900/90 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-br-2xl border-r border-b border-indigo-500/40 transition-colors group shadow-md"
+          >
+            <Maximize2 size={11} className="rotate-90 text-indigo-300 group-hover:scale-125 transition-transform shrink-0" />
+          </div>
+
+          {/* Top Edge Drag Resize Handle */}
+          <div
+            onMouseDown={startResizing}
+            onTouchStart={startResizing}
+            title="Drag to resize height"
+            className="absolute top-0 left-7 right-0 h-2 z-40 cursor-ns-resize hover:bg-indigo-500/40 transition-colors"
+          />
+
+          {/* Left Edge Drag Resize Handle */}
+          <div
+            onMouseDown={startResizing}
+            onTouchStart={startResizing}
+            title="Drag to resize width"
+            className="absolute top-7 left-0 bottom-0 w-2 z-40 cursor-ew-resize hover:bg-indigo-500/40 transition-colors"
+          />
           {/* Header */}
           <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-3.5 border-b border-indigo-900/50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">

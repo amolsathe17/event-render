@@ -44,6 +44,8 @@ const detectIntent = (message, role) => {
   return 'GENERAL_HELP';
 };
 
+const { evaluateSecurityAndPermission } = require('../services/chatbotSecurity');
+
 // @route   POST /api/chatbot/message
 // @desc    Process user question, enforce security & event scope, return verified AI response
 // @access  Private
@@ -76,8 +78,44 @@ router.post('/message', protect, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Admin chatbot assistant is disabled.' });
     }
 
-    // 1. Detect Intent
-    const intent = detectIntent(message, user.role);
+    // 1. Evaluate Security & Role Permission BEFORE Database Query
+    const securityResult = evaluateSecurityAndPermission(message, user.role);
+
+    if (!securityResult.allowed) {
+      // Role Permission Check Failed! DO NOT QUERY CONFIDENTIAL DATABASE TABLES!
+      const refusalMessage = securityResult.responseMessage;
+
+      // Save History if enabled
+      if (settings.storeChatHistory) {
+        let session = await ChatSession.findOne({ userId: String(user._id), isActive: true });
+        if (!session) {
+          session = await ChatSession.create({
+            userId: String(user._id),
+            userName: user.name,
+            role: user.role,
+            eventId
+          });
+        }
+        await ChatMessage.create({
+          sessionId: session._id,
+          sender: 'user',
+          text: message.trim()
+        });
+        await ChatMessage.create({
+          sessionId: session._id,
+          sender: 'assistant',
+          text: refusalMessage
+        });
+      }
+
+      return res.json({
+        success: true,
+        intent: securityResult.intent,
+        message: refusalMessage
+      });
+    }
+
+    const intent = securityResult.intent;
 
     // 2. Retrieve Public Event Info
     const eventInfo = await getEventInfo(eventId);

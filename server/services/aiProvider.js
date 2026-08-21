@@ -64,10 +64,7 @@ const generateVerifiedFactResponse = ({ intent, role, eventInfo, participantData
     }
 
     if (intent === 'CERTIFICATE' || queryLower.includes('certificate')) {
-      if (participantData?.results?.certificateAvailable) {
-        return `📜 **Certificate Available!**\nYour official participation certificate for **${eventTitle}** is available for digital download from your Participant Dashboard!`;
-      }
-      return `Participation certificates are generated after your entry fee payment is verified and final submission is completed.`;
+      return `The official printed certificate can only be collected from the event office or the designated exhibition/gallery after the competition. Digital download is not available. you can preview it in only Digital Certificates`;
     }
 
     if (intent === 'EVENT_DETAILS' || queryLower.includes('event') || queryLower.includes('venue') || queryLower.includes('date') || queryLower.includes('deadline')) {

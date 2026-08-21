@@ -76,6 +76,12 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Helper for strictly 10 digits mobile input
+  const handleMobileChange = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setMobile(digitsOnly);
+  };
+
   // OTP states
   const [isVerifying, setIsVerifying] = useState(false);
   const [userId, setUserId] = useState('');
@@ -91,6 +97,10 @@ export default function Register() {
     }
     if (!name || !email || !mobile || !password || !city) {
       setError('Please fill in all fields');
+      return;
+    }
+    if (mobile.length !== 10) {
+      setError('Mobile number must be exactly 10 digits');
       return;
     }
 
@@ -120,6 +130,10 @@ export default function Register() {
     }
     if (!name || !mobile || !city) {
       setError('Please enter Name, Mobile, and City');
+      return;
+    }
+    if (mobile.length !== 10) {
+      setError('Mobile number must be exactly 10 digits');
       return;
     }
 
@@ -354,7 +368,9 @@ export default function Register() {
                             <input
                               type="tel"
                               value={mobile}
-                              onChange={(e) => setMobile(e.target.value)}
+                              onChange={handleMobileChange}
+                              maxLength={10}
+                              pattern="[0-9]{10}"
                               placeholder="9876543210"
                               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600 dark:focus:border-indigo-400"
                               required
@@ -459,7 +475,9 @@ export default function Register() {
                           <input
                             type="tel"
                             value={mobile}
-                            onChange={(e) => setMobile(e.target.value)}
+                            onChange={handleMobileChange}
+                            maxLength={10}
+                            pattern="[0-9]{10}"
                             placeholder="9876543210"
                             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600 dark:focus:border-indigo-400"
                             required

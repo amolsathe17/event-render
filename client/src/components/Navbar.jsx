@@ -302,11 +302,11 @@ export default function Navbar() {
                       user.name ? user.name.charAt(0).toUpperCase() : 'U'
                     )}
                   </div>
-                  <div className="flex flex-col text-left leading-tight">
-                    <span className="text-sm font-black text-white drop-shadow-xs">
+                  <div className="flex flex-col text-left leading-tight shrink-0">
+                    <span className="text-sm font-black text-white drop-shadow-xs whitespace-nowrap">
                       {user.name}
                     </span>
-                    <span className="text-[10px] font-extrabold text-indigo-200 uppercase tracking-widest">
+                    <span className="text-[10px] font-extrabold text-indigo-200 uppercase tracking-widest whitespace-nowrap">
                       {user.role}
                     </span>
                   </div>
@@ -516,38 +516,7 @@ export default function Navbar() {
         <div className="md:hidden bg-slate-900/90 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-white rounded-b-none overflow-hidden">
           <div className="px-4 pt-3 pb-6 space-y-2 max-h-[85vh] overflow-y-auto">
 
-            {/* Mobile Toggle Menu User Card */}
-            {user && (
-              <div className="p-3 bg-slate-800/90 dark:bg-slate-900/90 rounded-2xl border border-slate-700/70 flex items-center justify-between gap-3 shadow-sm mb-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md shrink-0 uppercase border border-indigo-400/30 overflow-hidden">
-                    {user.avatar ? (
-                      <img src={getBackendUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      user.name ? user.name.charAt(0) : 'U'
-                    )}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-display font-extrabold text-white text-xs truncate leading-tight">
-                      {user.name}
-                    </span>
-                    <span className="text-[10px] text-slate-300 truncate">
-                      {user.email}
-                    </span>
-                  </div>
-                </div>
 
-                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 border ${
-                  user.role === 'Admin'
-                    ? 'bg-purple-500/25 text-purple-200 border-purple-400/40'
-                    : user.role === 'Judge'
-                    ? 'bg-amber-500/25 text-amber-200 border-amber-400/40'
-                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
-                }`}>
-                  {user.role || 'Participant'}
-                </span>
-              </div>
-            )}
             <Link
               to="/info"
               onClick={() => setIsOpen(false)}

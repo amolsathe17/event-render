@@ -998,7 +998,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                   <p className="font-display font-black text-base min-[380px]:text-lg sm:text-2xl text-emerald-600 dark:text-emerald-400">
                     {reportStats ? (reportStats.totalPhotos + reportStats.totalVideos) : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (curr.totalUploaded || curr.photographsCount || curr.uploads || 1), 0) : 0)}
                   </p>
-                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified submissions</span>
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified</span>
                 </div>
 
                 {/* Fees Paid Card */}

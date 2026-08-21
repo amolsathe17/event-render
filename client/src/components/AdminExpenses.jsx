@@ -892,7 +892,7 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
             {/* Left: Recharts Interactive Donut Pie Chart (Full Height on Mobile & Desktop) */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center p-3 bg-slate-50/60 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800 rounded-3xl relative h-64 sm:h-72 lg:h-full shrink-0 min-h-[240px]">
               <div className="w-full h-full min-h-[220px] max-h-65 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
                   <PieChart>
                     <Pie
                       data={pieChartData}

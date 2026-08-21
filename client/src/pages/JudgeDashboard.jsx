@@ -788,32 +788,7 @@ export default function JudgeDashboard() {
 
       {judgeDashboardTab === "overview" && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-          {/* Welcome header */}
-          {user?.role !== 'Admin' && (
-            <div className="bg-linear-to-r from-indigo-900/10 via-indigo-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex flex-col gap-2 text-left">
-                <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-widest">
-                  Jury Panel Dashboard
-                </span>
-                <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
-                  Welcome back, Judge {user?.name || "Jury Member"}!
-                </h1>
-                <p className="text-sm text-black dark:text-slate-400">
-                  Review assigned DSLR uploads, grade photography composition benchmarks, and submit final signed-off scores.
-                </p>
-              </div>
-              <div className="flex gap-2 self-start md:self-center">
-                <button
-                  onClick={() => setJudgeDashboardTab("portal")}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Camera size={14} /> Open Evaluation Portal
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Stats Widgets - 5 Cards in a single row matching Participant Dashboard */}
+          {/* Top Banner Row: Left Jury Welcome Card + Right 3 Stats Cards */}
           {(() => {
             const totalEvents = events.length;
             const targetEvents = userSelectedEventId && event ? [event] : events;
@@ -821,7 +796,10 @@ export default function JudgeDashboard() {
               ? (allPhotographsByEvent[userSelectedEventId] || photographs || [])
               : Object.values(allPhotographsByEvent).reduce((acc, arr) => [...acc, ...(arr || [])], []);
 
+            const isVideoAsset = (p) => p?.mediaType === 'video' || p?.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || p?.fileUrl?.includes('/video/upload/') || p?.fileUrl?.includes('/video/') || p?.fileUrl?.includes('video_');
             const totalPhotos = targetPhotos.length;
+            const totalVideos = targetPhotos.filter(isVideoAsset).length;
+            const totalPhotosOnly = targetPhotos.filter(p => !isVideoAsset(p)).length;
             const unpaidCount = targetPhotos.filter(p => p.paymentStatus === 'Unpaid').length;
             const paidPhotos = targetPhotos.filter(p => p.paymentStatus !== 'Unpaid');
             const gradedCount = paidPhotos.filter(p => p.graded).length;
@@ -829,85 +807,123 @@ export default function JudgeDashboard() {
 
             return (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {/* Card 1: Assigned Contests */}
-                  <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
-                      {userSelectedEventId ? 'SELECTED CONTEST' : 'ASSIGNED CONTESTS'}
-                    </span>
-                    <h3 className="font-display font-extrabold text-2xl text-indigo-600 dark:text-indigo-400">
-                      {userSelectedEventId ? 1 : totalEvents}
-                    </h3>
-                    <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium truncate">
-                      {userSelectedEventId ? (event?.title || 'Active Event') : 'Total events panel seat'}
-                    </span>
-                  </div>
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
+                  {/* Left: Jury Panel Dashboard Welcome Header */}
+                  {user?.role !== 'Admin' && (
+                    <div className="xl:col-span-4 bg-linear-to-br from-indigo-900/10 via-purple-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between gap-4 text-left shadow-2xs">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-widest">
+                          Jury Panel Dashboard
+                        </span>
+                        <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
+                          Welcome back, Judge {user?.name || "Jury Member"}!
+                        </h1>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                          Review assigned uploads, grade composition, and submit final signed-off scores.
+                        </p>
+                      </div>
+                      <div className="flex gap-2 self-start">
+                        <button
+                          onClick={() => setJudgeDashboardTab("portal")}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-2xl text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                        >
+                          <Camera size={14} /> Open Evaluation Portal
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Card 2: Graded Photographs / Videos */}
-                  <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                      GRADED PHOTOGRAPHS / VIDEOS
-                    </span>
-                    <h3 className="font-display font-extrabold text-2xl text-emerald-600 dark:text-emerald-400">{gradedCount}</h3>
-                    <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Completed assessments</span>
-                  </div>
+                  {/* Right Side: 6 Stats Cards (2-col on mobile, 3-col on desktop, zero gaps) */}
+                  <div className={`${user?.role !== 'Admin' ? 'xl:col-span-8' : 'xl:col-span-12'} grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3.5 items-stretch`}>
+                    {/* Card 1: Assigned Contests */}
+                    <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                      <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
+                        {userSelectedEventId ? 'SELECTED CONTEST' : 'ASSIGNED CONTESTS'}
+                      </span>
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                        {userSelectedEventId ? 1 : totalEvents}
+                      </h3>
+                      <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium truncate">
+                        {userSelectedEventId ? (event?.title || 'Active Event') : 'Total events panel seat'}
+                      </span>
+                    </div>
 
-                  {/* Card 3: Ungraded Photographs / Videos */}
-                  <div className="bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-red-900/80 dark:text-red-300 font-extrabold uppercase tracking-wider">
-                      UNGRADED PHOTOGRAPHS / VIDEOS
-                    </span>
-                    <h3 className="font-display font-extrabold text-2xl text-red-600 dark:text-red-400">{pendingCount}</h3>
-                    <span className="text-[10px] text-red-600/70 dark:text-red-400/70 font-medium">Assessments remaining</span>
-                  </div>
+                    {/* Card 2: Graded Photographs / Videos */}
+                    <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                      <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                        GRADED PHOTOGRAPHS / VIDEOS
+                      </span>
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{gradedCount}</h3>
+                      <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Completed assessments</span>
+                    </div>
 
-                  {/* Card 4: Unpaid Photographs / Videos */}
-                  <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                      UNPAID PHOTOGRAPHS / VIDEOS
-                    </span>
-                    <h3 className="font-display font-extrabold text-2xl text-rose-600 dark:text-rose-400">{unpaidCount}</h3>
-                    <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Payment pending entries</span>
-                  </div>
+                    {/* Card 3: Ungraded Photographs / Videos */}
+                    <div className="bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                      <span className="text-[10px] text-red-900/80 dark:text-red-300 font-extrabold uppercase tracking-wider">
+                        UNGRADED PHOTOGRAPHS / VIDEOS
+                      </span>
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-red-600 dark:text-red-400 whitespace-nowrap">{pendingCount}</h3>
+                      <span className="text-[10px] text-red-600/70 dark:text-red-400/70 font-medium">Assessments remaining</span>
+                    </div>
 
-                  {/* Card 5: Total Photographs / Videos */}
-                  <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-                    <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                      TOTAL PHOTOGRAPHS / VIDEOS
-                    </span>
-                    <h3 className="font-display font-extrabold text-2xl text-purple-600 dark:text-purple-400">{totalPhotos}</h3>
-                    <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
-                      Total assigned assets
-                    </span>
+                    {/* Card 4: Unpaid Photographs / Videos */}
+                    <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                      <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">
+                        UNPAID PHOTOGRAPHS / VIDEOS
+                      </span>
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-rose-600 dark:text-rose-400 whitespace-nowrap">{unpaidCount}</h3>
+                      <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Payment pending entries</span>
+                    </div>
+
+                    {/* Card 5: Total Photographs */}
+                    <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                      <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                        TOTAL PHOTOGRAPHS
+                      </span>
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-purple-600 dark:text-purple-400 whitespace-nowrap">{totalPhotosOnly}</h3>
+                      <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
+                        Total image entries
+                      </span>
+                    </div>
+
+                    {/* Card 6: Total Videos */}
+                    <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                      <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">
+                        TOTAL VIDEOS
+                      </span>
+                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-amber-600 dark:text-amber-400 whitespace-nowrap">{totalVideos}</h3>
+                      <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">
+                        Total video entries
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                {/* SVG Progress charts */}
+                {/* SVG Progress charts - Hidden in mobile view */}
                 {totalPhotos > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4">
                     
                     {/* Donut Progress chart */}
                     {(() => {
                       const totalPaid = paidPhotos.length;
                       const gradedPct = totalPaid ? (gradedCount / totalPaid) : 0;
-                      const radius = 50;
+                      const radius = 42;
                       const circumference = 2 * Math.PI * radius;
                       const strokeDashoffset = circumference - (circumference * gradedPct);
 
                       return (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-left flex flex-col gap-4 shadow-sm">
-                          <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white">Grading Completion Progress</h3>
-                          <div className="flex flex-row items-center justify-around gap-2 sm:gap-6 py-2">
-                            <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0">
-                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 140 140">
-                                <circle cx="70" cy="70" r={radius} fill="transparent" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="12" />
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col gap-2.5 shadow-sm">
+                          <h3 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Grading Completion Progress</h3>
+                          <div className="flex flex-row items-center justify-around gap-2 sm:gap-4 py-1">
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
+                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r={radius} fill="transparent" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="10" />
                                 <circle
-                                  cx="70"
-                                  cy="70"
+                                  cx="60"
+                                  cy="60"
                                   r={radius}
                                   fill="transparent"
                                   stroke="#4f46e5"
-                                  strokeWidth="12"
+                                  strokeWidth="10"
                                   strokeDasharray={circumference}
                                   strokeDashoffset={strokeDashoffset}
                                   strokeLinecap="round"
@@ -915,24 +931,24 @@ export default function JudgeDashboard() {
                                 />
                               </svg>
                               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
+                                <span className="font-display font-black text-lg sm:text-xl text-slate-900 dark:text-white">
                                   {Math.round(gradedPct * 100)}%
                                 </span>
-                                <span className="text-[7px] sm:text-[8px] text-slate-400 font-extrabold uppercase">Done</span>
+                                <span className="text-[7px] text-slate-400 font-extrabold uppercase">Done</span>
                               </div>
                             </div>
 
-                            <div className="flex flex-col gap-2 text-[10px] sm:text-[11px] shrink-0">
+                            <div className="flex flex-col gap-1.5 text-[10px] sm:text-[11px] shrink-0">
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-indigo-600 shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" />
                                 <span className="font-semibold text-slate-500 dark:text-slate-400">Graded: <strong className="text-slate-900 dark:text-white">{gradedCount}</strong></span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
                                 <span className="font-semibold text-slate-500 dark:text-slate-400">Ungraded: <strong className="text-slate-900 dark:text-white">{pendingCount}</strong></span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-rose-500 shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                                 <span className="font-semibold text-slate-500 dark:text-slate-400">Unpaid: <strong className="text-slate-900 dark:text-white">{unpaidCount}</strong></span>
                               </div>
                             </div>
@@ -961,18 +977,18 @@ export default function JudgeDashboard() {
                         '#8b5cf6', // Violet
                       ];
 
-                      const radius = 50;
+                      const radius = 42;
                       const circumference = 2 * Math.PI * radius;
                       let accumulatedPercent = 0;
 
                       return (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 text-left flex flex-col gap-4 shadow-sm">
-                          <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white">Assigned Categories Distribution</h3>
-                          <div className="flex flex-row items-center justify-center gap-4 sm:gap-12 py-2">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col gap-2.5 shadow-sm">
+                          <h3 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Assigned Categories Distribution</h3>
+                          <div className="flex flex-row items-center justify-center gap-3 sm:gap-6 py-1">
                             {totalCatPhotos > 0 ? (
                               <>
-                                <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0">
-                                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 140 140">
+                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
+                                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
                                     {catData.map((item, idx) => {
                                       const pct = item.count / totalCatPhotos;
                                       const strokeDashoffset = circumference - (circumference * pct);
@@ -982,16 +998,16 @@ export default function JudgeDashboard() {
                                       return (
                                         <circle
                                           key={item.name}
-                                          cx="70"
-                                          cy="70"
+                                          cx="60"
+                                          cy="60"
                                           r={radius}
                                           fill="transparent"
                                           stroke={colors[idx % colors.length]}
-                                          strokeWidth="12"
+                                          strokeWidth="10"
                                           strokeDasharray={circumference}
                                           strokeDashoffset={strokeDashoffset}
                                           style={{
-                                            transformOrigin: '70px 70px',
+                                            transformOrigin: '60px 60px',
                                             transform: `rotate(${rotation}deg)`,
                                           }}
                                           className="transition-all duration-1000 ease-out"
@@ -1000,18 +1016,18 @@ export default function JudgeDashboard() {
                                     })}
                                   </svg>
                                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
+                                    <span className="font-display font-black text-lg sm:text-xl text-slate-900 dark:text-white">
                                       {totalCatPhotos}
                                     </span>
-                                    <span className="text-[7px] sm:text-[8px] text-slate-400 font-extrabold uppercase">Photos</span>
+                                    <span className="text-[7px] text-slate-400 font-extrabold uppercase">Photos</span>
                                   </div>
                                 </div>
 
-                                <div className="flex flex-col gap-2 text-[10px] sm:text-[11px] max-h-32 overflow-y-auto pr-1 shrink-0 text-left justify-center">
+                                <div className="flex flex-col gap-1.5 text-[10px] sm:text-[11px] max-h-28 overflow-y-auto pr-1 shrink-0 text-left justify-center">
                                   {catData.map((item, idx) => (
-                                    <div key={item.name} className="flex items-center gap-2">
+                                    <div key={item.name} className="flex items-center gap-1.5">
                                       <span
-                                        className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0"
+                                        className="w-2 h-2 rounded-full shrink-0"
                                         style={{ backgroundColor: colors[idx % colors.length] }}
                                       />
                                       <span className="font-semibold text-slate-500 dark:text-slate-400">
@@ -1030,9 +1046,9 @@ export default function JudgeDashboard() {
                     })()}
 
                     {/* Event wise approvals / disapproval tracking */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-5 shadow-sm text-left">
-                      <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white">Events Breakdown Tracking</h3>
-                      <div className="flex flex-col gap-4 max-h-42.5 overflow-y-auto pr-1">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3 shadow-sm text-left">
+                      <h3 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Events Breakdown Tracking</h3>
+                      <div className="flex flex-col gap-2.5 max-h-34 overflow-y-auto pr-1">
                         {targetEvents.map((e, idx) => {
                           const eventPhotos = allPhotographsByEvent[e._id] || (e._id === event?._id ? photographs : []);
                           const total = eventPhotos.length;
@@ -1041,9 +1057,9 @@ export default function JudgeDashboard() {
                           const evaluated = eventPhotos.filter(p => p.graded).length;
 
                           return (
-                            <div key={idx} className="p-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl flex flex-col gap-2 text-xs">
+                            <div key={idx} className="p-2.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl flex flex-col gap-1.5 text-xs">
                               <div className="flex justify-between items-center">
-                                <span className="font-extrabold text-slate-900 dark:text-white text-xs truncate max-w-30">{e.title}</span>
+                                <span className="font-extrabold text-slate-900 dark:text-white text-[11px] truncate max-w-30">{e.title}</span>
                                 <span className={`px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full ${
                                   evaluated === total && total > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
                                 }`}>
@@ -1052,7 +1068,7 @@ export default function JudgeDashboard() {
                               </div>
                               
                               {/* Stacked Horizontal Bar Chart */}
-                              <div className="w-full bg-slate-200 dark:bg-slate-800 h-3 rounded-full overflow-hidden flex">
+                              <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden flex">
                                 {total > 0 ? (
                                   <>
                                     <div
@@ -1076,7 +1092,7 @@ export default function JudgeDashboard() {
                                 )}
                               </div>
 
-                              <div className="flex justify-between text-[9px] text-slate-400 mt-0.5 border-t border-slate-100 dark:border-slate-850 pt-1">
+                              <div className="flex justify-between text-[9px] text-slate-400 border-t border-slate-100 dark:border-slate-850 pt-0.5">
                                 <span>App: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{approved}</strong></span>
                                 <span>Dis: <strong className="text-red-600 dark:text-red-400 font-bold">{disapproved}</strong></span>
                                 <span>Pen: <strong className="text-slate-650 dark:text-slate-350 font-bold">{total - evaluated}</strong></span>
@@ -1086,7 +1102,6 @@ export default function JudgeDashboard() {
                         })}
                       </div>
                     </div>
-
                   </div>
                 )}
 

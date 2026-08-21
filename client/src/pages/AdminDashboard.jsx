@@ -2133,7 +2133,13 @@ export default function AdminDashboard() {
     const token = localStorage.getItem('token');
     const baseUrl = getApiBaseUrl();
     const query = targetEventId ? `?eventId=${targetEventId}` : '';
-    const path = `${baseUrl}/api/reports/${reportType}${query}`;
+    
+    // Map reportType names to valid server routes
+    let mappedType = reportType;
+    if (reportType === 'financial') mappedType = 'revenue';
+    if (reportType === 'photographs') mappedType = 'submissions';
+
+    const path = `${baseUrl}/api/reports/${mappedType}${query}`;
     
     // Trigger download with headers
     fetch(path, {
@@ -2300,6 +2306,50 @@ export default function AdminDashboard() {
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
           
+          {/* Full-Width Administrator Control Panel Welcome Banner Card */}
+          <div className="w-full bg-linear-to-r from-amber-900/10 via-amber-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 text-left shadow-2xs">
+            {/* Left Side: Welcome & Overview Info */}
+            <div className="flex flex-col gap-2 max-w-2xl">
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-widest flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-amber-500" /> ADMINISTRATOR CONTROL PANEL
+              </span>
+              <h1 className="font-display font-black text-2xl sm:text-4xl text-slate-900 dark:text-white leading-tight">
+                Welcome back, Admin {user?.name || "Amol Sathe"}!
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                Manage DSLR photography contests, oversee contestant enrollments, monitor financial ledgers & sponsorships, assign jury panel judges, and review overall system performance.
+              </p>
+            </div>
+
+            {/* Right Side: 3 Export Action Buttons with Amber/Slate/Indigo solid color scheme */}
+            <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto">
+              <button
+                onClick={() => handleExportCSV('participants')}
+                className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                title="Export Participants List Excel/CSV"
+              >
+                <Download size={14} className="text-white" />
+                <span>Export Participants Excel/CSV</span>
+              </button>
+              <button
+                onClick={() => handleExportCSV('financial')}
+                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                title="Export Revenue Ledger Excel/CSV"
+              >
+                <Download size={14} className="text-white" />
+                <span>Export Revenue Ledger Excel/CSV</span>
+              </button>
+              <button
+                onClick={() => handleExportCSV('photographs')}
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                title="Export Photos Metadata Excel/CSV"
+              >
+                <Download size={14} className="text-white" />
+                <span>Export Photos Metadata Excel/CSV</span>
+              </button>
+            </div>
+          </div>
+
           {/* Row 1: Executive Financial Cards Grid - 4 Cards in a row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Financial Card 1: Total Revenue */}
@@ -2414,46 +2464,6 @@ export default function AdminDashboard() {
             selectedEventId={selectedEventId}
             selectedEventTitle={selectedEvent?.title}
           />
-
-          {/* Downloadable Reports Panel - 3 distinct light background export buttons */}
-          <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Financial & Operational Exports</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {selectedEventId
-                    ? `Exporting excel/csv ledger books for selected event: "${selectedEvent?.title || 'Selected Event'}"`
-                    : `Exporting excel/csv ledger books for ALL events combined`}
-                </p>
-              </div>
-              <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl text-[11px] font-bold self-start sm:self-auto">
-                {selectedEventId ? 'Selected Event Data' : 'All Events Combined Data'}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                onClick={() => handleExportCSV('participants')}
-                className="flex items-center justify-center gap-2 bg-indigo-50/80 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700 p-3.5 rounded-2xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-              >
-                <Download size={15} className="text-indigo-600 dark:text-indigo-400" />
-                Export Participants Excel/CSV
-              </button>
-              <button
-                onClick={() => handleExportCSV('revenue')}
-                className="flex items-center justify-center gap-2 bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-300 dark:border-emerald-700 p-3.5 rounded-2xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-              >
-                <Download size={15} className="text-emerald-600 dark:text-emerald-400" />
-                Export Revenue Ledger Excel/CSV
-              </button>
-              <button
-                onClick={() => handleExportCSV('submissions')}
-                className="flex items-center justify-center gap-2 bg-purple-50/80 hover:bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-2 border-purple-300 dark:border-purple-700 p-3.5 rounded-2xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-              >
-                <Download size={15} className="text-purple-600 dark:text-purple-400" />
-                Export Photos Metadata Excel/CSV
-              </button>
-            </div>
-          </div>
 
         </div>
       )}
@@ -2718,7 +2728,7 @@ export default function AdminDashboard() {
               <>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl px-4 py-4 shadow-2xs">
+                  <div className="flex items-center gap-3 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-emerald-500/10 rounded-xl">
                       <ThumbsUp size={20} className="text-emerald-500 shrink-0" />
                     </div>
@@ -2728,7 +2738,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-2xl px-4 py-4 shadow-2xs">
+                  <div className="flex items-center gap-3 bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-red-500/10 rounded-xl">
                       <ThumbsDown size={20} className="text-red-500 shrink-0" />
                     </div>
@@ -2739,7 +2749,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Pending Evaluation Card (Right side of Disapproved by Judges) */}
-                  <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl px-4 py-4 shadow-2xs">
+                  <div className="flex items-center gap-3 bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-amber-500/10 rounded-xl">
                       <Clock size={20} className="text-amber-500 shrink-0" />
                     </div>
@@ -2749,7 +2759,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-4 shadow-2xs">
+                  <div className="flex items-center gap-3 bg-slate-50/80 dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-4 shadow-2xs">
                     <div className="p-2.5 bg-slate-500/10 rounded-xl">
                       <Camera size={20} className="text-slate-500 shrink-0" />
                     </div>
@@ -2760,7 +2770,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* TOTAL PHOTOGRAPHS / VIDEOS Card */}
-                  <div className="flex items-start flex-col justify-between bg-purple-50/80 dark:bg-purple-950/25 border-2 border-purple-400/80 dark:border-purple-600/60 rounded-2xl p-4 shadow-2xs">
+                  <div className="flex items-start flex-col justify-between bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-4 shadow-2xs">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">
                       {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS / VIDEOS'}
                     </span>

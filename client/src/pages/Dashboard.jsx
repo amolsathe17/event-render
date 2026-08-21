@@ -903,11 +903,11 @@ export default function Dashboard() {
   const isFinalized = !!submission?.isFinalSubmitted || user?.isSuspended;
 
   return (
-    <div className="w-full bg-slate-100/90 dark:bg-slate-950 min-h-screen py-5 transition-colors duration-300">
+    <div className="w-full bg-slate-100/90 dark:bg-slate-950 min-h-screen py-3 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
         
         {/* Dashboard Sub-navigation Tabs */}
-        <div className="w-full mb-3">
+        <div className="w-full mb-2">
           <div className="flex w-full bg-white/90 dark:bg-slate-900/80 p-1 sm:p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs gap-0.5 sm:gap-1">
             <button
               onClick={() => setDashboardTab("overview")}
@@ -954,66 +954,66 @@ export default function Dashboard() {
 
       {dashboardTab === "overview" && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-          {/* Welcome profile header */}
-          <div className="bg-linear-to-r from-indigo-900/10 via-indigo-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex flex-col gap-2 text-left">
+          {/* Top Banner Row: Left Welcome Card + Right 4 Stats Cards */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
+            {/* Left: Participant Dashboard Welcome Header */}
+            <div className="xl:col-span-5 bg-linear-to-br from-indigo-900/10 via-purple-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-center gap-2 text-left shadow-2xs">
               <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-widest">
                 Participant Dashboard
               </span>
               <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
                 Welcome back, {user?.name || "Participant"}!
               </h1>
-              <p className="text-sm text-black dark:text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Manage your contest submissions, track payment invoices, view performance stats, and download certificates.
               </p>
             </div>
-            
-          </div>
 
-          {/* Stats Widgets */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Registered Contests */}
-            <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">Registered Contests</span>
-              <h3 className="font-display font-extrabold text-2xl text-indigo-600 dark:text-indigo-400">{allSubmissions.length}</h3>
-              <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Total events registered</span>
-            </div>
-            
-            {/* Card 2: Total Uploads */}
-            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">Total Uploads</span>
-              <h3 className="font-display font-extrabold text-2xl text-emerald-600 dark:text-emerald-400">
-                {allSubmissions.reduce((acc, s) => acc + (s.photographs || []).length, 0)}
-              </h3>
-              <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified submissions</span>
-            </div>
+            {/* Right: 4 Stats Cards placed right beside the Welcome Banner */}
+            <div className="xl:col-span-7 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-stretch">
+              {/* Card 1: Registered Contests */}
+              <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">Registered Contests</span>
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{allSubmissions.length}</h3>
+                <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Total events registered</span>
+              </div>
+              
+              {/* Card 2: Total Uploads */}
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">Total Uploads</span>
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                  {allSubmissions.reduce((acc, s) => acc + (s.photographs || []).length, 0)}
+                </h3>
+                <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified</span>
+              </div>
 
-            {/* Card 3: Fees Paid */}
-            <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
-              <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">Fees Paid</span>
-              <h3 className="font-display font-extrabold text-2xl text-amber-600 dark:text-amber-500">
-                INR {allSubmissions.reduce((acc, s) => acc + (s.paymentStatus === 'Paid' ? s.amount : 0), 0)}
-              </h3>
-              <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Successful payments</span>
-            </div>
+              {/* Card 3: Fees Paid */}
+              <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+                <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">Fees Paid</span>
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-amber-600 dark:text-amber-500 whitespace-nowrap">
+                  ₹{allSubmissions.reduce((acc, s) => acc + (s.paymentStatus === 'Paid' ? s.amount : 0), 0)}
+                </h3>
+                <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Successful payments</span>
+              </div>
 
-            {/* Card 4: Account Status */}
-            <div className={`${
-              user?.isSuspended
-                ? 'bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700'
-                : 'bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700'
-            } rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm`}>
-              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                user?.isSuspended ? 'text-red-900/80 dark:text-red-300' : 'text-teal-900/80 dark:text-teal-300'
-              }`}>Account Status</span>
-              <h3 className={`font-display font-extrabold text-lg flex items-center gap-1.5 mt-1 ${
-                user?.isSuspended ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'
-              }`}>
-                {user?.isSuspended ? 'Suspended' : 'Active'}
-              </h3>
-              <span className={`text-[10px] font-medium ${
-                user?.isSuspended ? 'text-red-600/70 dark:text-red-400/70' : 'text-teal-600/70 dark:text-teal-400/70'
-              }`}>Participant privileges</span>
+              {/* Card 4: Account Status */}
+              <div className={`${
+                user?.isSuspended
+                  ? 'bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700'
+                  : 'bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700'
+              } rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm`}>
+                <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                  user?.isSuspended ? 'text-red-900/80 dark:text-red-300' : 'text-teal-900/80 dark:text-teal-300'
+                }`}>Account Status</span>
+                <h3 className={`font-display font-extrabold text-lg sm:text-xl whitespace-nowrap flex items-center gap-1.5 ${
+                  user?.isSuspended ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'
+                }`}>
+                  {user?.isSuspended ? 'Suspended' : 'Active'}
+                </h3>
+                <span className={`text-[10px] font-medium ${
+                  user?.isSuspended ? 'text-red-600/70 dark:text-red-400/70' : 'text-teal-600/70 dark:text-teal-400/70'
+                }`}>Participant privileges</span>
+              </div>
             </div>
           </div>
 
@@ -1066,36 +1066,36 @@ export default function Dashboard() {
                 ];
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 text-left flex flex-col justify-between gap-5 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
-                      <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
+                      <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Submission Status
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                         Breakdown of uploaded submissions by approval status
                       </p>
                     </div>
 
-                    <div className="w-full h-52 sm:h-56 flex items-center justify-center my-1 relative">
+                    <div className="w-full h-36 sm:h-40 flex items-center justify-center my-0.5 relative">
                       {/* Donut Hole Center Value & Label */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-                        <span className="font-display font-black text-2xl text-slate-900 dark:text-white">
+                        <span className="font-display font-black text-xl text-slate-900 dark:text-white leading-tight">
                           {totalPhotos}
                         </span>
-                        <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                           {totalPhotos === 1 ? 'Entry' : 'Entries'}
                         </span>
                       </div>
 
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
                         <PieChart>
                           <Pie
                             data={displayData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={55}
-                            outerRadius={80}
-                            paddingAngle={displayData.length > 1 ? 4 : 0}
+                            innerRadius={42}
+                            outerRadius={62}
+                            paddingAngle={displayData.length > 1 ? 3 : 0}
                             dataKey="value"
                             stroke="none"
                             label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
@@ -1111,7 +1111,7 @@ export default function Dashboard() {
                                   fill="#ffffff"
                                   textAnchor="middle"
                                   dominantBaseline="central"
-                                  className="text-xs font-black drop-shadow-md"
+                                  className="text-[10px] font-black drop-shadow-md"
                                 >
                                   {value}
                                 </text>
@@ -1128,17 +1128,17 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-start gap-y-3 gap-x-6 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: '#10B981' }} />
+                    <div className="flex flex-wrap items-center justify-start gap-y-2 gap-x-4 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: '#10B981' }} />
                         <span>Approved ({approvedCount})</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: '#F59E0B' }} />
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: '#F59E0B' }} />
                         <span>Pending ({pendingCount})</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: '#7C3AED' }} />
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: '#7C3AED' }} />
                         <span>Disapproved ({rejectedCount})</span>
                       </div>
                     </div>
@@ -1175,26 +1175,26 @@ export default function Dashboard() {
                     ];
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 text-left flex flex-col justify-between gap-5 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
-                      <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
+                      <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Category Distribution
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                         Breakdown of uploaded submissions across event categories
                       </p>
                     </div>
 
-                    <div className="w-full h-52 sm:h-56 flex items-center justify-center my-1">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="w-full h-36 sm:h-40 flex items-center justify-center my-0.5">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
                         <PieChart>
                           <Pie
                             data={catData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={58}
-                            outerRadius={82}
-                            paddingAngle={catData.length > 1 ? 5 : 0}
+                            innerRadius={44}
+                            outerRadius={64}
+                            paddingAngle={catData.length > 1 ? 4 : 0}
                             dataKey="value"
                             stroke="none"
                           >
@@ -1207,14 +1207,14 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-start gap-y-3 gap-x-6 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="flex flex-wrap items-center justify-start gap-y-2 gap-x-4 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                       {(catEntries.length > 0 ? catData : [
                         { name: 'In-door', value: 0, color: '#7C3AED' },
                         { name: 'Out-Door', value: 0, color: '#F59E0B' },
                         { name: 'Color', value: 0, color: '#10B981' }
                       ]).map((item) => (
-                        <div key={item.name} className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: item.color }} />
+                        <div key={item.name} className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: item.color }} />
                           <span>{item.name} ({item.value})</span>
                         </div>
                       ))}
@@ -1272,26 +1272,26 @@ export default function Dashboard() {
                 timelineEvents.sort((a, b) => b.date - a.date);
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 text-left flex flex-col gap-4 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
-                      <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
+                      <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Activities History Timeline
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                         Recent account actions & contest activity log
                       </p>
                     </div>
 
                     <div className="w-full">
                       {timelineEvents.length === 0 ? (
-                        <div className="h-52 sm:h-56 flex items-center justify-center text-xs text-slate-400">
+                        <div className="h-36 sm:h-40 flex items-center justify-center text-xs text-slate-400">
                           No timeline activities logged yet.
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-3.5 pl-3.5 border-l-2 border-indigo-100 dark:border-indigo-950/60 max-h-72 sm:max-h-80 overflow-y-auto pr-1 text-xs">
+                        <div className="flex flex-col gap-2.5 pl-3 border-l-2 border-indigo-100 dark:border-indigo-950/60 max-h-44 sm:max-h-48 overflow-y-auto pr-1 text-xs">
                           {timelineEvents.map((evt, idx) => (
                             <div key={idx} className="relative flex flex-col gap-0.5">
-                              <span className="absolute -left-4.75 top-1.5 w-2 h-2 rounded-full border-2 border-white dark:border-slate-900 bg-indigo-600" />
+                              <span className="absolute -left-4.25 top-1.5 w-2 h-2 rounded-full border-2 border-white dark:border-slate-900 bg-indigo-600" />
                               <span className="text-[10px] text-slate-400 font-semibold">
                                 {evt.date.toLocaleDateString()} {evt.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
@@ -1310,23 +1310,23 @@ export default function Dashboard() {
               {(() => {
                 const refundedSubs = allSubmissions.filter(s => s.paymentStatus === 'Refunded' || s.paymentStatus === 'Withdrawn');
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-7 text-left flex flex-col justify-between gap-5 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
-                      <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
+                      <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Refund Status Tracking
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                         Status of fee refunds & entry withdrawals
                       </p>
                     </div>
 
-                    <div className="w-full my-1">
+                    <div className="w-full my-0.5">
                       {refundedSubs.length === 0 ? (
-                        <div className="h-52 sm:h-56 flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 text-xs text-center">
+                        <div className="h-36 sm:h-40 flex flex-col items-center justify-center p-3 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 text-xs text-center">
                           <span>No refunded or withdrawn entry packages.</span>
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-3 h-52 sm:h-56 overflow-y-auto pr-1">
+                        <div className="flex flex-col gap-2.5 h-36 sm:h-40 overflow-y-auto pr-1">
                           {refundedSubs.map((sub, idx) => {
                             const targetEv = eventsList.find(e => e._id === sub.eventId || (e.title && sub.eventTitle && e.title.trim().toLowerCase() === sub.eventTitle.trim().toLowerCase()));
                             const isDeadlinePassed = targetEv?.deadline && new Date() >= new Date(targetEv.deadline);
@@ -3204,38 +3204,82 @@ export default function Dashboard() {
                   </h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                    <div className="p-4 bg-white/80 dark:bg-slate-950/60 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-2">
-                      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Key Event Dates</span>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        <strong>Start Date:</strong> {selectedHistoryEvent?.startDate ? new Date(selectedHistoryEvent.startDate).toLocaleDateString() : 'N/A'}
-                      </p>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        <strong>Submission Deadline:</strong> {selectedHistoryEvent?.deadline ? new Date(selectedHistoryEvent.deadline).toLocaleDateString() : 'N/A'}
-                      </p>
-                      {selectedHistoryEvent?.exhibitionFromDate && (
+                    {/* Merged Single Card: Key Dates, Location & Contest Details */}
+                    <div className="p-4 bg-white/80 dark:bg-slate-950/60 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-2.5">
+                      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Key Dates, Location & Details</span>
+                      
+                      <div className="pb-2 border-b border-slate-100 dark:border-slate-800/60 flex flex-col gap-1.5">
                         <p className="text-slate-700 dark:text-slate-300">
-                          <strong>Exhibition Dates:</strong> {new Date(selectedHistoryEvent.exhibitionFromDate).toLocaleDateString()} - {new Date(selectedHistoryEvent.exhibitionToDate).toLocaleDateString()}
+                          <strong>Start Date:</strong> {selectedHistoryEvent?.startDate ? new Date(selectedHistoryEvent.startDate).toLocaleDateString() : 'N/A'}
                         </p>
-                      )}
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Submission Deadline:</strong> {selectedHistoryEvent?.deadline ? new Date(selectedHistoryEvent.deadline).toLocaleDateString() : 'N/A'}
+                        </p>
+                        {selectedHistoryEvent?.exhibitionFromDate && (
+                          <p className="text-slate-700 dark:text-slate-300">
+                            <strong>Exhibition Dates:</strong> {new Date(selectedHistoryEvent.exhibitionFromDate).toLocaleDateString()} - {new Date(selectedHistoryEvent.exhibitionToDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <p className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
+                          <strong>Official Entry Code:</strong> <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/40 rounded-lg text-xs">#{selectedHistorySub?.entryNumber || 'N/A'}</span>
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Venue:</strong> {selectedHistoryEvent?.venue || 'Bal-Gandharv Art Gallery, Jangali Maharaj Road Pune 411030'}
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Category Type:</strong> {selectedHistoryEvent?.eventType || 'Photography'}
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Selected Entry Package:</strong> {selectedHistorySub?.packageName || 'Standard Entry'} (₹{selectedHistorySub?.totalAmount || '200'})
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="p-4 bg-white/80 dark:bg-slate-950/60 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-2">
-                      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Contest Location & Details</span>
-                      <p className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
-                        <strong>Official Entry Code:</strong> <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/40 rounded-lg text-xs">#{selectedHistorySub?.entryNumber || 'N/A'}</span>
-                      </p>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        <strong>Venue:</strong> {selectedHistoryEvent?.venue || 'Online Portal'}
-                      </p>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        <strong>Category Type:</strong> {selectedHistoryEvent?.eventType || 'Photography'}
-                      </p>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        <strong>Selected Entry Package:</strong> {selectedHistorySub?.packageName || 'Standard Entry'} (₹{selectedHistorySub?.totalAmount || '200'})
-                      </p>
+                    {/* Single Combined Card: Event Admin & Assigned Judge(s) Details */}
+                    <div className="p-4 bg-white/80 dark:bg-slate-950/60 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-2.5">
+                      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Event Admin & Assigned Judge(s) Details</span>
+                      
+                      {/* Admin Section */}
+                      <div className="pb-2 border-b border-slate-100 dark:border-slate-800/60 flex flex-col gap-1">
+                        <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">👑 Event Admin Contact:</span>
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Admin Name:</strong> {selectedHistoryEvent?.adminDetails?.name || 'Amol Sathe'}
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Email:</strong> {selectedHistoryEvent?.adminDetails?.email || 'amol@gmail.com'}
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300">
+                          <strong>Contact No:</strong> {selectedHistoryEvent?.adminDetails?.mobile || '+91 9876543210'}
+                        </p>
+                      </div>
+
+                      {/* Judge Section */}
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wide">⚖️ Assigned Judge(s):</span>
+                        {Array.isArray(selectedHistoryEvent?.assignedJudgesDetails) && selectedHistoryEvent.assignedJudgesDetails.length > 0 ? (
+                          <div className="flex flex-col gap-1.5 max-h-28 overflow-y-auto pr-1">
+                            {selectedHistoryEvent.assignedJudgesDetails.map((j, idx) => (
+                              <div key={idx} className="text-slate-700 dark:text-slate-300">
+                                <p><strong>Name:</strong> {j.name}</p>
+                                <p><strong>Email:</strong> {j.email}</p>
+                                <p><strong>Contact No:</strong> {j.mobile}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-slate-700 dark:text-slate-300">
+                            <p><strong>Name:</strong> Chitra Mete</p>
+                            <p><strong>Email:</strong> mete@gmail.com</p>
+                            <p><strong>Contact No:</strong> +91 9876543210</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Activity History Timeline placed beside right side of Contest Location & Details */}
+                    {/* Activity History Timeline */}
                     <div className="p-4 bg-white/80 dark:bg-slate-950/60 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-2.5">
                       <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">Activity History Timeline</span>
                       <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">

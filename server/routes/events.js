@@ -90,7 +90,37 @@ router.get('/', async (req, res) => {
     const Submission = require('../models/Submission');
     const events = await Event.find(query).sort({ createdAt: -1 }).lean();
     
+    // Fetch system admins & judges for contact enrichment
+    const admins = await User.find({ role: 'Admin' }).select('name email mobile').lean();
+    const primaryAdmin = admins.length > 0 ? admins[0] : { name: 'Sumbaran Art Society Admin', email: 'admin@sumbaranart.org', mobile: '+91 9876543210' };
+    const allJudges = await User.find({ role: 'Judge', isSuspended: { $ne: true } }).select('name email mobile').lean();
+
     for (let event of events) {
+      // 1. Admin / Organizer Details
+      event.adminDetails = {
+        name: primaryAdmin.name,
+        email: primaryAdmin.email,
+        mobile: primaryAdmin.mobile || '+91 9876543210'
+      };
+
+      // 2. Assigned Judges Details
+      let matchedJudges = [];
+      if (Array.isArray(event.assignedJudges) && event.assignedJudges.length > 0) {
+        matchedJudges = allJudges.filter(j => 
+          event.assignedJudges.some(id => String(id) === String(j._id) || String(id).toLowerCase() === String(j.email).toLowerCase())
+        );
+      }
+      
+      if (matchedJudges.length === 0) {
+        matchedJudges = allJudges;
+      }
+
+      event.assignedJudgesDetails = matchedJudges.map(j => ({
+        name: j.name,
+        email: j.email,
+        mobile: j.mobile || '+91 9876543210'
+      }));
+
       if (event.winners && event.winners.length > 0) {
         for (let w of event.winners) {
           if (w.submissionId && w.photographId) {

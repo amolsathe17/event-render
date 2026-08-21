@@ -58,9 +58,9 @@ router.get('/participants', protect, authorize('Admin'), async (req, res) => {
 });
 
 // @desc    Export Revenue report to CSV / Excel
-// @route   GET /api/reports/revenue
+// @route   GET /api/reports/revenue or /api/reports/financial
 // @access  Private/Admin
-router.get('/revenue', protect, authorize('Admin'), async (req, res) => {
+router.get(['/revenue', '/financial'], protect, authorize('Admin'), async (req, res) => {
   try {
     const { eventId } = req.query;
     const filter = { status: 'Success' };
@@ -271,9 +271,9 @@ router.get('/profit_loss', protect, authorize('Admin'), async (req, res) => {
 });
 
 // @desc    Export Submission report to CSV / Excel
-// @route   GET /api/reports/submissions
+// @route   GET /api/reports/submissions or /api/reports/photographs
 // @access  Private/Admin
-router.get('/submissions', protect, authorize('Admin'), async (req, res) => {
+router.get(['/submissions', '/photographs'], protect, authorize('Admin'), async (req, res) => {
   try {
     const { eventId } = req.query;
     const filter = { isFinalSubmitted: true };
