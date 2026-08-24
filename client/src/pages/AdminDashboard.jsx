@@ -175,7 +175,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (events.length > 0) {
-      const incompleteEvents = events.filter(e => !e.winnersPublished && e.status !== 'Completed' && e.status !== 'Results Published');
+      const incompleteEvents = events.filter(e => !e.winnersPublished && e.status !== 'Completed' && e.status !== 'Results Published' && !e.gradingConfirmed);
       if (incompleteEvents.length > 0) {
         const timer = setTimeout(() => {
           setShowIncompleteGradingModal(true);
@@ -506,10 +506,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAdminMobileChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setProfileMobile(val);
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setProfileError('');
     setProfileSubmitting(true);
+
+    if (profileMobile.replace(/\D/g, '').length !== 10) {
+      setProfileError('Mobile number must be exactly 10 digits');
+      setProfileSubmitting(false);
+      return;
+    }
 
     if (profilePassword && profilePassword !== profileConfirmPassword) {
       setProfileError('Passwords do not match');
@@ -5405,7 +5416,9 @@ export default function AdminDashboard() {
                   <input
                     type="tel"
                     value={profileMobile}
-                    onChange={(e) => setProfileMobile(e.target.value)}
+                    onChange={handleAdminMobileChange}
+                    maxLength={10}
+                    pattern="[0-9]{10}"
                     placeholder="9876543210"
                     className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
                     required
@@ -7450,7 +7463,7 @@ export default function AdminDashboard() {
 
       {/* INCOMPLETE GRADING PROGRESS MODAL POPUP (Appears when admin clicks on Judges & Results tab) */}
       {activeTab === 'judges' && showIncompleteGradingModal && (() => {
-        const incompleteItems = events.filter(e => !e.winnersPublished && e.status !== 'Completed' && e.status !== 'Results Published').map(e => {
+        const incompleteItems = events.filter(e => !e.winnersPublished && e.status !== 'Completed' && e.status !== 'Results Published' && !e.gradingConfirmed).map(e => {
           const eventPhotos = photographs.filter(p => p.eventId === e._id);
           const assignedJudges = e.assignedJudges || [];
           const totalRequiredReviews = eventPhotos.length * assignedJudges.length;
@@ -7507,36 +7520,36 @@ export default function AdminDashboard() {
         if (incompleteItems.length === 0) return null;
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl flex flex-col gap-6 relative animate-in zoom-in-95 duration-200 my-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-8 max-w-2xl w-full shadow-2xl flex flex-col gap-4 sm:gap-6 relative animate-in zoom-in-95 duration-200 my-auto max-h-[82vh] sm:max-h-[85vh]">
               {/* Close Button */}
               <button
                 onClick={() => setShowIncompleteGradingModal(false)}
-                className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
 
               {/* Header */}
-              <div className="flex items-center gap-3.5 border-b border-slate-100 dark:border-slate-800 pb-4">
-                <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl shrink-0">
-                  <Clock size={24} className="animate-pulse" />
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 sm:pb-4 pr-6">
+                <div className="p-2.5 sm:p-3 bg-amber-500/10 text-amber-500 rounded-2xl shrink-0">
+                  <Clock size={22} className="animate-pulse" />
                 </div>
                 <div>
                   <span className="text-[10px] text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-widest block">
                     Grading Status Alert
                   </span>
-                  <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">
+                  <h3 className="font-display font-black text-base sm:text-lg text-slate-900 dark:text-white">
                     Incomplete Grading Progress Events ({incompleteItems.length})
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     The following assigned contests have pending photo evaluations or unconfirmed jury sign-offs:
                   </p>
                 </div>
               </div>
 
-              {/* List of Incomplete Events */}
-              <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1">
+              {/* List of Incomplete Events - Height reduced on mobile view to show 1 event details card at a time */}
+              <div className="flex flex-col gap-3.5 max-h-[230px] sm:max-h-[55vh] overflow-y-auto pr-1">
                 {incompleteItems.map(({ event: ev, totalRequiredReviews, completedReviews, progressPercentage, pendingJudges }) => (
                   <div
                     key={ev._id}

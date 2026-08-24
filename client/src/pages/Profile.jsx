@@ -51,10 +51,20 @@ export default function Profile() {
     }
   };
 
+  const handleMobileChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setMobile(val);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !mobile || !city) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    if (mobile.replace(/\D/g, '').length !== 10) {
+      setError('Mobile number must be exactly 10 digits');
       return;
     }
 
@@ -205,7 +215,10 @@ export default function Profile() {
                 <input
                   type="tel"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={handleMobileChange}
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  placeholder="9876543210"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
                   required
                 />

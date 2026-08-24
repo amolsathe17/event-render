@@ -405,7 +405,13 @@ router.put('/profile', protect, async (req, res) => {
     }
 
     user.name = req.body.name || user.name;
-    user.mobile = req.body.mobile || user.mobile;
+    if (req.body.mobile !== undefined) {
+      const cleanMobile = String(req.body.mobile).replace(/\D/g, '');
+      if (cleanMobile.length !== 10) {
+        return res.status(400).json({ success: false, message: 'Mobile number must be exactly 10 digits' });
+      }
+      user.mobile = cleanMobile;
+    }
     user.city = req.body.city || user.city;
     if (req.body.avatar !== undefined) user.avatar = req.body.avatar;
 

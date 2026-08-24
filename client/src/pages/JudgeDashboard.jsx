@@ -54,7 +54,11 @@ export default function JudgeDashboard() {
 
   useEffect(() => {
     if (events.length > 0) {
-      const closedDeadlineEvents = events.filter(e => e.deadline && new Date() >= new Date(e.deadline));
+      const closedDeadlineEvents = events.filter(e => {
+        const isPastDeadline = e.deadline && new Date() >= new Date(e.deadline);
+        const isSignedOff = e.gradingConfirmed || (e.confirmedJudges && (e.confirmedJudges.includes(user?.id) || e.confirmedJudges.includes(user?._id)));
+        return isPastDeadline && !isSignedOff;
+      });
       if (closedDeadlineEvents.length > 0) {
         const timer = setTimeout(() => {
           setShowJudgeAlertModal(true);
@@ -62,7 +66,7 @@ export default function JudgeDashboard() {
         return () => clearTimeout(timer);
       }
     }
-  }, [events.length]);
+  }, [events.length, user]);
 
   // Broadcast Notification State
   const [broadcasts, setBroadcasts] = useState([]);
@@ -129,10 +133,21 @@ export default function JudgeDashboard() {
     }
   };
 
+  const handleJudgeMobileChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setJudgeProfileMobile(val);
+  };
+
   const handleUpdateJudgeProfile = async (e) => {
     e.preventDefault();
     setJudgeProfileError('');
     setJudgeProfileSubmitting(true);
+
+    if (judgeProfileMobile.replace(/\D/g, '').length !== 10) {
+      setJudgeProfileError('Mobile number must be exactly 10 digits');
+      setJudgeProfileSubmitting(false);
+      return;
+    }
 
     if (judgeProfilePassword && judgeProfilePassword !== judgeProfileConfirmPassword) {
       setJudgeProfileError('Passwords do not match');
@@ -1275,7 +1290,7 @@ export default function JudgeDashboard() {
           ) : (
             <>
               {/* Submission Deadline Passed Alert Banner for Judges */}
-              {event?.deadline && new Date() >= new Date(event.deadline) && (
+              {event?.deadline && new Date() >= new Date(event.deadline) && !(event?.gradingConfirmed || (event?.confirmedJudges && (event?.confirmedJudges.includes(user?.id) || event?.confirmedJudges.includes(user?._id)))) && (
                 <div className="mb-6 bg-linear-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-500/40 p-4 sm:p-5 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-in fade-in duration-200">
                   <div className="flex items-center gap-3.5">
                     <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm">
@@ -2756,7 +2771,9 @@ export default function JudgeDashboard() {
                   <input
                     type="tel"
                     value={judgeProfileMobile}
-                    onChange={(e) => setJudgeProfileMobile(e.target.value)}
+                    onChange={handleJudgeMobileChange}
+                    maxLength={10}
+                    pattern="[0-9]{10}"
                     placeholder="9876543210"
                     className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
                     required
@@ -2813,7 +2830,11 @@ export default function JudgeDashboard() {
 
       {/* JUDGE EVALUATION & DEADLINE ALERT CENTERED MODAL POPUP */}
       {showJudgeAlertModal && (() => {
-        const closedEvents = events.filter(e => e.deadline && new Date() >= new Date(e.deadline));
+        const closedEvents = events.filter(e => {
+          const isPastDeadline = e.deadline && new Date() >= new Date(e.deadline);
+          const isSignedOff = e.gradingConfirmed || (e.confirmedJudges && (e.confirmedJudges.includes(user?.id) || e.confirmedJudges.includes(user?._id)));
+          return isPastDeadline && !isSignedOff;
+        });
         if (closedEvents.length === 0) return null;
 
         return (
