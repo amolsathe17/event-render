@@ -793,20 +793,10 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
       <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700/80 rounded-3xl p-3.5 sm:p-4 shadow-sm print:hidden">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 w-full">
           
-          {/* Left Side: Search & From/To Date Pickers */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-            {/* 1. Search Input */}
-            <div className="relative flex-1 min-w-44">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400" />
-              <input
-                type="text"
-                placeholder="Search keyword..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-2xl text-xs outline-none focus:border-amber-500 font-bold shadow-xs placeholder-slate-400"
-              />
-            </div>
-          </div>
+          {/* Left Side: Name of Selected Event */}
+          <h2 className="font-display font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
+            {filterEventId && filterEventId !== 'all' && activeEv ? `${activeEv.title} - Reports & Analytics` : 'All Events Combined Reports & Analytics'}
+          </h2>
 
           {/* Right Side: Action Export Buttons (Excel, CSV, PDF, Print) */}
           <div className="grid grid-cols-2 min-[420px]:grid-cols-4 sm:flex items-center gap-2 shrink-0">
