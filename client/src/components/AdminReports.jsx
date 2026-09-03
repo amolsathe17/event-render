@@ -920,69 +920,69 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
 
             {/* Summary Cards */}
             {(activeReport === 'overview' || activeReport === 'participants') ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 my-2">
                 {/* Registered Contests Card */}
-                <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md text-left">
+                <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                       REGISTERED CONTESTS
                     </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
-                      <Trophy size={15} />
+                    <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
+                      <Trophy size={14} />
                     </div>
                   </div>
-                  <p className="font-display font-black text-2xl sm:text-3xl text-purple-950 dark:text-white">
+                  <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
                     {filterEventId && filterEventId !== 'all' ? 1 : (allEvents?.length || 0)}
                   </p>
-                  <span className="text-[10px] sm:text-xs font-semibold text-purple-700/80 dark:text-purple-300/80">Total events registered</span>
+                  <span className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-300/80">Total events registered</span>
                 </div>
 
                 {/* Total Uploads Card */}
-                <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md text-left">
+                <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                       TOTAL UPLOADS
                     </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
-                      <Camera size={15} />
+                    <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
+                      <Camera size={14} />
                     </div>
                   </div>
-                  <p className="font-display font-black text-2xl sm:text-3xl text-emerald-950 dark:text-white">
+                  <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
                     {reportStats ? ((reportStats.totalPhotos || 0) + (reportStats.totalVideos || 0)) : (Array.isArray(reportData) ? reportData.reduce((acc, curr) => acc + (curr.totalUploaded || curr.photographsCount || curr.uploads || 1), 0) : 0)}
                   </p>
-                  <span className="text-[10px] sm:text-xs font-semibold text-emerald-700/80 dark:text-emerald-300/80">DSLR verified</span>
+                  <span className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">DSLR verified</span>
                 </div>
 
                 {/* Fees Paid Card */}
-                <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md text-left">
+                <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] sm:text-[11px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">
                       FEES PAID
                     </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-200/80 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-                      <IndianRupee size={15} />
+                    <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-amber-200/80 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
+                      <IndianRupee size={14} />
                     </div>
                   </div>
-                  <p className="font-display font-black text-2xl sm:text-3xl text-amber-950 dark:text-white">
+                  <p className="font-display font-black text-xl sm:text-2xl text-amber-950 dark:text-white">
                     INR {(reportStats?.totalRevenue !== undefined ? reportStats.totalRevenue : (summaryData?.totalRevenue || 0)).toLocaleString('en-IN')}
                   </p>
-                  <span className="text-[10px] sm:text-xs font-semibold text-amber-700/80 dark:text-amber-300/80">Successful payments</span>
+                  <span className="text-[10px] font-semibold text-amber-700/80 dark:text-amber-300/80">Successful payments</span>
                 </div>
 
                 {/* Account Status Card */}
-                <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md text-left">
+                <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
                       ACCOUNT STATUS
                     </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
-                      <UserCheck size={15} />
+                    <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
+                      <UserCheck size={14} />
                     </div>
                   </div>
-                  <p className="font-display font-black text-2xl sm:text-3xl text-sky-950 dark:text-white">
+                  <p className="font-display font-black text-xl sm:text-2xl text-sky-950 dark:text-white">
                     Active
                   </p>
-                  <span className="text-[10px] sm:text-xs font-semibold text-sky-700/80 dark:text-sky-300/80">Participant privileges</span>
+                  <span className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-300/80">Participant privileges</span>
                 </div>
               </div>
             ) : activeReport === 'winners' ? (

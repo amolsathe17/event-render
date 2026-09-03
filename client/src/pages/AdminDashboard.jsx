@@ -2355,57 +2355,57 @@ export default function AdminDashboard() {
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Financial Card 1: Total Revenue */}
-            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                   TOTAL REVENUE {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
                 </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
-                  <IndianRupee size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
+                  <IndianRupee size={14} />
                 </div>
               </div>
-              <p className="font-display font-black text-2xl sm:text-3xl text-emerald-950 dark:text-white">
+              <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
                 ₹{(financialSummary?.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-emerald-700/80 dark:text-emerald-300/80">Successful payments volume</span>
+              <span className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">Successful payments volume</span>
             </div>
 
             {/* Financial Card 2: Donation & Sponsorship */}
-            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                   DONATION & SPONSORSHIP {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
                 </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
-                  <Building2 size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
+                  <Building2 size={14} />
                 </div>
               </div>
-              <p className="font-display font-black text-2xl sm:text-3xl text-purple-950 dark:text-white">
+              <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
                 ₹{(financialSummary?.totalFunding || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-purple-700/80 dark:text-purple-300/80">CSR, Corporate & Donor grants</span>
+              <span className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-300/80">CSR, Corporate & Donor grants</span>
             </div>
 
             {/* Financial Card 3: Total Expenses */}
-            <div className="bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
                   TOTAL EXPENSES {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
                 </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-200/80 dark:bg-rose-900/60 flex items-center justify-center text-rose-700 dark:text-rose-300 shrink-0">
-                  <Wallet size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-rose-200/80 dark:bg-rose-900/60 flex items-center justify-center text-rose-700 dark:text-rose-300 shrink-0">
+                  <Wallet size={14} />
                 </div>
               </div>
-              <p className="font-display font-black text-2xl sm:text-3xl text-rose-950 dark:text-white">
+              <p className="font-display font-black text-xl sm:text-2xl text-rose-950 dark:text-white">
                 ₹{(financialSummary?.totalExpenses || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-rose-700/80 dark:text-rose-300/80">Operational line items</span>
+              <span className="text-[10px] font-semibold text-rose-700/80 dark:text-rose-300/80">Operational line items</span>
             </div>
 
             {/* Financial Card 4: Net Profit / Loss */}
-            <div className={`border rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md ${
+            <div className={`border rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md ${
               (financialSummary?.netProfitLoss || 0) >= 0
                 ? 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800'
                 : 'bg-red-50/80 dark:bg-red-950/30 border-red-200 dark:border-red-800'
@@ -2414,88 +2414,88 @@ export default function AdminDashboard() {
                 <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
                   NET PROFIT / LOSS {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
                 </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
-                  <TrendingUp size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
+                  <TrendingUp size={14} />
                 </div>
               </div>
-              <p className={`font-display font-black text-2xl sm:text-3xl ${
+              <p className={`font-display font-black text-xl sm:text-2xl ${
                 (financialSummary?.netProfitLoss || 0) >= 0 ? 'text-sky-950 dark:text-white' : 'text-red-950 dark:text-white'
               }`}>
                 ₹{(financialSummary?.netProfitLoss || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-sky-700/80 dark:text-sky-300/80">
+              <span className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-300/80">
                 {(financialSummary?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
               </span>
             </div>
           </div>
 
           {/* Row 2: Operational & Payout Cards Grid - 4 Cards below in a row */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Total Participants */}
-            <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">TOTAL PARTICIPANTS</span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
-                  <Users size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
+                  <Users size={14} />
                 </div>
               </div>
-              <p className="font-display font-black text-2xl sm:text-3xl text-sky-950 dark:text-white">
+              <p className="font-display font-black text-xl sm:text-2xl text-sky-950 dark:text-white">
                 {stats?.totalParticipants || 0}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-sky-700/80 dark:text-sky-300/80">{stats?.todayRegistrations || 0} added today</span>
+              <span className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-300/80">{stats?.todayRegistrations || 0} added today</span>
             </div>
 
             {/* Card 2: Active Entries */}
-            <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">ACTIVE ENTRIES</span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-200/80 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-                  <CheckCircle size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-amber-200/80 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
+                  <CheckCircle size={14} />
                 </div>
               </div>
-              <p className="font-display font-black text-2xl sm:text-3xl text-amber-950 dark:text-white">
+              <p className="font-display font-black text-xl sm:text-2xl text-amber-950 dark:text-white">
                 {stats?.totalEntries || 0}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-amber-700/80 dark:text-amber-300/80">Locked submission folders</span>
+              <span className="text-[10px] font-semibold text-amber-700/80 dark:text-amber-300/80">Locked submission folders</span>
             </div>
 
             {/* Card 3: Total Photographs / Videos Combined */}
-            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                   TOTAL PHOTOGRAPHS / VIDEOS
                 </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
-                  <Camera size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
+                  <Camera size={14} />
                 </div>
               </div>
               <div className="flex items-baseline gap-2 flex-wrap">
-                <p className="font-display font-black text-2xl sm:text-3xl text-purple-950 dark:text-white">
+                <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
                   {(stats?.totalPhotos || 0) + (stats?.totalVideos || 0)}
                 </p>
-                <span className="text-xs font-bold text-purple-800 dark:text-purple-300 bg-purple-200/80 dark:bg-purple-900/60 px-2 py-0.5 rounded-lg border border-purple-300 dark:border-purple-700">
+                <span className="text-[11px] font-bold text-purple-800 dark:text-purple-300 bg-purple-200/80 dark:bg-purple-900/60 px-2 py-0.5 rounded-lg border border-purple-300 dark:border-purple-700">
                   {stats?.totalPhotos || 0} Photos / {stats?.totalVideos || 0} Videos
                 </span>
               </div>
-              <span className="text-[10px] sm:text-xs font-semibold text-purple-700/80 dark:text-purple-300/80">
+              <span className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-300/80">
                 High-res images & video media assets
               </span>
             </div>
 
             {/* Card 4: Paid / Settled */}
-            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
+            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
                   PAID / SETTLED {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
                 </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
-                  <Award size={15} />
+                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
+                  <Award size={14} />
                 </div>
               </div>
-              <p className="font-display font-black text-2xl sm:text-3xl text-emerald-950 dark:text-white">
+              <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
                 ₹{(financialSummary?.paidExpenses || 0).toLocaleString('en-IN')}
               </p>
-              <span className="text-[10px] sm:text-xs font-semibold text-emerald-700/80 dark:text-emerald-300/80">Cleared vendor payouts</span>
+              <span className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">Cleared vendor payouts</span>
             </div>
           </div>
 
