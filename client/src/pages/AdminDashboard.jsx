@@ -50,7 +50,9 @@ import {
   ChevronDown,
   ShieldCheck,
   Lock,
-  Eye
+  Eye,
+  IndianRupee,
+  CheckCircle
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import StatsCharts from '../components/StatsCharts';
