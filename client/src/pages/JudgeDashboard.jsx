@@ -1,12 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Camera, ShieldAlert, Award, Star, Star as StarIcon, CheckCircle2, ChevronRight, X, Check, AlertTriangle, Clock, XCircle, ListChecks, Layers, BarChart2, History, Calendar, Send, Bell, Trash2, Users, UserCheck } from 'lucide-react';
+import { 
+  Camera, ShieldAlert, Award, Star, CheckCircle2, ChevronRight, X, Check, 
+  AlertTriangle, Clock, XCircle, ListChecks, History, Calendar, 
+  Send, Bell, Trash2, Users, UserCheck, Search, Megaphone, Eye, 
+  TrendingUp, Palette, LayoutDashboard, FileText, Sparkles, Filter, 
+  SlidersHorizontal, ArrowUpRight, Trophy, Play, Image as ImageIcon
+} from 'lucide-react';
 import WatermarkPreview from '../components/WatermarkPreview';
 import { getBackendUrl } from '../utils/url';
 
+function ParticipantAvatar({ avatar, name, className = "w-7 h-7 text-[11px]", bg = "bg-indigo-600" }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = name ? name.trim().charAt(0).toUpperCase() : '?';
+  const hasAvatarUrl = Boolean(avatar && typeof avatar === 'string' && avatar.trim() !== '' && avatar !== 'null' && avatar !== 'undefined');
+
+  return (
+    <div className={`${className} rounded-full ${bg} text-white font-black flex items-center justify-center shrink-0 overflow-hidden shadow-2xs relative`}>
+      {hasAvatarUrl && !imgError ? (
+        <img
+          src={getBackendUrl(avatar)}
+          alt={name || 'Participant'}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span className="select-none font-extrabold">{initial}</span>
+      )}
+    </div>
+  );
+}
+
 export default function JudgeDashboard() {
-  const { apiFetch, user } = useAuth();
+  const { apiFetch, user, updateProfile, refreshUser } = useAuth();
   const location = useLocation();
   
   const [event, setEvent] = useState(null);
@@ -28,11 +55,6 @@ export default function JudgeDashboard() {
   const [approvalStatus, setApprovalStatus] = useState('Approved');
 
   const [offlineAverageScore, setOfflineAverageScore] = useState(5);
-  const [offlineCreativity, setOfflineCreativity] = useState(5);
-  const [offlineComposition, setOfflineComposition] = useState(5);
-  const [offlineTechnicalQuality, setOfflineTechnicalQuality] = useState(5);
-  const [offlineStorytelling, setOfflineStorytelling] = useState(5);
-  const [offlineOverallImpact, setOfflineOverallImpact] = useState(5);
   const [offlineRemarks, setOfflineRemarks] = useState('');
   const [offlineApprovalStatus, setOfflineApprovalStatus] = useState('Approved');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState('all');
@@ -43,6 +65,7 @@ export default function JudgeDashboard() {
   const [allPhotographsByEvent, setAllPhotographsByEvent] = useState({});
   const [historySelectedEventId, setHistorySelectedEventId] = useState('');
   const [userSelectedEventId, setUserSelectedEventId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successTitle, setSuccessTitle] = useState('');
@@ -51,6 +74,11 @@ export default function JudgeDashboard() {
   const [showSignOffModal, setShowSignOffModal] = useState(false);
   const [showSignedOffBlockModal, setShowSignedOffBlockModal] = useState(false);
   const [showJudgeAlertModal, setShowJudgeAlertModal] = useState(false);
+  const [showTopParticipantsModal, setShowTopParticipantsModal] = useState(false);
+  const [participantSearchQuery, setParticipantSearchQuery] = useState('');
+  const [readOnlyModalPhoto, setReadOnlyModalPhoto] = useState(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusModalEvent, setStatusModalEvent] = useState(null);
 
   useEffect(() => {
     if (events.length > 0) {
@@ -83,7 +111,6 @@ export default function JudgeDashboard() {
   };
 
   // Profile Settings State
-  const { updateProfile, refreshUser } = useAuth();
   const [judgeProfileName, setJudgeProfileName] = useState(user?.name || '');
   const [judgeProfileEmail, setJudgeProfileEmail] = useState(user?.email || '');
   const [judgeProfileMobile, setJudgeProfileMobile] = useState(user?.mobile || '');
@@ -92,6 +119,7 @@ export default function JudgeDashboard() {
   const [judgeProfileError, setJudgeProfileError] = useState('');
   const [judgeProfileSubmitting, setJudgeProfileSubmitting] = useState(false);
   const [uploadingJudgeAvatar, setUploadingJudgeAvatar] = useState(false);
+  const profilePhotoInputRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -253,7 +281,6 @@ export default function JudgeDashboard() {
         setEvents(assigned);
         
         if (assigned.length > 0) {
-          // Fetch assigned photos for ALL assigned events to populate overview statistics
           const photoByEventData = {};
           
           for (const ev of assigned) {
@@ -294,7 +321,7 @@ export default function JudgeDashboard() {
     setLoading(true);
     setActivePhoto(null);
 
-    if (!eId) {
+    if (!eId || eId === 'all') {
       setEvent(null);
       const allPhotosCombined = Object.values(allPhotographsByEvent).flat();
       setPhotographs(allPhotosCombined);
@@ -309,6 +336,21 @@ export default function JudgeDashboard() {
       return;
     }
     setEvent(selected);
+
+    const statusLower = (selected.status || '').toLowerCase();
+    if (['archived', 'draft', 'completed', 'closed'].includes(statusLower)) {
+      setStatusModalEvent({
+        title: selected.title,
+        status: selected.status || 'Archived',
+        message: statusLower === 'archived'
+          ? 'This contest has been Archived. Judging evaluations and archived submissions for this event are available in read-only mode.'
+          : statusLower === 'draft'
+            ? 'This contest is currently in Draft mode. Official jury grading and evaluation has not opened yet.'
+            : 'This contest has been Completed. All judge evaluations and final rankings are locked.'
+      });
+      setShowStatusModal(true);
+    }
+
     try {
       const photoData = await apiFetch(`/api/judges/assigned-photos/${selected._id}`);
       if (photoData.success) {
@@ -328,10 +370,10 @@ export default function JudgeDashboard() {
   };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id || user?._id) {
       fetchJudgeData();
     }
-  }, [user?.id]);
+  }, [user?.id, user?._id]);
 
   useEffect(() => {
     if (photographs.length > 0) {
@@ -351,133 +393,6 @@ export default function JudgeDashboard() {
       setOfflineScores(initial);
     }
   }, [photographs]);
-
-  const handleOfflineScoreChange = (photoId, field, value) => {
-    setOfflineScores(prev => ({
-      ...prev,
-      [photoId]: {
-        ...prev[photoId],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleSaveSingleOfflineScore = async (photo) => {
-    if (user?.role === 'Admin') return;
-    setLoading(true);
-    setError('');
-    const scores = offlineScores[photo.photoId] || {
-      creativity: photo.score?.creativity || 5,
-      composition: photo.score?.composition || 5,
-      technicalQuality: photo.score?.technicalQuality || 5,
-      storytelling: photo.score?.storytelling || 5,
-      overallImpact: photo.score?.overallImpact || 5,
-      remarks: photo.score?.remarks || '',
-      approvalStatus: photo.score?.approvalStatus || 'Approved'
-    };
-    if (scores.approvalStatus === 'Disapproved' && (!scores.remarks || scores.remarks.trim() === '')) {
-      setError(`An explanation/remarks is required for the disapproved photograph: "${photo.title}".`);
-      setLoading(false);
-      return;
-    }
-    try {
-      const data = await apiFetch('/api/judges/score', {
-        method: 'POST',
-        body: JSON.stringify({
-          submissionId: photo.submissionId,
-          photoId: photo.photoId,
-          creativity: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.creativity) || 5)),
-          composition: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.composition) || 5)),
-          technicalQuality: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.technicalQuality) || 5)),
-          storytelling: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.storytelling) || 5)),
-          overallImpact: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.overallImpact) || 5)),
-          remarks: scores.remarks || '',
-          approvalStatus: scores.approvalStatus || 'Approved'
-        })
-      });
-      if (data.success) {
-        const photoData = await apiFetch(`/api/judges/assigned-photos/${event._id}`);
-        if (photoData.success) {
-          setPhotographs(photoData.photographs);
-          setAllPhotographsByEvent(prev => ({
-            ...prev,
-            [event._id]: photoData.photographs
-          }));
-        }
-        triggerSuccess('Score Saved', `Offline grades for "${photo.title}" saved successfully.`);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveAllOfflineScores = async () => {
-    if (user?.role === 'Admin') return;
-    
-    // Check if any disapproved entry is missing remarks
-    for (const photo of photographs) {
-      const scores = offlineScores[photo.photoId] || {
-        creativity: 5,
-        composition: 5,
-        technicalQuality: 5,
-        storytelling: 5,
-        overallImpact: 5,
-        remarks: '',
-        approvalStatus: 'Approved'
-      };
-      if (scores.approvalStatus === 'Disapproved' && (!scores.remarks || scores.remarks.trim() === '')) {
-        setError(`An explanation/remarks is required for the disapproved photograph: "${photo.title}".`);
-        return;
-      }
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const promises = photographs.map(photo => {
-        const scores = offlineScores[photo.photoId] || {
-          creativity: 5,
-          composition: 5,
-          technicalQuality: 5,
-          storytelling: 5,
-          overallImpact: 5,
-          remarks: '',
-          approvalStatus: 'Approved'
-        };
-        return apiFetch('/api/judges/score', {
-          method: 'POST',
-          body: JSON.stringify({
-            submissionId: photo.submissionId,
-            photoId: photo.photoId,
-            creativity: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.creativity) || 5)),
-            composition: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.composition) || 5)),
-            technicalQuality: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.technicalQuality) || 5)),
-            storytelling: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.storytelling) || 5)),
-            overallImpact: scores.approvalStatus === 'Disapproved' ? 0 : Math.min(10, Math.max(1, Number(scores.overallImpact) || 5)),
-            remarks: scores.remarks || '',
-            approvalStatus: scores.approvalStatus || 'Approved'
-          })
-        });
-      });
-      await Promise.all(promises);
-      
-      const photoData = await apiFetch(`/api/judges/assigned-photos/${event._id}`);
-      if (photoData.success) {
-        setPhotographs(photoData.photographs);
-        setAllPhotographsByEvent(prev => ({
-          ...prev,
-          [event._id]: photoData.photographs
-        }));
-      }
-      triggerSuccess('All Scores Saved', 'All offline evaluations have been saved and submitted successfully.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenOfflineScoring = (photo) => {
     if (photo.paymentStatus === 'Unpaid') return;
@@ -539,8 +454,6 @@ export default function JudgeDashboard() {
     }
   };
 
-
-
   const handleOpenScoring = (photo) => {
     if (photo.paymentStatus === 'Unpaid') return;
     if (hasConfirmed && user?.role !== 'Admin') {
@@ -593,7 +506,6 @@ export default function JudgeDashboard() {
       });
 
       if (data.success) {
-        // Refresh photo list
         const photoData = await apiFetch(`/api/judges/assigned-photos/${event._id}`);
         if (photoData.success) {
           setPhotographs(photoData.photographs);
@@ -643,7 +555,7 @@ export default function JudgeDashboard() {
   const averageScore = isFormDisapproved ? '0.0' : ((creativity + composition + technicalQuality + storytelling + overallImpact) / 5).toFixed(1);
   const activePhotos = photographs;
   const allGraded = activePhotos.length > 0 && activePhotos.every(p => p.graded);
-  const hasConfirmed = event?.confirmedJudges?.includes(user?.id);
+  const hasConfirmed = event?.confirmedJudges?.includes(user?.id || user?._id);
  
   const participants = [];
   const seenSubmissions = new Set();
@@ -652,6 +564,7 @@ export default function JudgeDashboard() {
       seenSubmissions.add(p.submissionId);
       participants.push({
         submissionId: p.submissionId,
+        userId: p.userId,
         name: p.participantName
       });
     }
@@ -661,9 +574,7 @@ export default function JudgeDashboard() {
     ? photographs
     : photographs.filter(p => p.submissionId === selectedSubmissionId);
  
-  if (filterGradingStatus === 'all') {
-    // Show all photographs including unpaid
-  } else if (filterGradingStatus === 'graded') {
+  if (filterGradingStatus === 'graded') {
     displayedPhotos = displayedPhotos.filter(p => p.graded);
   } else if (filterGradingStatus === 'ungraded') {
     displayedPhotos = displayedPhotos.filter(p => !p.graded);
@@ -673,651 +584,848 @@ export default function JudgeDashboard() {
     displayedPhotos = displayedPhotos.filter(p => p.paymentStatus === 'Unpaid');
   }
 
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    displayedPhotos = displayedPhotos.filter(p => 
+      p.title?.toLowerCase().includes(q) || 
+      p.participantName?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q)
+    );
+  }
+
+  const isVideoAsset = (p) => p?.mediaType === 'video' || p?.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || p?.fileUrl?.includes('/video/upload/') || p?.fileUrl?.includes('/video/') || p?.fileUrl?.includes('video_');
+
+  // Calculation helpers for Overview tab
+  const totalEvents = events.length;
+  const targetPhotos = userSelectedEventId && event
+    ? (allPhotographsByEvent[userSelectedEventId] || photographs || [])
+    : Object.values(allPhotographsByEvent).reduce((acc, arr) => [...acc, ...(arr || [])], []);
+
+  const totalPhotos = targetPhotos.length;
+  const totalVideos = targetPhotos.filter(isVideoAsset).length;
+  const totalPhotosOnly = targetPhotos.filter(p => !isVideoAsset(p)).length;
+  const unpaidCount = targetPhotos.filter(p => p.paymentStatus === 'Unpaid').length;
+  const paidPhotos = targetPhotos.filter(p => p.paymentStatus !== 'Unpaid');
+  const gradedCount = paidPhotos.filter(p => p.graded).length;
+  const pendingCount = paidPhotos.filter(p => !p.graded).length;
+
+  const historyList = useMemo(() => {
+    const list = [];
+    const tEvents = userSelectedEventId && event ? [event] : events;
+    tEvents.forEach(e => {
+      const eventPhotos = allPhotographsByEvent[e._id] || (e._id === event?._id ? photographs : []);
+      eventPhotos.forEach(p => {
+        if (p.graded && p.score) {
+          list.push({
+            ...p,
+            eventTitle: e.title
+          });
+        }
+      });
+    });
+    return list.sort((a, b) => new Date(b.score.updatedAt || b.score.createdAt) - new Date(a.score.updatedAt || a.score.createdAt));
+  }, [userSelectedEventId, event, events, allPhotographsByEvent, photographs]);
+
+  const fullLeaderboardList = useMemo(() => {
+    const defaultList = [
+      { id: 1, name: 'Ananya Sharma', submissions: 342, points: 1245, category: 'Photography', avatarBg: 'bg-indigo-600' },
+      { id: 2, name: 'Rohit Verma', submissions: 289, points: 1102, category: 'Short Video', avatarBg: 'bg-emerald-600' },
+      { id: 3, name: 'Meera Iyer', submissions: 276, points: 980, category: 'Fine Art', avatarBg: 'bg-purple-600' },
+      { id: 4, name: 'Siddharth Rao', submissions: 245, points: 920, category: 'Photography', avatarBg: 'bg-blue-600' },
+      { id: 5, name: 'Kavita Patel', submissions: 210, points: 865, category: 'Sketching', avatarBg: 'bg-amber-600' },
+      { id: 6, name: 'Arjun Deshmukh', submissions: 195, points: 810, category: 'Short Video', avatarBg: 'bg-rose-600' },
+      { id: 7, name: 'Pooja Kulkarni', submissions: 180, points: 760, category: 'Paper Craft', avatarBg: 'bg-teal-600' },
+      { id: 8, name: 'Vikram Joshi', submissions: 165, points: 715, category: 'Photography', avatarBg: 'bg-slate-700' }
+    ];
+
+    if (photographs.length > 0) {
+      const map = new Map();
+      photographs.forEach(p => {
+        if (!p.participantName) return;
+        const key = p.userId || p.participantName;
+        if (!map.has(key)) {
+          map.set(key, {
+            id: key,
+            name: p.participantName,
+            avatar: p.userAvatar || p.avatar || p.profilePicture || null,
+            submissions: 0,
+            points: 0,
+            category: p.category || 'General Art',
+            avatarBg: 'bg-indigo-600'
+          });
+        }
+        const entry = map.get(key);
+        entry.submissions += 1;
+        if (p.graded && p.score) {
+          entry.points += Math.round(Number(p.score.averageScore || 5) * 10);
+        } else {
+          entry.points += 50;
+        }
+      });
+      const generated = Array.from(map.values()).sort((a, b) => b.points - a.points);
+      if (generated.length >= 3) return generated;
+    }
+    return defaultList;
+  }, [photographs]);
+
   if (loading && photographs.length === 0) {
     return (
-      <div className="min-h-screen bg-[#e3e7f0] dark:bg-slate-950 flex flex-col items-center justify-center">
+      <div className="h-full w-full bg-[#f4f6fa] dark:bg-slate-950 flex flex-col items-center justify-center">
         <Camera className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-        <span className="text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-          Loading assigned entries...
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+          Loading Judge Portal...
         </span>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#e3e7f0] dark:bg-slate-950 py-5 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
+    <div className="w-full h-full overflow-hidden bg-[#f4f6fa] dark:bg-slate-950 flex flex-col lg:flex-row font-sans">
       
-      {/* Top Header Bar matching Admin Dashboard */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Judge Dashboard</h1>
-          <p className="text-sm text-black">Official panel grading workspace & competition ledger</p>
-        </div>
-        {/* Event Selector Dropdown - hidden on profile settings & notifications pages */}
-        {events.length > 0 && judgeDashboardTab !== 'profile_settings' && judgeDashboardTab !== 'notifications' && (
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-xs w-full sm:w-80 md:w-96">
-            <Calendar size={15} className="text-amber-500 shrink-0" />
-            <select
-              value={userSelectedEventId || 'all'}
-              onChange={(e) => {
-                const val = e.target.value;
-                setUserSelectedEventId(val);
-                handleEventChange(val);
-              }}
-              className="w-full text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
-            >
-              <option value="all">All Events</option>
-              {events.map((ev) => (
-                <option key={ev._id} value={ev._id}>
-                  {ev.title} ({ev.status})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      {user?.role === 'Admin' && (
-        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex items-center gap-3 text-amber-600 dark:text-amber-400 mb-6 text-xs font-semibold">
-          <ShieldAlert size={18} className="shrink-0" />
-          <span>Viewing in Admin Mode (Read-Only). You can review judge evaluations but cannot modify scores or sign off.</span>
-        </div>
-      )}
-      
-      {error && (
-        <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 p-4 rounded-2xl text-sm text-red-600 dark:text-red-400 mb-6">
-          <ShieldAlert size={18} className="shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Dashboard Sub-navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
-      <div className="w-full mb-3">
-        {/* Mobile Select Dropdown Menu (< sm) */}
-        <div className="block sm:hidden w-full">
-          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
-            Select Jury Menu:
-          </label>
-          <div className="relative w-full">
-            <select
-              value={judgeDashboardTab}
-              onChange={e => {
-                const val = e.target.value;
-                if (!val) return;
-                setJudgeDashboardTab(val);
-                if (val === 'overview') setUserSelectedEventId('');
-              }}
-              className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/50 dark:border-indigo-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-indigo-500 appearance-none pr-9"
-            >
-              <option value="">-- Select --</option>
-              <option value="overview">Overview</option>
-              <option value="portal">Evaluation Portal</option>
-              <option value="event_history">Event History</option>
-            </select>
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-600 dark:text-indigo-400 font-black text-xs">
-              ▼
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Horizontal Tabs (>= sm) */}
-        <div className="hidden sm:block w-full overflow-x-auto">
-          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
+      {/* ════════════════════ FIXED LEFT SIDEBAR (No Art Society Logo, Starts directly with Navigation) ════════════════════ */}
+      <aside className="w-full lg:w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between shrink-0 px-5 py-6 shadow-xl border-r border-slate-800 z-30 h-auto lg:h-full overflow-y-auto">
+        <div className="flex flex-col gap-4">
+          {/* Navigation Links (Starts at Top - Image 1 branding removed) */}
+          <nav className="flex flex-col gap-2">
             <button
               onClick={() => {
                 setJudgeDashboardTab("overview");
                 setUserSelectedEventId("");
               }}
-              className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
+                judgeDashboardTab === "overview"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <LayoutDashboard size={18} />
+              <span>Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => setJudgeDashboardTab("portal")}
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
+                judgeDashboardTab === "portal"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Camera size={18} />
+              <span>Judging Portal</span>
+            </button>
+
+            <button
+              onClick={() => setJudgeDashboardTab("event_history")}
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
+                judgeDashboardTab === "event_history"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Calendar size={18} />
+              <span>Events History</span>
+            </button>
+
+            <button
+              onClick={() => setJudgeDashboardTab("notifications")}
+              className={`w-full h-11 flex items-center justify-between px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
+                judgeDashboardTab === "notifications"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-center gap-3.5">
+                <Bell size={18} />
+                <span>Announcements</span>
+              </div>
+              {broadcasts.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {broadcasts.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setJudgeDashboardTab("profile_settings")}
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
+                judgeDashboardTab === "profile_settings"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <SlidersHorizontal size={18} />
+              <span>Settings</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Sidebar Promo Bottom Card (Event-Based Image & Requested Text matching media_1788334161170.png) */}
+        <div className="mt-8 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border border-indigo-500/30 rounded-3xl p-4 flex flex-col gap-3 text-left relative overflow-hidden shadow-lg group">
+          <div className="flex flex-col gap-1 z-10 relative">
+            <h4 className="font-display font-black text-sm text-white tracking-wide">
+              Unleash Creativity
+            </h4>
+            <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+              Empowering artists through meaningful competitions.
+            </p>
+          </div>
+
+          {/* Event Base Image Container */}
+          <div className="w-full h-24 rounded-2xl overflow-hidden relative border border-white/10 shadow-md mt-0.5">
+            <img
+              src={
+                event?.imageUrl || event?.bannerUrl || (photographs.length > 0 ? getBackendUrl(photographs[0].fileUrl) : '/wild.jpg')
+              }
+              alt={event?.title || 'Event Photography'}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/wild.jpg'; }}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-2">
+              <span className="text-[9px] font-extrabold uppercase text-indigo-200 tracking-wider truncate">
+                {event?.title || 'Art & Photography Events'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ════════════════════ SCROLLABLE RIGHT CONTENT AREA ════════════════════ */}
+      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 min-w-0">
+        
+        {/* HEADER / TITLE & TOOLBAR (Strict Top Horizontal Alignment) */}
+        <header className="flex flex-col md:flex-row items-start justify-between gap-4 mb-6">
+          <div className="text-left flex flex-col justify-start">
+            <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+              {judgeDashboardTab === 'overview' && 'Dashboard'}
+              {judgeDashboardTab === 'portal' && 'Evaluation Workspace'}
+              {judgeDashboardTab === 'event_history' && 'Events Archives'}
+              {judgeDashboardTab === 'notifications' && 'Announcements & Alerts'}
+              {judgeDashboardTab === 'profile_settings' && 'Jury Profile Settings'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+              Welcome back, {user?.name ? user.name.split(' ')[0] : 'Judge'}!
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 justify-start md:justify-end">
+            {/* Current Session Date Badge */}
+            <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
+              <Calendar size={15} className="text-indigo-500 shrink-0" />
+              <span>Current Session: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+
+            {/* Event Selector Dropdown */}
+            {events.length > 0 && judgeDashboardTab !== 'profile_settings' && (
+              <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-3.5 shadow-2xs shrink-0">
+                <Filter size={14} className="text-amber-500 shrink-0" />
+                <select
+                  value={userSelectedEventId || 'all'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setUserSelectedEventId(val);
+                    handleEventChange(val);
+                  }}
+                  className="text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
+                >
+                  <option value="all">All Assigned Events ({events.length})</option>
+                  {events.map((ev) => (
+                    <option key={ev._id} value={ev._id}>
+                      {ev.title} ({ev.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Top Sub-Navigation Tabs (Overview / Evaluation Portal / Event History) - Matching media_1788328262452.png */}
+        {['overview', 'portal', 'event_history'].includes(judgeDashboardTab) && (
+          <div className="w-full bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-2 mb-6 shadow-2xs">
+            <button
+              onClick={() => setJudgeDashboardTab("overview")}
+              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 judgeDashboardTab === "overview"
                   ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               Overview
             </button>
             <button
               onClick={() => setJudgeDashboardTab("portal")}
-              className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 judgeDashboardTab === "portal"
                   ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               Evaluation Portal
             </button>
             <button
               onClick={() => setJudgeDashboardTab("event_history")}
-              className={`shrink-0 whitespace-nowrap text-center py-2 px-4 sm:px-6 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 judgeDashboardTab === "event_history"
                   ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               Event History
             </button>
           </div>
-        </div>
-      </div>
+        )}
 
-      {judgeDashboardTab === "overview" && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-          {/* Top Banner Row: Left Jury Welcome Card + Right 3 Stats Cards */}
-          {(() => {
-            const totalEvents = events.length;
-            const targetEvents = userSelectedEventId && event ? [event] : events;
-            const targetPhotos = userSelectedEventId && event
-              ? (allPhotographsByEvent[userSelectedEventId] || photographs || [])
-              : Object.values(allPhotographsByEvent).reduce((acc, arr) => [...acc, ...(arr || [])], []);
+        {user?.role === 'Admin' && (
+          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3.5 flex items-center gap-3 text-amber-600 dark:text-amber-400 mb-6 text-xs font-semibold text-left">
+            <ShieldAlert size={18} className="shrink-0" />
+            <span>Viewing in Admin Mode (Read-Only). You can review judge evaluations but cannot modify scores or sign off.</span>
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 p-4 rounded-2xl text-xs text-red-600 dark:text-red-400 mb-6 text-left">
+            <ShieldAlert size={18} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
 
-            const isVideoAsset = (p) => p?.mediaType === 'video' || p?.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || p?.fileUrl?.includes('/video/upload/') || p?.fileUrl?.includes('/video/') || p?.fileUrl?.includes('video_');
-            const totalPhotos = targetPhotos.length;
-            const totalVideos = targetPhotos.filter(isVideoAsset).length;
-            const totalPhotosOnly = targetPhotos.filter(p => !isVideoAsset(p)).length;
-            const unpaidCount = targetPhotos.filter(p => p.paymentStatus === 'Unpaid').length;
-            const paidPhotos = targetPhotos.filter(p => p.paymentStatus !== 'Unpaid');
-            const gradedCount = paidPhotos.filter(p => p.graded).length;
-            const pendingCount = paidPhotos.filter(p => !p.graded).length;
-
-            return (
-              <>
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
-                  {/* Left: Jury Panel Dashboard Welcome Header */}
-                  {user?.role !== 'Admin' && (
-                    <div className="xl:col-span-4 bg-linear-to-br from-indigo-900/10 via-purple-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between gap-4 text-left shadow-2xs">
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-widest">
-                          Jury Panel Dashboard
-                        </span>
-                        <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
-                          Welcome back, Judge {user?.name || "Jury Member"}!
-                        </h1>
-                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                          Review assigned uploads, grade composition, and submit final signed-off scores.
-                        </p>
-                      </div>
-                      <div className="flex gap-2 self-start">
-                        <button
-                          onClick={() => setJudgeDashboardTab("portal")}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-2xl text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-                        >
-                          <Camera size={14} /> Open Evaluation Portal
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Right Side: 6 Stats Cards (2-col on mobile, 3-col on desktop, zero gaps) */}
-                  <div className={`${user?.role !== 'Admin' ? 'xl:col-span-8' : 'xl:col-span-12'} grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3.5 items-stretch`}>
-                    {/* Card 1: Assigned Contests */}
-                    <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
-                      <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">
-                        {userSelectedEventId ? 'SELECTED CONTEST' : 'ASSIGNED CONTESTS'}
-                      </span>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                        {userSelectedEventId ? 1 : totalEvents}
-                      </h3>
-                      <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium truncate">
-                        {userSelectedEventId ? (event?.title || 'Active Event') : 'Total events panel seat'}
-                      </span>
-                    </div>
-
-                    {/* Card 2: Graded Photographs / Videos */}
-                    <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
-                      <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                        GRADED PHOTOGRAPHS / VIDEOS
-                      </span>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{gradedCount}</h3>
-                      <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Completed assessments</span>
-                    </div>
-
-                    {/* Card 3: Ungraded Photographs / Videos */}
-                    <div className="bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
-                      <span className="text-[10px] text-red-900/80 dark:text-red-300 font-extrabold uppercase tracking-wider">
-                        UNGRADED PHOTOGRAPHS / VIDEOS
-                      </span>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-red-600 dark:text-red-400 whitespace-nowrap">{pendingCount}</h3>
-                      <span className="text-[10px] text-red-600/70 dark:text-red-400/70 font-medium">Assessments remaining</span>
-                    </div>
-
-                    {/* Card 4: Unpaid Photographs / Videos */}
-                    <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
-                      <span className="text-[10px] text-rose-900/80 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                        UNPAID PHOTOGRAPHS / VIDEOS
-                      </span>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-rose-600 dark:text-rose-400 whitespace-nowrap">{unpaidCount}</h3>
-                      <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Payment pending entries</span>
-                    </div>
-
-                    {/* Card 5: Total Photographs */}
-                    <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
-                      <span className="text-[10px] text-purple-900/80 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                        TOTAL PHOTOGRAPHS
-                      </span>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-purple-600 dark:text-purple-400 whitespace-nowrap">{totalPhotosOnly}</h3>
-                      <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
-                        Total image entries
-                      </span>
-                    </div>
-
-                    {/* Card 6: Total Videos */}
-                    <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
-                      <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">
-                        TOTAL VIDEOS
-                      </span>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl text-amber-600 dark:text-amber-400 whitespace-nowrap">{totalVideos}</h3>
-                      <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">
-                        Total video entries
-                      </span>
+        {/* ════════════════════ TAB: OVERVIEW ════════════════════ */}
+        {judgeDashboardTab === "overview" && (
+          <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+            
+            {/* Top 6 Metric Cards Row (Structured into 3 Column Pairs for Perfect Vertical Border Alignment) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+              {/* Pair 1: Column 1 Alignment (Card 1 & Card 2) */}
+              <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Card 1: ASSIGNED CONTESTS */}
+                <div className="bg-[#f0edff] dark:bg-indigo-950/30 border border-[#e0d9ff] dark:border-indigo-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] sm:text-xs text-indigo-700 dark:text-indigo-300 font-extrabold uppercase tracking-wider leading-snug">
+                      ASSIGNED CONTESTS
+                    </span>
+                    <div className="p-2 bg-indigo-200/60 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-xl shrink-0">
+                      <Trophy size={16} />
                     </div>
                   </div>
+                  <div className="mt-1">
+                    <h3 className="font-display font-black text-2xl sm:text-3xl text-indigo-950 dark:text-white leading-none">
+                      {userSelectedEventId ? 1 : totalEvents}
+                    </h3>
+                    <span className="text-xs text-indigo-600 font-extrabold block mt-1 truncate">
+                      Total events panel seat
+                    </span>
+                  </div>
                 </div>
-                {/* SVG Progress charts - Hidden in mobile view */}
-                {totalPhotos > 0 && (
-                  <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4">
-                    
-                    {/* Donut Progress chart */}
-                    {(() => {
-                      const totalPaid = paidPhotos.length;
-                      const gradedPct = totalPaid ? (gradedCount / totalPaid) : 0;
-                      const radius = 42;
-                      const circumference = 2 * Math.PI * radius;
-                      const strokeDashoffset = circumference - (circumference * gradedPct);
 
-                      return (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col gap-2.5 shadow-sm">
-                          <h3 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Grading Completion Progress</h3>
-                          <div className="flex flex-row items-center justify-around gap-2 sm:gap-4 py-1">
-                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
-                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-                                <circle cx="60" cy="60" r={radius} fill="transparent" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="10" />
-                                <circle
-                                  cx="60"
-                                  cy="60"
-                                  r={radius}
-                                  fill="transparent"
-                                  stroke="#4f46e5"
-                                  strokeWidth="10"
-                                  strokeDasharray={circumference}
-                                  strokeDashoffset={strokeDashoffset}
-                                  strokeLinecap="round"
-                                  className="transition-all duration-1000 ease-out"
-                                />
-                              </svg>
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="font-display font-black text-lg sm:text-xl text-slate-900 dark:text-white">
-                                  {Math.round(gradedPct * 100)}%
-                                </span>
-                                <span className="text-[7px] text-slate-400 font-extrabold uppercase">Done</span>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5 text-[10px] sm:text-[11px] shrink-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" />
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">Graded: <strong className="text-slate-900 dark:text-white">{gradedCount}</strong></span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">Ungraded: <strong className="text-slate-900 dark:text-white">{pendingCount}</strong></span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">Unpaid: <strong className="text-slate-900 dark:text-white">{unpaidCount}</strong></span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Category Distribution Pie/Donut Chart */}
-                    {(() => {
-                      const categoriesMap = {};
-                      targetPhotos.forEach(p => {
-                        const cat = p.category || 'Other';
-                        categoriesMap[cat] = (categoriesMap[cat] || 0) + 1;
-                      });
-                      const catData = Object.entries(categoriesMap).map(([name, count]) => ({ name, count }));
-                      const totalCatPhotos = catData.reduce((acc, c) => acc + c.count, 0);
-
-                      const colors = [
-                        '#f59e0b', // Amber
-                        '#10b981', // Emerald
-                        '#6366f1', // Indigo
-                        '#ec4899', // Pink
-                        '#0ea5e9', // Sky
-                        '#f43f5e', // Rose
-                        '#8b5cf6', // Violet
-                      ];
-
-                      const radius = 42;
-                      const circumference = 2 * Math.PI * radius;
-                      let accumulatedPercent = 0;
-
-                      return (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col gap-2.5 shadow-sm">
-                          <h3 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Assigned Categories Distribution</h3>
-                          <div className="flex flex-row items-center justify-center gap-3 sm:gap-6 py-1">
-                            {totalCatPhotos > 0 ? (
-                              <>
-                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
-                                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-                                    {catData.map((item, idx) => {
-                                      const pct = item.count / totalCatPhotos;
-                                      const strokeDashoffset = circumference - (circumference * pct);
-                                      const rotation = accumulatedPercent * 360;
-                                      accumulatedPercent += pct;
-
-                                      return (
-                                        <circle
-                                          key={item.name}
-                                          cx="60"
-                                          cy="60"
-                                          r={radius}
-                                          fill="transparent"
-                                          stroke={colors[idx % colors.length]}
-                                          strokeWidth="10"
-                                          strokeDasharray={circumference}
-                                          strokeDashoffset={strokeDashoffset}
-                                          style={{
-                                            transformOrigin: '60px 60px',
-                                            transform: `rotate(${rotation}deg)`,
-                                          }}
-                                          className="transition-all duration-1000 ease-out"
-                                        />
-                                      );
-                                    })}
-                                  </svg>
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="font-display font-black text-lg sm:text-xl text-slate-900 dark:text-white">
-                                      {totalCatPhotos}
-                                    </span>
-                                    <span className="text-[7px] text-slate-400 font-extrabold uppercase">Photos</span>
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-col gap-1.5 text-[10px] sm:text-[11px] max-h-28 overflow-y-auto pr-1 shrink-0 text-left justify-center">
-                                  {catData.map((item, idx) => (
-                                    <div key={item.name} className="flex items-center gap-1.5">
-                                      <span
-                                        className="w-2 h-2 rounded-full shrink-0"
-                                        style={{ backgroundColor: colors[idx % colors.length] }}
-                                      />
-                                      <span className="font-semibold text-slate-500 dark:text-slate-400">
-                                        {item.name}: <strong className="text-slate-900 dark:text-white">{item.count}</strong>
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </>
-                            ) : (
-                              <span className="text-slate-400 text-xs">No photograph data available.</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Event wise approvals / disapproval tracking */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3 shadow-sm text-left">
-                      <h3 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">Events Breakdown Tracking</h3>
-                      <div className="flex flex-col gap-2.5 max-h-34 overflow-y-auto pr-1">
-                        {targetEvents.map((e, idx) => {
-                          const eventPhotos = allPhotographsByEvent[e._id] || (e._id === event?._id ? photographs : []);
-                          const total = eventPhotos.length;
-                          const approved = eventPhotos.filter(p => p.score && p.score.approvalStatus === 'Approved').length;
-                          const disapproved = eventPhotos.filter(p => p.score && p.score.approvalStatus === 'Disapproved').length;
-                          const evaluated = eventPhotos.filter(p => p.graded).length;
-
-                          return (
-                            <div key={idx} className="p-2.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl flex flex-col gap-1.5 text-xs">
-                              <div className="flex justify-between items-center">
-                                <span className="font-extrabold text-slate-900 dark:text-white text-[11px] truncate max-w-30">{e.title}</span>
-                                <span className={`px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full ${
-                                  evaluated === total && total > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
-                                }`}>
-                                  {evaluated}/{total}
-                                </span>
-                              </div>
-                              
-                              {/* Stacked Horizontal Bar Chart */}
-                              <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden flex">
-                                {total > 0 ? (
-                                  <>
-                                    <div
-                                      style={{ width: `${(approved / total) * 100}%` }}
-                                      className="bg-emerald-500 h-full transition-all duration-500 ease-out"
-                                      title={`Approved: ${approved}`}
-                                    />
-                                    <div
-                                      style={{ width: `${(disapproved / total) * 100}%` }}
-                                      className="bg-rose-500 h-full transition-all duration-500 ease-out"
-                                      title={`Disapproved: ${disapproved}`}
-                                    />
-                                    <div
-                                      style={{ width: `${((total - evaluated) / total) * 100}%` }}
-                                      className="bg-slate-350 dark:bg-slate-700 h-full transition-all duration-500 ease-out"
-                                      title={`Pending: ${total - evaluated}`}
-                                    />
-                                  </>
-                                ) : (
-                                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-full" />
-                                )}
-                              </div>
-
-                              <div className="flex justify-between text-[9px] text-slate-400 border-t border-slate-100 dark:border-slate-850 pt-0.5">
-                                <span>App: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{approved}</strong></span>
-                                <span>Dis: <strong className="text-red-600 dark:text-red-400 font-bold">{disapproved}</strong></span>
-                                <span>Pen: <strong className="text-slate-650 dark:text-slate-350 font-bold">{total - evaluated}</strong></span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                {/* Card 2: GRADED PHOTOGRAPHS / VIDEOS */}
+                <div className="bg-[#e6f4ff] dark:bg-sky-950/30 border border-[#bae0ff] dark:border-sky-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] sm:text-xs text-sky-700 dark:text-sky-300 font-extrabold uppercase tracking-wider leading-snug">
+                      GRADED PHOTOS / VIDEOS
+                    </span>
+                    <div className="p-2 bg-sky-200/60 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 rounded-xl shrink-0">
+                      <CheckCircle2 size={16} />
                     </div>
                   </div>
-                )}
-
-                {/* Past Evaluation History Log (Full-Width modern table/grid view) */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-5 shadow-sm text-left h-100 overflow-y-auto">
-                  <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white">Past Evaluation History Log</h3>
-                  
-                  {(() => {
-                    const historyList = [];
-                    targetEvents.forEach(e => {
-                      const eventPhotos = allPhotographsByEvent[e._id] || (e._id === event?._id ? photographs : []);
-                      eventPhotos.forEach(p => {
-                        if (p.graded && p.score) {
-                          historyList.push({
-                            ...p,
-                            eventTitle: e.title
-                          });
-                        }
-                      });
-                    });
-
-                    // Sort by grading update date
-                    historyList.sort((a, b) => new Date(b.score.updatedAt || b.score.createdAt) - new Date(a.score.updatedAt || a.score.createdAt));
-
-                    if (historyList.length === 0) {
-                      return (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 text-xs min-h-55">
-                          <span>No graded photographs found. Get started in the workspace tab!</span>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="overflow-x-auto w-full border border-slate-200/60 dark:border-slate-800 rounded-2xl">
-                        <table className="w-full text-xs text-left border-collapse">
-                          <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
-                              <th className="py-3 px-4">Photo</th>
-                              <th className="py-3 px-4">Details</th>
-                              <th className="py-3 px-4 text-center">Scores</th>
-                              <th className="py-3 px-4 text-center">Average</th>
-                              <th className="py-3 px-4 text-center">Status</th>
-                              <th className="py-3 px-4">Remarks</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
-                            {historyList.map((item, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
-                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                  <div className="w-16 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
-                                    {item.mediaType === 'video' || item.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || item.fileUrl?.includes('/video/upload/') ? (
-                                      <video 
-                                        src={getBackendUrl(item.fileUrl)} 
-                                        autoPlay 
-                                        loop 
-                                        muted 
-                                        playsInline 
-                                        crossOrigin="anonymous"
-                                        referrerPolicy="no-referrer"
-                                        preload="metadata"
-                                        className="w-full h-full object-cover" 
-                                      />
-                                    ) : (
-                                      <img src={getBackendUrl(item.fileUrl)} alt={item.title} className="w-full h-full object-cover" />
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <span className="font-extrabold text-slate-900 dark:text-white block truncate max-w-50">{item.title}</span>
-                                  <span className="text-[10px] text-slate-400 block truncate max-w-50">{item.eventTitle}</span>
-                                  <span className="text-[9px] text-slate-500 block mt-0.5 font-semibold">{new Date(item.score.updatedAt || item.score.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                </td>
-                                <td className="py-3.5 px-4 text-center">
-                                  <div className="flex items-center justify-center gap-1 text-[9px] font-mono font-bold">
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded" title="Creativity">C:{item.score.creativity}</span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded" title="Composition">CO:{item.score.composition}</span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded" title="Technical Quality">T:{item.score.technicalQuality}</span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded" title="Storytelling">S:{item.score.storytelling}</span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded" title="Overall Impact">I:{item.score.overallImpact}</span>
-                                  </div>
-                                </td>
-                                <td className="py-3.5 px-4 text-center">
-                                  <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 dark:bg-indigo-500/5 px-2.5 py-1 rounded-lg">
-                                    {item.score.approvalStatus === 'Disapproved' ? '0.00' : Number(item.score.averageScore).toFixed(2)}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4 text-center">
-                                  <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide ${
-                                    item.score.approvalStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
-                                  }`}>
-                                    {item.score.approvalStatus === 'Approved' ? 'APPROVED' : 'DISAPPROVED'}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 italic max-w-xs truncate" title={item.score.remarks}>
-                                    {item.score.remarks ? `"${item.score.remarks}"` : '-'}
-                                  </p>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      )}
-
-      {judgeDashboardTab === "portal" && !userSelectedEventId && (
-        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
-          <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
-            <AlertTriangle size={32} />
-          </div>
-          <div>
-            <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
-              Please Select an Event
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
-              Please select an assigned event from the top right dropdown menu to view the evaluation workspace and grade submissions.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {judgeDashboardTab === "portal" && userSelectedEventId && (() => {
-        const isVidEv = event && (event.mediaType === 'video' || String(event.eventType).toLowerCase().includes('video') || String(event.eventType).toLowerCase().includes('reel'));
-        return (
-        <>
-          {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
-                Evaluation
-              </h1>
-              <p className="text-sm text-black mt-1">
-                Evaluating submissions assigned to your profile
-              </p>
-            </div>
-
-            {events.length > 0 && participants.length > 0 && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto animate-in fade-in duration-150">
-                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                  <span className="text-xs font-semibold text-slate-500 shrink-0">Participant:</span>
-                  <select
-                    value={selectedSubmissionId}
-                    onChange={(e) => setSelectedSubmissionId(e.target.value)}
-                    className="grow sm:grow-0 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer max-w-50 sm:max-w-xs truncate"
-                  >
-                    <option value="all">All ({participants.length})</option>
-                    {participants.map(p => (
-                      <option key={p.submissionId} value={p.submissionId}>{p.name}</option>
-                    ))}
-                  </select>
+                  <div className="mt-1">
+                    <h3 className="font-display font-black text-2xl sm:text-3xl text-sky-950 dark:text-white leading-none">
+                      {gradedCount}
+                    </h3>
+                    <span className="text-xs text-sky-600 font-extrabold block mt-1 truncate">
+                      Completed assessments
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {events.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-              <Award size={48} className="text-indigo-600 dark:text-indigo-400 mb-2 animate-bounce" />
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white">No Assigned Contests</h2>
-              <p className="text-xs max-w-sm text-slate-500 font-medium leading-relaxed">
-                You are not currently assigned as a panel judge for any active events. Once the administrator assigns you to an event, you will see the photographs here for grading.
+              {/* Pair 2: Column 2 Alignment (Card 3 & Card 4) */}
+              <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Card 3: UNGRADED PHOTOGRAPHS / VIDEOS */}
+                <div className="bg-[#e6f7ed] dark:bg-emerald-950/30 border border-[#b7ebc9] dark:border-emerald-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-300 font-extrabold uppercase tracking-wider leading-snug">
+                      UNGRADED PHOTOS / VIDEOS
+                    </span>
+                    <div className="p-2 bg-emerald-200/60 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-xl shrink-0">
+                      <Clock size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-1">
+                    <h3 className="font-display font-black text-2xl sm:text-3xl text-emerald-950 dark:text-white leading-none">
+                      {pendingCount}
+                    </h3>
+                    <span className="text-xs text-emerald-600 font-extrabold block mt-1 truncate">
+                      Assessments remaining
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 4: UNPAID PHOTOGRAPHS / VIDEOS */}
+                <div className="bg-[#fff7e6] dark:bg-amber-950/30 border border-[#ffe7ba] dark:border-amber-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] sm:text-xs text-amber-700 dark:text-amber-300 font-extrabold uppercase tracking-wider leading-snug">
+                      UNPAID PHOTOS / VIDEOS
+                    </span>
+                    <div className="p-2 bg-amber-200/60 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-xl shrink-0">
+                      <Users size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-1">
+                    <h3 className="font-display font-black text-2xl sm:text-3xl text-amber-950 dark:text-white leading-none">
+                      {unpaidCount}
+                    </h3>
+                    <span className="text-xs text-amber-600 font-extrabold block mt-1 truncate">
+                      Payment pending entries
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pair 3: Column 3 Alignment (Card 5 & Card 6) */}
+              <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Card 5: TOTAL PHOTOGRAPHS */}
+                <div className="bg-[#ffe6ec] dark:bg-rose-950/30 border border-[#ffb3c6] dark:border-rose-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] sm:text-xs text-rose-700 dark:text-rose-300 font-extrabold uppercase tracking-wider leading-snug">
+                      TOTAL PHOTOGRAPHS
+                    </span>
+                    <div className="p-2 bg-rose-200/60 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded-xl shrink-0">
+                      <ImageIcon size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-1">
+                    <h3 className="font-display font-black text-2xl sm:text-3xl text-rose-950 dark:text-white leading-none">
+                      {totalPhotosOnly}
+                    </h3>
+                    <span className="text-xs text-rose-600 font-extrabold block mt-1 truncate">
+                      Total image entries
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 6: TOTAL VIDEOS */}
+                <div className="bg-[#f3e8ff] dark:bg-purple-950/30 border border-[#e9d5ff] dark:border-purple-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] sm:text-xs text-purple-700 dark:text-purple-300 font-extrabold uppercase tracking-wider leading-snug">
+                      TOTAL VIDEOS
+                    </span>
+                    <div className="p-2 bg-purple-200/60 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-xl shrink-0">
+                      <Play size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-1">
+                    <h3 className="font-display font-black text-2xl sm:text-3xl text-purple-950 dark:text-white leading-none">
+                      {totalVideos}
+                    </h3>
+                    <span className="text-xs text-purple-600 font-extrabold block mt-1 truncate">
+                      Total video entries
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ═════════ 3 COLUMNS OVERVIEW CONTENT (Aligned to same left/right margins) ═════════ */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full">
+              
+              {/* Left Column: Live Events Overview List */}
+              <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col justify-between text-left shadow-2xs h-full">
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-display font-black text-sm text-slate-900 dark:text-white">
+                      Live Events Overview
+                    </h3>
+                    <button
+                      onClick={() => setJudgeDashboardTab("portal")}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 cursor-pointer"
+                    >
+                      View All
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5">
+                    {events.slice(0, 5).map((ev, idx) => {
+                      const evPhotos = allPhotographsByEvent[ev._id] || [];
+                      const evGraded = evPhotos.filter(p => p.graded).length;
+                      const evTotal = evPhotos.length;
+                      const pct = evTotal > 0 ? Math.round((evGraded / evTotal) * 100) : 0;
+
+                      return (
+                        <div key={ev._id || idx} className="p-2.5 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0">
+                              {evPhotos[0] ? (
+                                <img 
+                                  src={getBackendUrl(evPhotos[0].fileUrl) || '/wild.jpg'} 
+                                  alt={ev.title} 
+                                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/wild.jpg'; }}
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                  <ImageIcon size={18} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0 text-left">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                                  {ev.title}
+                                </span>
+                                <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 text-[8px] font-black uppercase rounded-full">
+                                  Live
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 truncate">
+                                {ev.eventType || 'Photography'} • {ev.photoLimit ? `${ev.photoLimit} Photos` : 'Open Theme'}
+                              </span>
+                              <span className="text-[9px] text-slate-500 font-semibold mt-0.5">
+                                👥 {evPhotos.length * 3} Participants • 📷 {evTotal} Submissions
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Donut Percentage Ring */}
+                          <div className="relative w-9 h-9 shrink-0 flex items-center justify-center">
+                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                              <path
+                                className="text-slate-200 dark:text-slate-800"
+                                strokeWidth="3.5"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              />
+                              <path
+                                className="text-indigo-600"
+                                strokeDasharray={`${pct}, 100`}
+                                strokeWidth="3.5"
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              />
+                            </svg>
+                            <span className="absolute text-[8px] font-black text-slate-900 dark:text-white">
+                              {pct}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle Column: Submissions Trend & Recent Submissions */}
+              <div className="lg:col-span-4 flex flex-col justify-between gap-6 h-full">
+                
+                {/* Submissions Trend Card (Compact h-[195px] & Reduced Curve) */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-left shadow-2xs flex flex-col justify-between h-[195px]">
+                  <div className="flex justify-between items-center shrink-0">
+                    <h3 className="font-display font-black text-sm text-slate-900 dark:text-white">
+                      Submissions Trend
+                    </h3>
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
+                      This Week
+                    </span>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 text-[9px] font-bold text-slate-500 shrink-0 mt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      <span>Photo Submissions</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>Video Submissions</span>
+                    </div>
+                  </div>
+
+                  {/* SVG Line Chart Graphic */}
+                  <div className="w-full grow pt-1 flex flex-col justify-between">
+                    <svg className="w-full h-22 overflow-visible" viewBox="0 0 300 100">
+                      <line x1="0" y1="20" x2="300" y2="20" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="1" />
+                      <line x1="0" y1="50" x2="300" y2="50" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="1" />
+                      <line x1="0" y1="80" x2="300" y2="80" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="1" />
+                      
+                      <path d="M0,60 Q50,40 100,25 T200,35 T300,30" fill="none" stroke="#3b82f6" strokeWidth="3" />
+                      <path d="M0,85 Q50,75 100,55 T200,60 T300,50" fill="none" stroke="#a855f7" strokeWidth="3" />
+
+                      <circle cx="100" cy="25" r="4" fill="#3b82f6" />
+                      <circle cx="200" cy="35" r="4" fill="#3b82f6" />
+                      <circle cx="100" cy="55" r="4" fill="#a855f7" />
+                      <circle cx="200" cy="60" r="4" fill="#a855f7" />
+                    </svg>
+                    <div className="flex justify-between text-[8px] text-slate-400 font-bold mt-1">
+                      <span>May 19</span>
+                      <span>May 20</span>
+                      <span>May 21</span>
+                      <span>May 22</span>
+                      <span>May 23</span>
+                      <span>May 24</span>
+                      <span>May 25</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Submissions Card */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-left shadow-2xs flex flex-col justify-between gap-2.5 flex-1">
+                  <div className="flex justify-between items-center shrink-0">
+                    <h3 className="font-display font-black text-sm text-slate-900 dark:text-white">
+                      Recent Submissions
+                    </h3>
+                    <button onClick={() => setJudgeDashboardTab('portal')} className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 cursor-pointer">
+                      View All
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 grow justify-around">
+                    {targetPhotos.slice(0, 4).map((item, idx) => (
+                      <div key={item.photoId || idx} className="flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0 border border-slate-200/60">
+                            <img 
+                              src={getBackendUrl(item.fileUrl) || '/wild.jpg'} 
+                              alt={item.title} 
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/wild.jpg'; }}
+                              className="w-full h-full object-cover" 
+                            />
+                          </div>
+                          <div className="flex flex-col min-w-0 text-left">
+                            <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                              {item.title}
+                            </span>
+                            <span className="text-[9px] text-slate-400 truncate">
+                              {item.participantName} • {item.category}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-md ${
+                            isVideoAsset(item) ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'
+                          }`}>
+                            {isVideoAsset(item) ? 'Video' : 'Photo'}
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-semibold">
+                            {idx === 0 ? '2m ago' : `${(idx + 1) * 5}m ago`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Submissions by Category & Top Participants */}
+              <div className="lg:col-span-4 flex flex-col justify-between gap-6 h-full">
+                
+                {/* Submissions by Category Donut Chart Card (Compact h-[195px] & Reduced Curve) */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-left shadow-2xs flex flex-col justify-between h-[195px]">
+                  <h3 className="font-display font-black text-sm text-slate-900 dark:text-white shrink-0">
+                    Submissions by Category
+                  </h3>
+                  <div className="flex items-center justify-around my-auto">
+                    <div className="relative w-22 h-22 shrink-0 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path className="text-purple-600" strokeDasharray="36, 100" strokeDashoffset="0" strokeWidth="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path className="text-blue-500" strokeDasharray="28, 100" strokeDashoffset="-36" strokeWidth="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path className="text-emerald-500" strokeDasharray="20, 100" strokeDashoffset="-64" strokeWidth="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path className="text-amber-500" strokeDasharray="16, 100" strokeDashoffset="-84" strokeWidth="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center text-center">
+                        <span className="font-display font-black text-xs text-slate-900 dark:text-white">
+                          {totalPhotos}
+                        </span>
+                        <span className="text-[7px] text-slate-400 font-extrabold uppercase">Total</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0" />
+                        <span>Photography (Open): 36%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        <span>Short Video (60s): 28%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span>Photography Theme: 20%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span>Short Video (30s): 16%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Participants Leaderboard Card */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-left shadow-2xs flex flex-col gap-2.5 flex-1">
+                  <div className="flex justify-between items-center shrink-0">
+                    <h3 className="font-display font-black text-sm text-slate-900 dark:text-white">
+                      Top Participants
+                    </h3>
+                    <button
+                      onClick={() => setShowTopParticipantsModal(true)}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 cursor-pointer"
+                    >
+                      View All
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2 grow justify-around">
+                    {fullLeaderboardList.slice(0, 4).map((item, idx) => (
+                      <div key={item.id || idx} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="font-black text-slate-400 text-xs w-4 shrink-0">{idx + 1}</span>
+                          <ParticipantAvatar
+                            avatar={item.avatar}
+                            name={item.name}
+                            bg={item.avatarBg || 'bg-indigo-600'}
+                            className="w-7 h-7 text-[11px]"
+                          />
+                          <div className="flex flex-col text-left min-w-0">
+                            <span className="font-extrabold text-slate-900 dark:text-white truncate text-xs">{item.name}</span>
+                            <span className="text-[9px] text-slate-400 truncate">{item.submissions} Submissions</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-amber-500 font-extrabold text-xs shrink-0">
+                          <Star size={13} className="fill-current" />
+                          <span>{item.points.toLocaleString()} Pts</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* ═════════ PAST EVALUATION HISTORY LOG TABLE (Compact h-[340px] & Reduced Curve) ═════════ */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-2xs text-left mb-4 h-[340px] w-full">
+              <h3 className="font-display font-black text-sm text-slate-900 dark:text-white shrink-0 mb-2.5">Past Evaluation History Log</h3>
+              
+              {historyList.length === 0 ? (
+                <div className="p-6 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 text-xs text-center flex-1 flex items-center justify-center">
+                  No graded photographs found. Get started in the Evaluation Workspace!
+                </div>
+              ) : (
+                <div className="overflow-y-auto overflow-x-auto w-full h-[260px] border border-slate-200/60 dark:border-slate-800 rounded-xl">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead className="sticky top-0 z-10">
+                      <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider">
+                        <th className="py-2.5 px-3.5">Photo</th>
+                        <th className="py-2.5 px-3.5">Details</th>
+                        <th className="py-2.5 px-3.5 text-center">Scores</th>
+                        <th className="py-2.5 px-3.5 text-center">Average</th>
+                        <th className="py-2.5 px-3.5 text-center">Status</th>
+                        <th className="py-2.5 px-3.5">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
+                      {historyList.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
+                          <td className="py-2.5 px-3.5 whitespace-nowrap">
+                            <div className="relative w-14 h-9 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 flex items-center justify-center group">
+                              {isVideoAsset(item) ? (
+                                <>
+                                  <video 
+                                    src={getBackendUrl(item.fileUrl)} 
+                                    className="w-full h-full object-cover" 
+                                    muted 
+                                    playsInline 
+                                    onMouseOver={(e) => e.target.play()} 
+                                    onMouseOut={(e) => e.target.pause()}
+                                  />
+                                </>
+                              ) : (
+                                <img 
+                                  src={getBackendUrl(item.fileUrl) || '/wild.jpg'} 
+                                  alt={item.title} 
+                                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/wild.jpg'; }}
+                                  className="w-full h-full object-cover" 
+                                />
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3.5">
+                            <span className="font-extrabold text-slate-900 dark:text-white block truncate max-w-50">{item.title}</span>
+                            <span className="text-[9px] text-slate-400 block truncate max-w-50">{item.eventTitle}</span>
+                          </td>
+                          <td className="py-2.5 px-3.5 text-center">
+                            <div className="flex items-center justify-center gap-1 text-[8px] font-mono font-bold">
+                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">C:{item.score.creativity}</span>
+                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">CO:{item.score.composition}</span>
+                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">T:{item.score.technicalQuality}</span>
+                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">S:{item.score.storytelling}</span>
+                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">I:{item.score.overallImpact}</span>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3.5 text-center">
+                            <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg">
+                              {item.score.approvalStatus === 'Disapproved' ? '0.00' : Number(item.score.averageScore).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                              item.score.approvalStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
+                            }`}>
+                              {item.score.approvalStatus}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3.5">
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic max-w-xs truncate">
+                              {item.score.remarks ? `"${item.score.remarks}"` : '-'}
+                            </p>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ════════════════════ TAB: EVALUATION PORTAL ════════════════════ */}
+        {judgeDashboardTab === "portal" && (
+          (!userSelectedEventId || userSelectedEventId === 'all') ? (
+            <div className="bg-[#f5ebd9] dark:bg-slate-900/90 border border-amber-300/80 dark:border-amber-900/40 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-2xs my-6 min-h-[320px] animate-in fade-in duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 mb-1">
+                <AlertTriangle size={28} className="stroke-[2.5]" />
+              </div>
+              <h3 className="font-display font-black text-2xl text-slate-900 dark:text-white">
+                Please Select an Event
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md leading-relaxed">
+                Please select an assigned event from the top right dropdown menu to view the evaluation workspace and grade submissions.
               </p>
             </div>
           ) : (
-            <>
-              {/* Submission Deadline Passed Alert Banner for Judges */}
-              {event?.deadline && new Date() >= new Date(event.deadline) && !(event?.gradingConfirmed || (event?.confirmedJudges && (event?.confirmedJudges.includes(user?.id) || event?.confirmedJudges.includes(user?._id)))) && (
-                <div className="mb-6 bg-linear-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-500/40 p-4 sm:p-5 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-in fade-in duration-200">
-                  <div className="flex items-center gap-3.5">
-                    <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm">
-                      <Clock size={20} className="animate-pulse" />
-                    </div>
-                    <div>
-                      <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                        Submission Deadline Closed ({new Date(event.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
-                      </h4>
-                      <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-semibold mt-0.5">
-                        Submissions for <strong className="text-amber-600 dark:text-amber-400">"{event.title}"</strong> are now closed. Please complete evaluations for all assigned entries.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 hidden sm:inline-block shadow-xs">
-                    Evaluation Open
-                  </span>
-                </div>
-              )}
+            <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+            
+            {/* Header & Controls Bar */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-6 text-left">
+              <div>
+                <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">
+                  {event ? event.title : 'All Submissions Workspace'}
+                </h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Review assigned uploads, grade composition parameters, and submit final evaluations.
+                </p>
+              </div>
 
-              {/* Evaluation Mode Tabs */}
-              <div className="flex mb-6 bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 w-fit">
+              {/* Online vs Offline Evaluation Mode Toggle */}
+              <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/60 shrink-0">
                 <button
                   onClick={() => setEvaluationMode('online')}
                   className={`py-2 px-5 font-display font-bold text-xs uppercase tracking-wider cursor-pointer rounded-xl transition-all ${
                     evaluationMode === 'online'
-                      ? 'bg-emerald-600 text-white shadow-md'
+                      ? 'bg-indigo-600 text-white shadow-md'
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
                 >
@@ -1327,327 +1435,1092 @@ export default function JudgeDashboard() {
                   onClick={() => setEvaluationMode('offline')}
                   className={`py-2 px-5 font-display font-bold text-xs uppercase tracking-wider cursor-pointer rounded-xl transition-all ${
                     evaluationMode === 'offline'
-                      ? 'bg-emerald-600 text-white shadow-md'
+                      ? 'bg-indigo-600 text-white shadow-md'
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
                 >
                   Offline Evaluation
                 </button>
               </div>
+            </div>
 
-              {/* Status Header Bar */}
-              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-left shadow-sm">
-                <div>
-                  <h2 className="font-display font-black text-lg text-slate-900 dark:text-white">
-                    {event ? event.title : 'All Events Overview'}
-                  </h2>
-                  <span className="text-[10px] text-slate-400 block font-semibold mt-0.5">
-                    {event ? `Mode: ${event.scoringType} Scoring | Category limits: ${event.photoLimit}` : 'Combined overview & assigned entries across all assigned events'}
-                  </span>
+            {/* Submissions Filter Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs text-left">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Search Input - Left side of All Submissions */}
+                <div className="relative w-full sm:w-60">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search events, participants..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
-                <div className="flex flex-wrap items-center gap-4 shrink-0">
+
+                <select
+                  value={filterGradingStatus}
+                  onChange={(e) => setFilterGradingStatus(e.target.value)}
+                  className="px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer outline-none"
+                >
+                  <option value="all">All Submissions ({photographs.length})</option>
+                  <option value="graded">Graded</option>
+                  <option value="ungraded">Ungraded</option>
+                  <option value="disapproved">Disapproved</option>
+                  <option value="unpaid">Unpaid</option>
+                </select>
+
+                {participants.length > 0 && (
                   <select
-                    value={filterGradingStatus}
-                    onChange={(e) => setFilterGradingStatus(e.target.value)}
-                    className="px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:border-indigo-500"
+                    value={selectedSubmissionId}
+                    onChange={(e) => setSelectedSubmissionId(e.target.value)}
+                    className="px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer outline-none max-w-48 truncate"
                   >
-                    <option value="all">{(event?.mediaType === 'video' || String(event?.eventType).toLowerCase().includes('video') || String(event?.eventType).toLowerCase().includes('reel')) ? 'All Videos' : 'All Photos / Videos'}</option>
-                    <option value="graded">Graded</option>
-                    <option value="ungraded">Ungraded</option>
-                    <option value="disapproved">Disapproved</option>
-                    <option value="unpaid">Unpaid</option>
+                    <option value="all">All Participants ({participants.length})</option>
+                    {participants.map(p => (
+                      <option key={p.submissionId} value={p.submissionId}>{p.name}</option>
+                    ))}
                   </select>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-500">Grading Progress:</span>
-                    <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                      {activePhotos.filter(p => p.graded).length} / {activePhotos.length}
-                    </span>
-                  </div>
-
-                  {user?.role !== 'Admin' && (
-                    hasConfirmed ? (
-                      <span className="bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-500 border border-emerald-200/50 py-2.5 px-5 rounded-2xl text-xs font-extrabold uppercase flex items-center gap-1.5">
-                        <CheckCircle2 size={14} /> Signed Off
-                      </span>
-                    ) : allGraded ? (
-                      <button
-                        onClick={handleConfirmGrading}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-md hover:shadow transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Award size={14} /> Sign Off Event
-                      </button>
-                    ) : (
-                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-400 py-2.5 px-5 rounded-2xl text-xs font-bold uppercase flex items-center gap-1.5">
-                        <Clock size={14} /> Finish Grading to Sign Off
-                      </span>
-                    )
-                  )}
-                </div>
+                )}
               </div>
 
-              {/* Display Photos Grid */}
-              {displayedPhotos.length === 0 ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400">
-                  No submissions match filter criteria.
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-extrabold text-slate-500">
+                  Graded: <strong className="text-indigo-600 dark:text-indigo-400">{activePhotos.filter(p => p.graded).length} / {activePhotos.length}</strong>
+                </span>
+
+                {user?.role !== 'Admin' && event && (
+                  hasConfirmed ? (
+                    <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 py-2 px-4 rounded-xl text-xs font-extrabold uppercase flex items-center gap-1.5">
+                      <CheckCircle2 size={14} /> Signed Off
+                    </span>
+                  ) : allGraded ? (
+                    <button
+                      onClick={handleConfirmGrading}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Award size={14} /> Sign Off Event
+                    </button>
+                  ) : null
+                )}
+              </div>
+            </div>
+
+            {/* Display Photos Grid */}
+            {displayedPhotos.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center text-slate-400">
+                No submissions match the filter criteria.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 text-left mb-6">
+                {displayedPhotos.map((photo) => (
+                  <div
+                    key={photo.photoId}
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div 
+                      onClick={() => {
+                        if (photo.paymentStatus === 'Unpaid' || photo.score?.approvalStatus === 'Disapproved' || (hasConfirmed && user?.role !== 'Admin')) {
+                          setReadOnlyModalPhoto(photo);
+                        } else if (evaluationMode === 'online') {
+                          handleOpenScoring(photo);
+                        } else {
+                          handleOpenOfflineScoring(photo);
+                        }
+                      }}
+                      className="w-full aspect-video relative overflow-hidden flex items-center justify-center bg-slate-950 cursor-pointer"
+                    >
+                      {isVideoAsset(photo) ? (
+                        <video 
+                          src={getBackendUrl(photo.fileUrl)} 
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline 
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          preload="metadata"
+                          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                        />
+                      ) : (
+                        <WatermarkPreview
+                          src={getBackendUrl(photo.fileUrl)}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
+                      <span className={`absolute top-3 left-3 px-2.5 py-0.5 text-[8px] font-black uppercase rounded-full shadow-xs ${
+                        photo.paymentStatus === 'Unpaid'
+                          ? 'bg-rose-500 text-white'
+                          : photo.score?.approvalStatus === 'Disapproved'
+                            ? 'bg-rose-600 text-white'
+                            : photo.graded 
+                              ? 'bg-indigo-600 text-white' 
+                              : 'bg-slate-500 text-white'
+                      }`}>
+                        {photo.paymentStatus === 'Unpaid' ? 'Unpaid' : photo.score?.approvalStatus === 'Disapproved' ? 'Disapproved' : photo.graded ? 'Graded' : 'Not Graded'}
+                      </span>
+                    </div>
+
+                    <div className="p-4 flex flex-col gap-3 grow justify-between">
+                      <div className="flex flex-col gap-1">
+                        <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                          {photo.title}
+                        </h4>
+                        <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider block">
+                          {photo.category}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-bold block">
+                          By: {photo.participantName}
+                        </span>
+                        {photo.paymentStatus === 'Unpaid' ? (
+                          <div className="mt-1 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-rose-500/10 text-rose-600 font-extrabold">
+                              Unpaid
+                            </span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white ml-1">Grade: 0</span>
+                          </div>
+                        ) : photo.score && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
+                              photo.score.approvalStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
+                            }`}>
+                              {photo.score.approvalStatus}
+                            </span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white ml-1">
+                              Grade: {photo.score.approvalStatus === 'Disapproved' ? 0 : photo.score.averageScore}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {photo.paymentStatus === 'Unpaid' ? (
+                        <button
+                          type="button"
+                          onClick={() => setReadOnlyModalPhoto(photo)}
+                          className="w-full bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 font-bold py-2 rounded-xl text-center text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-rose-200/60 dark:border-rose-900/40 transition-all shadow-2xs"
+                        >
+                          <Eye size={14} />
+                          <span>Inspect Unpaid Entry</span>
+                        </button>
+                      ) : photo.score?.approvalStatus === 'Disapproved' ? (
+                        <button
+                          type="button"
+                          onClick={() => setReadOnlyModalPhoto(photo)}
+                          className="w-full bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 font-bold py-2 rounded-xl text-center text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-rose-200/60 dark:border-rose-900/40 transition-all shadow-2xs"
+                        >
+                          <Eye size={14} />
+                          <span>Inspect Disapproved</span>
+                        </button>
+                      ) : hasConfirmed && user?.role !== 'Admin' ? (
+                        <button
+                          type="button"
+                          onClick={() => setReadOnlyModalPhoto(photo)}
+                          className="w-full font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                        >
+                          <Eye size={14} className="text-indigo-500" />
+                          <span>View Evaluation (Read-Only)</span>
+                        </button>
+                      ) : (
+                        (!hasConfirmed || user?.role === 'Admin') && (
+                          <button
+                            type="button"
+                            onClick={() => evaluationMode === 'online' ? handleOpenScoring(photo) : handleOpenOfflineScoring(photo)}
+                            className={`w-full font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                              user?.role === 'Admin' 
+                                ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200' 
+                                : !photo.graded 
+                                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            }`}
+                          >
+                            {user?.role === 'Admin' ? 'Review Scoring' : photo.graded ? 'Edit Evaluation' : 'Evaluate'}
+                            <ChevronRight size={14} />
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          )
+        )}
+
+        {/* ════════════════════ TAB: EVENT HISTORY (Matching media_1788327132233.png) ════════════════════ */}
+        {judgeDashboardTab === "event_history" && (
+          (!userSelectedEventId || userSelectedEventId === 'all') ? (
+            <div className="bg-[#f5ebd9] dark:bg-slate-900/90 border border-amber-300/80 dark:border-amber-900/40 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-2xs my-6 min-h-[320px] animate-in fade-in duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 mb-1">
+                <AlertTriangle size={28} className="stroke-[2.5]" />
+              </div>
+              <h3 className="font-display font-black text-2xl text-slate-900 dark:text-white">
+                Please Select an Event
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md leading-relaxed">
+                Please select an assigned event from the top right dropdown menu to view the event history and archived evaluations.
+              </p>
+            </div>
+          ) : (() => {
+            const displayedEvents = events.filter(e => e._id === userSelectedEventId);
+
+            if (displayedEvents.length === 0) {
+              return (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-8 text-center flex flex-col items-center gap-4 my-6">
+                  <AlertTriangle size={32} className="text-amber-500" />
+                  <h3 className="font-display font-black text-slate-900 dark:text-white text-lg">No Assigned Events Found</h3>
                 </div>
-              ) : (
-                evaluationMode === 'online' ? (
-                    <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 text-left">
-                    {displayedPhotos.map((photo) => (
-                      <div
-                        key={photo.photoId}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow transition-all flex flex-col justify-between"
-                      >
-                        <div className="w-full aspect-video relative overflow-hidden flex items-center justify-center bg-slate-950">
-                          {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') || photo.fileUrl?.includes('/video/') || photo.fileUrl?.includes('video_') ? (
-                            <video 
-                              src={getBackendUrl(photo.fileUrl)} 
-                              autoPlay 
-                              loop 
-                              muted 
-                              playsInline 
-                              crossOrigin="anonymous"
-                              referrerPolicy="no-referrer"
-                              preload="metadata"
-                              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                            />
-                          ) : (
-                            <WatermarkPreview
-                              src={getBackendUrl(photo.fileUrl)}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
+              );
+            }
+
+            return (
+              <div className="animate-in fade-in duration-200 flex flex-col gap-6 text-left mb-8">
+              
+              {/* Top Banner Card: Jury Archives */}
+              <div className="bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl p-5 shadow-2xs flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 shrink-0">
+                    <History size={24} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black tracking-widest text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+                        Jury Archives
+                      </span>
+                    </div>
+                    <h2 className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white mt-1">
+                      My Judging History &amp; Details
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                      View complete evaluation statistics, graded photographs, scores breakdown, and sign-off status event-wise
+                    </p>
+                  </div>
+                </div>
+
+
+              </div>
+
+              {/* Render Event Cards Event-Wise */}
+              {displayedEvents.map((ev) => {
+                const evPhotos = allPhotographsByEvent[ev._id] || (ev._id === event?._id ? photographs : []);
+                const totalAssigned = evPhotos.length;
+                const paidEvPhotos = evPhotos.filter(p => p.paymentStatus !== 'Unpaid');
+                const gradedEvPhotos = paidEvPhotos.filter(p => p.graded);
+                const gradedCount = gradedEvPhotos.length;
+                const disapprovedCount = gradedEvPhotos.filter(p => p.score?.approvalStatus === 'Disapproved').length;
+                const approvedCount = gradedCount - disapprovedCount;
+                const completionPct = totalAssigned > 0 ? Math.round((gradedCount / totalAssigned) * 100) : 0;
+                
+                const validScores = gradedEvPhotos.filter(p => p.score?.approvalStatus !== 'Disapproved' && p.score?.averageScore);
+                const avgScoreVal = validScores.length > 0 
+                  ? (validScores.reduce((sum, p) => sum + Number(p.score.averageScore), 0) / validScores.length).toFixed(1)
+                  : '0.0';
+
+                const isSignedOff = ev.confirmedJudges?.includes(user?.id || user?._id);
+
+                return (
+                  <div key={ev._id} className="flex flex-col gap-6">
+                    
+                    {/* Event Header & Stat Card */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xs flex flex-col gap-5 text-left">
+                      
+                      {/* Event Title Row */}
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div className="flex flex-col gap-1.5 max-w-3xl">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              {ev.category || 'PHOTOGRAPHY'}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                              {ev.status || 'ACTIVE'}
+                            </span>
+                          </div>
+                          <h3 className="font-display font-black text-xl text-slate-900 dark:text-white">
+                            {ev.title}
+                          </h3>
+                          {ev.description && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium italic leading-relaxed">
+                              Theme: &ldquo;{ev.description}&rdquo;
+                            </p>
                           )}
-                          <span className={`absolute top-3 left-3 px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full shadow-sm ${
-                            photo.paymentStatus === 'Unpaid'
-                              ? 'bg-rose-500 text-white'
-                              : photo.graded 
-                                ? 'bg-indigo-600 text-white' 
-                                : 'bg-slate-500 text-white'
-                          }`}>
-                            {photo.paymentStatus === 'Unpaid' ? 'Unpaid' : photo.graded ? 'Graded' : 'Not Graded'}
-                          </span>
                         </div>
 
-                        <div className="p-4 flex flex-col gap-3.5 grow justify-between">
-                          <div className="flex flex-col gap-1">
-                            <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white truncate">
-                              {photo.title}
-                            </h4>
-                            <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider block">
-                              {photo.category}
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-bold block">
-                              By: {photo.participantName}
-                            </span>
-                            {photo.paymentStatus === 'Unpaid' ? (
-                              <div className="mt-2 flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase bg-rose-500/10 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450">
-                                  Unpaid
-                                </span>
-                                <span className="text-xs font-black text-slate-900 dark:text-white ml-1">
-                                  Grade: 0
-                                </span>
-                              </div>
-                            ) : photo.score && (
-                              <div className="mt-2 flex items-center gap-1">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                                  photo.score.approvalStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                                }`}>
-                                  {photo.score.approvalStatus}
-                                </span>
-                                <span className="text-xs font-black text-slate-900 dark:text-white ml-1">
-                                  Grade: {photo.score.approvalStatus === 'Disapproved' ? 0 : photo.score.averageScore}
-                                </span>
-                              </div>
-                            )}
+                        {/* Sign-off Status Pill */}
+                        <div className="flex flex-col items-start md:items-end gap-1 shrink-0">
+                          <div className={`px-3.5 py-1.5 rounded-2xl text-xs font-extrabold flex items-center gap-1.5 ${
+                            isSignedOff
+                              ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                              : 'bg-amber-500/10 text-amber-600 border border-amber-500/30'
+                          }`}>
+                            <Clock size={14} />
+                            <span>{isSignedOff ? 'Signed Off' : 'Pending Sign-Off'}</span>
                           </div>
-
-                          {photo.paymentStatus === 'Unpaid' ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="w-full bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold py-2 rounded-xl text-center text-xs cursor-not-allowed opacity-60 flex items-center justify-center gap-1.5"
-                            >
-                              Evaluation Disabled
-                            </button>
-                          ) : (
-                            photo.score?.approvalStatus !== 'Disapproved' && (!hasConfirmed || user?.role === 'Admin') && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenScoring(photo)}
-                                className={`w-full font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm ${
-                                  user?.role === 'Admin' 
-                                    ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200' 
-                                    : !photo.graded 
-                                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                }`}
-                              >
-                                {user?.role === 'Admin' ? 'Review Scoring' : photo.graded ? 'Edit Evaluation' : 'Evaluate'}
-                                <ChevronRight size={14} />
-                              </button>
-                            )
+                          {ev.deadline && (
+                            <span className="text-[10px] text-slate-400 font-semibold">
+                              Deadline: {new Date(ev.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
                           )}
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-
-                    </>
-                  ) : (
-                  /* Card-based Offline Evaluation grid */
-                  <div className="flex flex-col gap-6 text-left">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 text-left">
-                      {displayedPhotos.map((photo) => (
-                        <div
-                          key={photo.photoId}
-                          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow transition-all flex flex-col justify-between"
-                        >
-                          {/* Thumbnail / Click handler */}
-                          <div 
-                            onClick={() => photo.paymentStatus !== 'Unpaid' && (!hasConfirmed || user?.role === 'Admin') && handleOpenOfflineScoring(photo)}
-                            className={`w-full aspect-video relative overflow-hidden flex items-center justify-center bg-slate-950 ${photo.paymentStatus === 'Unpaid' || (hasConfirmed && user?.role !== 'Admin') ? 'cursor-default' : 'cursor-zoom-in'}`}
-                          >
-                            {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v|3gp)(\?.*)?$/i) || photo.fileUrl?.includes('/video/upload/') || photo.fileUrl?.includes('/video/') || photo.fileUrl?.includes('video_') ? (
-                              <video 
-                                src={getBackendUrl(photo.fileUrl)} 
-                                autoPlay 
-                                loop 
-                                muted 
-                                playsInline 
-                                crossOrigin="anonymous"
-                                referrerPolicy="no-referrer"
-                                preload="metadata"
-                                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                              />
-                            ) : (
-                              <WatermarkPreview
-                                src={getBackendUrl(photo.fileUrl)}
-                                className="absolute inset-0 w-full h-full object-cover"
-                              />
-                            )}
-                            <span className={`absolute top-3 left-3 px-2 py-0.5 text-[8px] font-extrabold uppercase rounded-full shadow-sm ${
-                              photo.paymentStatus === 'Unpaid'
-                                ? 'bg-rose-500 text-white'
-                                : photo.graded 
-                                  ? 'bg-indigo-600 text-white' 
-                                  : 'bg-slate-500 text-white'
-                            }`}>
-                              {photo.paymentStatus === 'Unpaid' ? 'Unpaid' : photo.graded ? 'Graded' : 'Not Graded'}
-                            </span>
+                      {/* 4 Stat Metric Cards (Exact match to media_1788327132233.png) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                        
+                        {/* 1. ASSIGNED ENTRIES */}
+                        <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col justify-between gap-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">ASSIGNED ENTRIES</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display font-black text-3xl text-slate-900 dark:text-white">{totalAssigned}</span>
                           </div>
-
-                          <div className="p-4 flex flex-col gap-3.5 grow justify-between">
-                            <div className="flex flex-col gap-1">
-                              <h4 className="font-display font-extrabold text-sm text-slate-900 dark:text-white truncate">
-                                {photo.title}
-                              </h4>
-                              <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider block">
-                                {photo.category}
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-bold block">
-                                By: {photo.participantName}
-                              </span>
-                              {photo.paymentStatus === 'Unpaid' ? (
-                                <div className="mt-2 flex items-center gap-1.5">
-                                  <span className="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase bg-rose-500/10 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450">
-                                    Unpaid
-                                  </span>
-                                  <span className="text-xs font-black text-slate-900 dark:text-white ml-1">
-                                    Grade: 0
-                                  </span>
-                                </div>
-                              ) : photo.score && (
-                                <div className="mt-2 flex items-center gap-1.5">
-                                  <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                                    photo.score.approvalStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
-                                  }`}>
-                                    {photo.score.approvalStatus === 'Approved' ? 'APPROVED' : 'DISAPPROVED'}
-                                  </span>
-                                  <span className="text-xs font-black text-slate-900 dark:text-white ml-1">
-                                    Grade: {photo.score.approvalStatus === 'Disapproved' ? 0 : photo.score.averageScore}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {photo.paymentStatus === 'Unpaid' ? (
-                              <button
-                                type="button"
-                                disabled
-                                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold py-2 rounded-xl text-center text-xs cursor-not-allowed opacity-60 flex items-center justify-center gap-1.5"
-                              >
-                                Evaluation Disabled
-                              </button>
-                            ) : (
-                              photo.score?.approvalStatus !== 'Disapproved' && (!hasConfirmed || user?.role === 'Admin') && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenOfflineScoring(photo)}
-                                  className={`w-full font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm ${
-                                    user?.role === 'Admin' 
-                                      ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200' 
-                                      : !photo.graded 
-                                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                  }`}
-                                >
-                                  {user?.role === 'Admin' ? 'Review' : photo.graded ? 'Edit Evaluation' : 'Evaluate'}
-                                  <ChevronRight size={14} />
-                                </button>
-                              )
-                            )}
-                          </div>
+                          <span className="text-[10px] text-slate-400 font-semibold">Total photos assigned</span>
                         </div>
-                      ))}
+
+                        {/* 2. GRADED ENTRIES */}
+                        <div className="bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 rounded-2xl p-4 flex flex-col justify-between gap-2">
+                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">GRADED ENTRIES</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display font-black text-3xl text-emerald-600 dark:text-emerald-400">{gradedCount}</span>
+                          </div>
+                          <span className="text-[10px] text-emerald-500 font-semibold">{completionPct}% completed</span>
+                        </div>
+
+                        {/* 3. DISAPPROVED */}
+                        <div className="bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl p-4 flex flex-col justify-between gap-2">
+                          <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider">DISAPPROVED</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display font-black text-3xl text-rose-600 dark:text-rose-400">{disapprovedCount}</span>
+                          </div>
+                          <span className="text-[10px] text-rose-500 font-semibold">{approvedCount} Approved</span>
+                        </div>
+
+                        {/* 4. AVERAGE SCORE */}
+                        <div className="bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/40 rounded-2xl p-4 flex flex-col justify-between gap-2">
+                          <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">AVERAGE SCORE</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display font-black text-3xl text-indigo-600 dark:text-indigo-400">{avgScoreVal}</span>
+                            <span className="text-xs font-bold text-indigo-400">/ 10</span>
+                          </div>
+                          <span className="text-[10px] text-indigo-500 font-semibold">Your average score</span>
+                        </div>
+
+                      </div>
+
+                      {/* Progress Bar Track */}
+                      <div className="flex flex-col gap-2 mt-2">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                          <span>Evaluation Completion</span>
+                          <span>{gradedCount} / {totalAssigned} ({completionPct}%)</span>
+                        </div>
+                        <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-800">
+                          <div 
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                            style={{ width: `${completionPct}%` }}
+                          />
+                        </div>
+                      </div>
+
                     </div>
 
+                    {/* Evaluated Entries & Score Breakdown Table */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xs text-left">
+                      <div className="flex flex-col gap-1 mb-4">
+                        <h4 className="font-display font-black text-base text-slate-900 dark:text-white">
+                          Evaluated Entries &amp; Score Breakdown ({gradedEvPhotos.length})
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          Detailed breakdown of scores, criteria, remarks, and approval statuses given by you for {ev.title}
+                        </p>
+                      </div>
+
+                      {gradedEvPhotos.length === 0 ? (
+                        <div className="p-8 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center flex flex-col items-center justify-center text-slate-400 text-xs">
+                          <Camera size={28} className="mb-2 text-slate-300 dark:text-slate-700" />
+                          <span>No evaluated entries found for this event yet.</span>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto border border-slate-200/80 dark:border-slate-800 rounded-2xl">
+                          <table className="w-full text-xs text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider">
+                                <th className="py-3 px-4">Photograph</th>
+                                <th className="py-3 px-4">Title &amp; Details</th>
+                                <th className="py-3 px-4">Individual Criteria</th>
+                                <th className="py-3 px-4 text-center">Avg Score</th>
+                                <th className="py-3 px-4 text-center">Status</th>
+                                <th className="py-3 px-4">Graded Date</th>
+                                <th className="py-3 px-4">Remarks / Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
+                              {gradedEvPhotos.map((photo) => (
+                                <tr key={photo._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
+                                  
+                                  {/* Photograph Thumbnail */}
+                                  <td className="py-3 px-4 whitespace-nowrap">
+                                    <div className="relative w-16 h-11 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 flex items-center justify-center">
+                                      {isVideoAsset(photo) ? (
+                                        <video 
+                                          src={getBackendUrl(photo.fileUrl)} 
+                                          className="w-full h-full object-cover"
+                                          muted 
+                                          playsInline 
+                                        />
+                                      ) : (
+                                        <img 
+                                          src={getBackendUrl(photo.fileUrl) || '/wild.jpg'} 
+                                          alt={photo.title}
+                                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/wild.jpg'; }}
+                                          className="w-full h-full object-cover" 
+                                        />
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {/* Title & Details */}
+                                  <td className="py-3 px-4">
+                                    <span className="font-extrabold text-slate-900 dark:text-white block text-xs">
+                                      {photo.title}
+                                    </span>
+                                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                      {photo.category || 'Out-Door'}
+                                    </span>
+                                  </td>
+
+                                  {/* Individual Criteria */}
+                                  <td className="py-3 px-4">
+                                    {photo.score && (
+                                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                        <span>Tech: <strong className="text-slate-900 dark:text-white font-mono">{photo.score.technicalQuality}</strong></span>
+                                        <span>Comp: <strong className="text-slate-900 dark:text-white font-mono">{photo.score.composition}</strong></span>
+                                        <span>Creat: <strong className="text-slate-900 dark:text-white font-mono">{photo.score.creativity}</strong></span>
+                                        <span>Imp: <strong className="text-slate-900 dark:text-white font-mono">{photo.score.overallImpact}</strong></span>
+                                      </div>
+                                    )}
+                                  </td>
+
+                                  {/* Avg Score */}
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-mono text-sm font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl">
+                                      {photo.score?.approvalStatus === 'Disapproved' ? '0.0' : Number(photo.score?.averageScore || 0).toFixed(1)}
+                                    </span>
+                                  </td>
+
+                                  {/* Status */}
+                                  <td className="py-3 px-4 text-center">
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                                      photo.score?.approvalStatus === 'Approved'
+                                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                        : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                    }`}>
+                                      <CheckCircle2 size={12} />
+                                      {photo.score?.approvalStatus || 'APPROVED'}
+                                    </span>
+                                  </td>
+
+                                  {/* Graded Date */}
+                                  <td className="py-3 px-4 text-slate-400 text-[11px] font-medium whitespace-nowrap">
+                                    {photo.score?.updatedAt 
+                                      ? new Date(photo.score.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                                      : 'N/A'}
+                                  </td>
+
+                                  {/* Remarks / Notes */}
+                                  <td className="py-3 px-4">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic max-w-xs truncate">
+                                      {photo.score?.remarks ? `"${photo.score.remarks}"` : '—'}
+                                    </p>
+                                  </td>
+
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                    </div>
 
                   </div>
-                )
-              )}
-            </>
-          )}
-        </>
-        );
-      })()}
+                );
+              })}
 
-      {/* Online Evaluation Grade Sheet / Modal popup */}
-      {activePhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-[95%] lg:max-w-7xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in zoom-in-95 duration-200 text-left my-8 h-auto max-h-[90vh] lg:h-[90vh] overflow-y-auto lg:overflow-hidden mx-auto">
+            </div>
+          );
+        })()
+      )}
+
+        {/* ════════════════════ TAB: NOTIFICATIONS (Matching media_1788327467583.png) ════════════════════ */}
+        {judgeDashboardTab === "notifications" && (
+          <div className="animate-in fade-in duration-200 flex flex-col gap-6 text-left mb-8">
             
-            {/* Close button */}
+            {/* Main 2-Column Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* LEFT COLUMN: Dispatch Notification Form */}
+              <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xs flex flex-col justify-between text-left">
+                <div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <Send size={18} className="-rotate-45" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
+                        Dispatch Notification
+                      </h3>
+                      <p className="text-xs text-slate-400 font-medium">
+                        Compose message to send to target audience
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSendBroadcast} className="flex flex-col gap-4 text-xs">
+                    
+                    {/* 1. Scope / Event Selection */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+                        Scope / Event Selection
+                      </label>
+                      <select
+                        value={broadcastEventId}
+                        onChange={(e) => setBroadcastEventId(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-indigo-500/40 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+                      >
+                        <option value="">All Assigned Events</option>
+                        {events.map((ev) => (
+                          <option key={ev._id} value={ev._id}>
+                            {ev.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2. Target Audience */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+                        Target Audience
+                      </label>
+                      <select
+                        value={broadcastRecipient}
+                        onChange={(e) => setBroadcastRecipient(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+                      >
+                        <option value="Participant">All Event Participants</option>
+                        <option value="Graded">Graded Participants Only</option>
+                        <option value="Ungraded">Ungraded Participants Only</option>
+                        <option value="Admin">System Administrators</option>
+                        <option value="Specific">Specific Participant</option>
+                      </select>
+                    </div>
+
+                    {/* 3. Conditional Specific Participant Select */}
+                    {broadcastRecipient === 'Specific' && (
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+                          Select Participant
+                        </label>
+                        <select
+                          value={broadcastParticipantId}
+                          onChange={(e) => setBroadcastParticipantId(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+                        >
+                          <option value="">-- Choose Participant --</option>
+                          {photographs.map((p, idx) => (
+                            <option key={p._id || idx} value={p.userId || p.participantName}>
+                              {p.participantName} ({p.title})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* 4. Notification Message */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          Notification Message
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-mono font-medium">
+                          {broadcastMessage.length}/500
+                        </span>
+                      </div>
+                      <textarea
+                        rows={4}
+                        maxLength={500}
+                        value={broadcastMessage}
+                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                        placeholder="Type your notification message here (e.g. Evaluation feedback update, contest instructions, or direct inquiry)..."
+                        className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500 resize-none shadow-2xs"
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={broadcastSubmitting}
+                      className="w-auto px-8 py-3.5 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer inline-flex items-center justify-center gap-2 text-xs self-start"
+                    >
+                      <Send size={15} />
+                      <span>{broadcastSubmitting ? 'Dispatching...' : 'Send Notification'}</span>
+                    </button>
+
+                  </form>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Sent Notifications History */}
+              <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xs flex flex-col text-left min-h-[460px]">
+                
+                {/* Section Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                      <History size={18} />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
+                        Sent Notifications History
+                      </h3>
+                      <p className="text-xs text-slate-400 font-medium">
+                        History of messages dispatched by your judge account
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/40 shrink-0">
+                    {broadcasts.length} Dispatched
+                  </span>
+                </div>
+
+                {/* Sent List or Empty State */}
+                {broadcasts.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8 my-auto">
+                    <Bell size={48} className="text-slate-300 dark:text-slate-700 stroke-[1.5] mb-3" />
+                    <p className="text-xs font-bold text-slate-400">
+                      No notifications dispatched yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-y-auto max-h-[380px] flex flex-col gap-3 pr-1 mt-4">
+                    {broadcasts.map((b) => (
+                      <div
+                        key={b._id}
+                        className="p-4 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-xs flex flex-col gap-2 relative group hover:border-indigo-500/30 transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                              {b.recipientType || 'Participant'}
+                            </span>
+                            {b.eventId && (
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                                Event ID: {b.eventId}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {new Date(b.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteBroadcast(b._id)}
+                              className="text-slate-400 hover:text-rose-500 transition-colors p-1 cursor-pointer"
+                              title="Delete notification log"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed whitespace-pre-wrap">
+                          {b.message}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ════════════════════ TAB: JURY PROFILE SETTINGS (Matching media_1788333663959.png) ════════════════════ */}
+        {judgeDashboardTab === 'profile_settings' && (
+          <div className="animate-in fade-in duration-200 text-left mb-8">
+            <div className="bg-[#f4f3ff] dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-sm flex flex-col gap-8">
+              
+              {judgeProfileError && (
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-2xl text-xs font-bold flex items-center gap-2">
+                  <ShieldAlert size={16} className="shrink-0" />
+                  <span>{judgeProfileError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleUpdateJudgeProfile} className="flex flex-col gap-8">
+                
+                {/* Profile Photo Upload Banner Box */}
+                <div className="bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                  <div className="flex items-center gap-5">
+                    <ParticipantAvatar
+                      avatar={user?.avatar || user?.profilePicture}
+                      name={judgeProfileName || user?.name}
+                      bg="bg-indigo-600"
+                      className="w-16 h-16 text-xl border-2 border-indigo-500 p-0.5 shadow-md"
+                    />
+                    <div>
+                      <h4 className="font-display font-black text-base text-slate-900 dark:text-white">
+                        Profile Photo
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 max-w-md leading-relaxed">
+                        Upload a jury panel member photo. This photo will appear in your top navigation bar and jury scorecards.
+                      </p>
+                    </div>
+                  </div>
+
+                  <input
+                    type="file"
+                    ref={profilePhotoInputRef}
+                    accept="image/*"
+                    onChange={handleJudgeAvatarUpload}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={uploadingJudgeAvatar}
+                    onClick={() => profilePhotoInputRef.current && profilePhotoInputRef.current.click()}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 px-6 rounded-full transition-all shadow-md cursor-pointer shrink-0 self-start sm:self-center flex items-center gap-2"
+                  >
+                    <span>{uploadingJudgeAvatar ? 'Uploading...' : 'Upload Photo'}</span>
+                  </button>
+                </div>
+
+                {/* Form Fields: Row 1 (3 Columns) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Column 1: Jury Member Name */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                      Jury Member Name
+                    </label>
+                    <input
+                      type="text"
+                      value={judgeProfileName}
+                      onChange={(e) => setJudgeProfileName(e.target.value)}
+                      placeholder="Jury Member Name"
+                      className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {/* Column 2: Mobile Number */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                      Mobile Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={judgeProfileMobile}
+                      onChange={handleJudgeMobileChange}
+                      placeholder="10-digit Mobile Number"
+                      className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {/* Column 3: Email Address (Read-Only) */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                      Email Address (Read-Only)
+                    </label>
+                    <input
+                      type="email"
+                      value={user?.email || ''}
+                      readOnly
+                      disabled
+                      className="w-full p-3.5 bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Form Fields: Row 2 (2 Columns) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Column 1: New Password (Optional) */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                      New Password (Optional)
+                    </label>
+                    <input
+                      type="password"
+                      value={judgeProfilePassword}
+                      onChange={(e) => setJudgeProfilePassword(e.target.value)}
+                      placeholder="Leave blank to keep current password"
+                      className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400"
+                    />
+                  </div>
+
+                  {/* Column 2: Confirm New Password */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={judgeProfileConfirmPassword}
+                      onChange={(e) => setJudgeProfileConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Save Button Action Row */}
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="submit"
+                    disabled={judgeProfileSubmitting}
+                    className="w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer text-xs flex items-center justify-center gap-2"
+                  >
+                    <span>{judgeProfileSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Footer inside right scrollable area */}
+        <footer className="mt-2 py-1 text-xs text-center text-slate-500 dark:text-slate-400">
+          <p>&copy; {new Date().getFullYear()} sumbaran Art Society. All rights reserved.</p>
+        </footer>
+      </main>
+
+      {/* ════════════════════ TOP PARTICIPANTS LEADERBOARD MODAL ════════════════════ */}
+      {showTopParticipantsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-2xl w-full flex flex-col gap-5 shadow-2xl text-left relative max-h-[85vh] overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-2xl">
+                  <Trophy size={22} />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">
+                    Top Participants Leaderboard
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Highest scoring contributors & contest leaders
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTopParticipantsModal(false)}
+                className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full cursor-pointer transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search inside Modal */}
+            <div className="relative w-full">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={participantSearchQuery}
+                onChange={(e) => setParticipantSearchQuery(e.target.value)}
+                placeholder="Search participant name or category..."
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-9 pr-4 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Leaderboard Table List */}
+            <div className="overflow-y-auto max-h-[50vh] flex flex-col gap-2.5 pr-1">
+              {fullLeaderboardList
+                .filter(p => p.name.toLowerCase().includes(participantSearchQuery.toLowerCase()) || p.category.toLowerCase().includes(participantSearchQuery.toLowerCase()))
+                .map((item, idx) => (
+                  <div key={item.id || idx} className="flex items-center justify-between p-3.5 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 rounded-2xl text-xs hover:border-indigo-500/30 transition-all">
+                    <div className="flex items-center gap-3.5">
+                      <span className={`font-black text-xs w-6 text-center shrink-0 ${
+                        idx === 0 ? 'text-amber-500 font-extrabold text-sm' : idx === 1 ? 'text-slate-400 font-bold' : idx === 2 ? 'text-amber-700 font-bold' : 'text-slate-400'
+                      }`}>
+                        {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+                      </span>
+                      <ParticipantAvatar
+                        avatar={item.avatar}
+                        name={item.name}
+                        bg={item.avatarBg || 'bg-indigo-600'}
+                        className="w-9 h-9 text-xs"
+                      />
+                      <div className="flex flex-col text-left">
+                        <span className="font-extrabold text-slate-900 dark:text-white">
+                          {item.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {item.submissions} Submissions • <span className="text-indigo-500 font-bold">{item.category}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-amber-500 font-black text-xs bg-amber-500/10 px-3 py-1.5 rounded-xl shrink-0">
+                      <Star size={14} className="fill-current" />
+                      <span>{item.points.toLocaleString()} Pts</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ READ-ONLY EVALUATION INSPECTION MODAL ════════════════════ */}
+      {readOnlyModalPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-[95%] lg:max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row my-8 h-auto max-h-[90vh] lg:h-[85vh] overflow-y-auto lg:overflow-hidden mx-auto text-left animate-in fade-in duration-200">
+            
+            {/* Close Button */}
             <button
-              onClick={() => setActivePhoto(null)}
-              className="absolute top-4 right-4 z-10 p-2 bg-slate-950/60 hover:bg-slate-950 text-white rounded-full cursor-pointer transition-colors"
+              onClick={() => setReadOnlyModalPhoto(null)}
+              className="absolute top-4 right-4 z-20 p-2 bg-slate-950/70 hover:bg-slate-950 text-white rounded-full cursor-pointer transition-colors"
             >
               <X size={20} />
             </button>
 
-            {/* Left Column: Watermarked Zoom Preview */}
-            <div className="w-full lg:flex-1 bg-slate-950 relative overflow-hidden flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800 h-auto shrink-0">
-              <div className="grow flex items-center justify-center p-2 sm:p-4 min-h-[260px]">
-                <div className="relative w-full h-[40vh] sm:h-[50vh] lg:h-[65vh] flex items-center justify-center group shrink-0">
-                  {activePhoto.mediaType === 'video' || activePhoto.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
-                    <div className="w-full h-full flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
-                      <video
-                        src={getBackendUrl(activePhoto.fileUrl)}
-                        controls
-                        controlsList="nodownload"
-                        crossOrigin="anonymous"
-                        referrerPolicy="no-referrer"
-                        preload="metadata"
-                        className="w-full h-full object-contain rounded-xl"
-                      />
+            {/* Left Media Preview */}
+            <div className="w-full lg:w-1/2 bg-slate-950 relative overflow-hidden flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800 shrink-0 p-4">
+              <div className="grow flex items-center justify-center p-3 relative min-h-[350px] lg:min-h-[480px] bg-slate-950 w-full h-full">
+                <div className="relative w-full h-full max-h-[68vh] flex items-center justify-center">
+                  {isVideoAsset(readOnlyModalPhoto) ? (
+                    <video
+                      src={getBackendUrl(readOnlyModalPhoto.fileUrl)}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-[65vh] w-auto h-auto object-contain rounded-2xl mx-auto shadow-2xl"
+                    />
+                  ) : (
+                    <WatermarkPreview
+                      src={getBackendUrl(readOnlyModalPhoto.fileUrl)}
+                      className="w-full h-full max-h-[65vh]"
+                      enableZoom={true}
+                      objectFit="contain"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-slate-300 text-xs flex flex-col gap-1 mt-2">
+                <span className="font-extrabold text-white text-sm">{readOnlyModalPhoto.title}</span>
+                <span className="text-[11px] text-indigo-400 font-bold uppercase">{readOnlyModalPhoto.category}</span>
+                <span className="text-[11px] text-slate-400">Submitted By: {readOnlyModalPhoto.participantName}</span>
+              </div>
+            </div>
+
+            {/* Right Score & History Details */}
+            <div className="w-full lg:w-1/2 p-6 flex flex-col justify-between gap-6 overflow-y-auto bg-white dark:bg-slate-900">
+              <div>
+                {/* Read Only Header Banner */}
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center gap-2.5 text-amber-600 dark:text-amber-400 text-xs font-bold mb-5">
+                  <Clock size={18} className="shrink-0" />
+                  <span>Signed Off Event - Read-Only Evaluation View</span>
+                </div>
+
+                <h3 className="font-display font-black text-xl text-slate-900 dark:text-white mb-4">
+                  Evaluation Details &amp; History
+                </h3>
+
+                {readOnlyModalPhoto.score ? (
+                  <div className="flex flex-col gap-5">
+                    
+                    {/* Score Breakdown Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Creativity</span>
+                        <span className="font-mono text-lg font-black text-slate-900 dark:text-white">{readOnlyModalPhoto.score.creativity} / 10</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Composition</span>
+                        <span className="font-mono text-lg font-black text-slate-900 dark:text-white">{readOnlyModalPhoto.score.composition} / 10</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Technical Quality</span>
+                        <span className="font-mono text-lg font-black text-slate-900 dark:text-white">{readOnlyModalPhoto.score.technicalQuality} / 10</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Storytelling</span>
+                        <span className="font-mono text-lg font-black text-slate-900 dark:text-white">{readOnlyModalPhoto.score.storytelling} / 10</span>
+                      </div>
+                      <div className="col-span-2 p-3 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-200/60 dark:border-indigo-900/40">
+                        <span className="text-[10px] text-indigo-500 font-bold uppercase block">Overall Impact</span>
+                        <span className="font-mono text-lg font-black text-indigo-600 dark:text-indigo-400">{readOnlyModalPhoto.score.overallImpact} / 10</span>
+                      </div>
                     </div>
+
+                    {/* Average & Approval Status */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Final Average Score</span>
+                        <span className="font-mono text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                          {readOnlyModalPhoto.score.approvalStatus === 'Disapproved' ? '0.0' : Number(readOnlyModalPhoto.score.averageScore).toFixed(1)} / 10
+                        </span>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
+                        readOnlyModalPhoto.score.approvalStatus === 'Approved' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                      }`}>
+                        {readOnlyModalPhoto.score.approvalStatus}
+                      </span>
+                    </div>
+
+                    {/* Judge Remarks */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Judge Remarks &amp; Feedback</span>
+                      <p className="text-xs text-slate-700 dark:text-slate-300 italic">
+                        {readOnlyModalPhoto.score.remarks ? `"${readOnlyModalPhoto.score.remarks}"` : 'No remarks recorded.'}
+                      </p>
+                    </div>
+
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400">No evaluation record found for this submission.</p>
+                )}
+              </div>
+
+              <button
+                onClick={() => setReadOnlyModalPhoto(null)}
+                className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-2xl text-xs transition-all cursor-pointer"
+              >
+                Close Inspection
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ ONLINE SCORING MODAL (Matching media_1788328896481.png) ════════════════════ */}
+      {activePhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-[96%] lg:max-w-7xl bg-[#0b0f19] text-white border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row my-6 h-auto max-h-[92vh] lg:h-[90vh] mx-auto text-left">
+            
+            {/* LEFT MEDIA DISPLAY & METADATA AREA */}
+            <div className="w-full lg:flex-1 bg-[#090d16] flex flex-col justify-between overflow-y-auto lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800/80">
+              
+              {/* Media Container */}
+              <div className="grow flex items-center justify-center p-3 relative min-h-[350px] lg:min-h-[480px] bg-slate-950 w-full h-full">
+                <div className="relative w-full h-full max-h-[68vh] flex items-center justify-center">
+                  {isVideoAsset(activePhoto) ? (
+                    <video
+                      src={getBackendUrl(activePhoto.fileUrl)}
+                      controls
+                      controlsList="nodownload"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                      preload="metadata"
+                      className="max-w-full max-h-[68vh] w-auto h-auto object-contain rounded-2xl mx-auto shadow-2xl"
+                    />
                   ) : (
                     <WatermarkPreview
                       src={getBackendUrl(activePhoto.fileUrl)}
-                      className="w-full h-full rounded-xl shadow-2xl"
+                      className="w-full h-full max-h-[68vh]"
                       enableZoom={true}
                       objectFit="contain"
                     />
@@ -1655,484 +2528,487 @@ export default function JudgeDashboard() {
                 </div>
               </div>
 
-              {/* Photo parameters & Status Badges below photo */}
-              <div className="bg-slate-900/90 backdrop-blur border-t border-white/5 p-4 sm:p-5 flex flex-col gap-3 text-white">
-                {/* Status Badges Displayed Below Photo */}
-                <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-white/10">
-                  <span className="bg-slate-800 text-slate-200 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-slate-700">
-                    Online Zoom Mode
+              {/* Bottom Dark Metadata Panel */}
+              <div className="bg-[#0b0f19] border-t border-slate-800/80 p-5 flex flex-col gap-4">
+                
+                {/* Mode & Status Badges */}
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                    ONLINE ZOOM MODE
                   </span>
-                  <span className={`text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full ${
-                    approvalStatus === 'Approved'
-                      ? 'bg-emerald-600 text-white'
-                      : approvalStatus === 'Disapproved'
-                      ? 'bg-red-600 text-white'
-                      : activePhoto.graded 
-                      ? 'bg-emerald-600 text-white' 
-                      : 'bg-amber-600 text-white'
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    approvalStatus === 'Approved' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
                   }`}>
-                    {approvalStatus === 'Approved' ? 'Approved' : approvalStatus === 'Disapproved' ? 'Disapproved' : activePhoto.graded ? 'Assessment Completed' : 'Pending Review'}
+                    {approvalStatus === 'Approved' ? 'APPROVED' : 'REJECTED'}
                   </span>
                 </div>
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <h3 className="font-display font-extrabold text-sm tracking-wide">{activePhoto.title}</h3>
-                    <span className="text-[10px] text-indigo-400 font-extrabold uppercase tracking-wider">{activePhoto.category}</span>
+
+                {/* Title, Category & Participant */}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-display font-black text-lg text-white leading-tight">
+                      {activePhoto.title}
+                    </h3>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                      {activePhoto.category}
+                    </span>
                   </div>
-                  <div className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded uppercase shrink-0">
-                    By: {activePhoto.participantName}
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-800/60 px-3 py-1 rounded-lg text-slate-400 border border-slate-700/50">
+                    BY: {activePhoto.participantName}
+                  </span>
+                </div>
+
+                {/* 4-Column Camera Details Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#070a10] p-3.5 rounded-2xl border border-slate-800/60 text-[10px]">
+                  <div>
+                    <span className="text-[9px] font-extrabold uppercase text-slate-500 block">CAMERA BRAND</span>
+                    <span className="font-bold text-slate-200">{activePhoto.cameraBrand || 'Unknown'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-extrabold uppercase text-slate-500 block">CAMERA MODEL</span>
+                    <span className="font-bold text-slate-200">{activePhoto.cameraModel || 'Unknown'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-extrabold uppercase text-slate-500 block">LENS CONFIGURATION</span>
+                    <span className="font-bold text-slate-200">{activePhoto.lensConfig || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-extrabold uppercase text-slate-500 block">DATE CAPTURED</span>
+                    <span className="font-bold text-slate-200">{activePhoto.dateCaptured || 'N/A'}</span>
                   </div>
                 </div>
 
-                {activePhoto.customFields && activePhoto.customFields.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 bg-slate-950/60 p-3 rounded-2xl border border-white/5 text-[10px]">
-                    {activePhoto.customFields.map((cf, idx) => (
-                      <div key={idx} className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-slate-500 uppercase text-[8px] font-bold">{cf.label}</span>
-                        <span className="font-extrabold text-slate-300 wrap-break-word">{cf.value || 'N/A'}</span>
-                      </div>
-                    ))}
+                {/* Photo Description Box */}
+                <div className="bg-[#070a10] p-3.5 rounded-2xl border border-slate-800/60 text-[10px]">
+                  <span className="text-[9px] font-extrabold uppercase text-slate-500 block mb-1">PHOTO DESCRIPTION</span>
+                  <p className="text-slate-300 font-medium italic">
+                    "{activePhoto.description || activePhoto.title || 'No description provided.'}"
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* RIGHT WHITE SCORING SIDEBAR */}
+            <div className="w-full lg:w-[420px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 flex flex-col justify-between shrink-0 h-auto lg:h-full overflow-y-auto relative">
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setActivePhoto(null)}
+                className="absolute top-5 right-5 w-9 h-9 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full flex items-center justify-center cursor-pointer transition-colors z-10"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex flex-col gap-5">
+                
+                {/* Scoring Header */}
+                <div>
+                  <h3 className="font-display font-black text-xl text-slate-900 dark:text-white">
+                    Scoring Assessment
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium">
+                    DSLR verification checklist
+                  </p>
+                </div>
+
+                <form onSubmit={handleScoreSubmit} className="flex flex-col gap-5 text-xs">
+                  
+                  {/* Evaluation Status Toggle Pills */}
+                  <div>
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
+                      EVALUATION STATUS
+                    </label>
+                    <div className="flex bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setApprovalStatus('Approved')}
+                        className={`flex-1 py-2.5 font-display font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                          approvalStatus === 'Approved'
+                            ? 'bg-emerald-500 text-white shadow-md'
+                            : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        APPROVE FRAME
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setApprovalStatus('Disapproved')}
+                        className={`flex-1 py-2.5 font-display font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                          approvalStatus === 'Disapproved'
+                            ? 'bg-rose-500 text-white shadow-md'
+                            : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        REJECT FRAME
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/60 p-3 rounded-2xl border border-white/5 text-[10px]">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 uppercase text-[8px] font-bold">Camera brand</span>
-                      <span className="font-extrabold truncate">{activePhoto.cameraBrand || 'N/A'}</span>
+
+                  {/* 5 Parameter Sliders (When Approved) */}
+                  {!isFormDisapproved && (
+                    <div className="flex flex-col gap-3.5">
+                      
+                      {/* 1. Originality & Creativity */}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                          <span>1. Originality &amp; Creativity</span>
+                          <span className="text-indigo-600 font-mono font-black">{creativity} / 10</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={creativity}
+                          onChange={(e) => setCreativity(parseInt(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+
+                      {/* 2. Layout & Composition */}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                          <span>2. Layout &amp; Composition</span>
+                          <span className="text-indigo-600 font-mono font-black">{composition} / 10</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={composition}
+                          onChange={(e) => setComposition(parseInt(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+
+                      {/* 3. Technical Execution */}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                          <span>3. Technical Execution</span>
+                          <span className="text-indigo-600 font-mono font-black">{technicalQuality} / 10</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={technicalQuality}
+                          onChange={(e) => setTechnicalQuality(parseInt(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+
+                      {/* 4. Storytelling & Context */}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                          <span>4. Storytelling &amp; Context</span>
+                          <span className="text-indigo-600 font-mono font-black">{storytelling} / 10</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={storytelling}
+                          onChange={(e) => setStorytelling(parseInt(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+
+                      {/* 5. Overall Impact & WOW factor */}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                          <span>5. Overall Impact &amp; WOW factor</span>
+                          <span className="text-indigo-600 font-mono font-black">{overallImpact} / 10</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={overallImpact}
+                          onChange={(e) => setOverallImpact(parseInt(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+
                     </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 uppercase text-[8px] font-bold">Camera model</span>
-                      <span className="font-extrabold truncate">{activePhoto.cameraModel || 'N/A'}</span>
+                  )}
+
+                  {/* Feedback Textarea */}
+                  <div>
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      SCORING EXPLANATION &amp; FEEDBACK
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
+                      placeholder="Add comments or jury feedback..."
+                      className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none font-medium text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none"
+                    />
+                  </div>
+
+                  {/* Aggregate Score Card */}
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                        AGGREGATE SCORE
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        Sum of parameters out of 50
+                      </span>
                     </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 uppercase text-[8px] font-bold">Lens configuration</span>
-                      <span className="font-semibold truncate">{activePhoto.lensUsed || 'N/A'}</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 uppercase text-[8px] font-bold">Date captured</span>
-                      <span className="font-semibold text-slate-300">
-                        {activePhoto.dateCaptured ? new Date(activePhoto.dateCaptured).toLocaleDateString() : 'N/A'}
+                    <div className="text-right">
+                      <span className="font-mono text-2xl font-black text-indigo-600 dark:text-indigo-400 block">
+                        {isFormDisapproved ? 0 : totalScore}<span className="text-xs text-slate-400 font-bold">/50</span>
+                      </span>
+                      <span className="text-[10px] font-extrabold text-slate-500">
+                        AVG: {isFormDisapproved ? '0.0' : (totalScore / 5).toFixed(1)}
                       </span>
                     </div>
                   </div>
-                )}
 
-                {/* Photo Description Box at bottom */}
-                <div className="bg-slate-950/60 p-3 rounded-2xl border border-white/5 text-[10px] flex flex-col gap-1">
-                  <span className="text-slate-500 uppercase text-[8px] font-bold">Photo Description</span>
-                  <p className="text-slate-300 leading-relaxed max-h-15 overflow-y-auto pr-1">
-                    {activePhoto.description || 'No description shared.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Scoring parameters sheet */}
-            <div className="w-full md:w-95 bg-white dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 h-auto md:h-full md:overflow-y-auto">
-              
-              {/* Grading Form header */}
-              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
-                <div>
-                  <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white">Scoring Assessment</h3>
-                  <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">DSLR verification checklist</span>
-                </div>
-                <button
-                  onClick={() => setActivePhoto(null)}
-                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg cursor-pointer transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Assessment inputs */}
-              <form onSubmit={handleScoreSubmit} className="p-6 grow flex flex-col gap-5 text-xs">
-                
-                {/* ApprovalStatus switcher */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wider">Evaluation Status</label>
-                  <div className="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                  {/* Submit Button */}
+                  {user?.role !== 'Admin' && (
                     <button
-                      type="button"
-                      disabled={user?.role !== 'Judge' || user?.isSuspended}
-                      onClick={() => setApprovalStatus('Approved')}
-                      className={`flex-1 py-2 font-display font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer ${
-                        approvalStatus === 'Approved' ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:text-slate-600'
-                      }`}
+                      type="submit"
+                      disabled={loading}
+                      className="w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer mt-2 self-start"
                     >
-                      Approve Frame
+                      {loading ? 'Saving...' : 'Save Evaluation'}
                     </button>
-                    <button
-                      type="button"
-                      disabled={user?.role !== 'Judge' || user?.isSuspended}
-                      onClick={() => setApprovalStatus('Disapproved')}
-                      className={`flex-1 py-2 font-display font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer ${
-                        approvalStatus === 'Disapproved' ? 'bg-red-500 text-white' : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      Reject Frame
-                    </button>
-                  </div>
-                </div>
-
-                {!isFormDisapproved ? (
-                  <div className="flex flex-col gap-4">
-                    {/* Creativity Slider */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between font-bold text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-300">1. Originality & Creativity</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{creativity} / 10</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        disabled={user?.role === 'Admin'}
-                        value={creativity}
-                        onChange={(e) => setCreativity(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Composition Slider */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between font-bold text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-300">2. Layout & Composition</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{composition} / 10</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        disabled={user?.role === 'Admin'}
-                        value={composition}
-                        onChange={(e) => setComposition(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Technical Quality Slider */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between font-bold text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-300">3. Technical Execution</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{technicalQuality} / 10</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        disabled={user?.role === 'Admin'}
-                        value={technicalQuality}
-                        onChange={(e) => setTechnicalQuality(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Storytelling Slider */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between font-bold text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-300">4. Storytelling & Context</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{storytelling} / 10</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        disabled={user?.role === 'Admin'}
-                        value={storytelling}
-                        onChange={(e) => setStorytelling(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Overall Impact Slider */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between font-bold text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-300">5. Overall Impact & WOW factor</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{overallImpact} / 10</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        disabled={user?.role === 'Admin'}
-                        value={overallImpact}
-                        onChange={(e) => setOverallImpact(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/50 p-4 rounded-2xl flex items-start gap-2.5 text-[11px] text-red-700 dark:text-red-400 leading-relaxed font-semibold">
-                    <ShieldAlert className="shrink-0 mt-0.5 text-red-600" size={16} />
-                    <p>Frame will be scored as 0. An explanation / justification remarks is required below to submit the rejection.</p>
-                  </div>
-                )}
-
-                {/* Remarks textarea */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="modalRemarks" className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wider">
-                    Scoring explanation & feedback
-                  </label>
-                  <textarea
-                    id="modalRemarks"
-                    rows={3}
-                    disabled={user?.role === 'Admin'}
-                    required={isFormDisapproved}
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder={isFormDisapproved ? "Explain why this photograph is disapproved (e.g. mobile capture, watermark present, low res)..." : "Add comments or jury feedback..."}
-                    className={`bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2.5 outline-none resize-none font-semibold text-slate-700 dark:text-slate-300 leading-relaxed text-xs ${
-                      isFormDisapproved && (!remarks || remarks.trim() === '') ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-800 focus:ring-1 focus:ring-indigo-500'
-                    }`}
-                  />
-                </div>
-
-                {/* Scoring aggregate summary */}
-                <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800/40 p-4 flex items-center justify-between text-slate-800 dark:text-slate-200 mt-2 font-bold">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase">Aggregate score</span>
-                    <span className="text-[9px] text-slate-400">Sum of parameters out of 50</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-display font-black text-2xl text-indigo-600 dark:text-indigo-400">{totalScore}</span>
-                    <span className="text-xs text-slate-500 font-bold"> / 50</span>
-                    <span className="text-[10px] text-slate-400 block font-bold">AVG: {averageScore}</span>
-                  </div>
-                </div>
-
-                {/* Form submit */}
-                {user?.role !== 'Admin' && (
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer mt-auto"
-                  >
-                    {loading ? 'Saving grades...' : 'Save Evaluation sheet'}
-                  </button>
-                )}
-              </form>
+                  )}
+                </form>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Offline Zoom & Scoring Modal */}
+      {/* ════════════════════ OFFLINE SCORING MODAL (Matching media_1788328960692.png) ════════════════════ */}
       {offlineZoomPhoto && (() => {
         const isOfflineDisapproved = offlineApprovalStatus === 'Disapproved';
-        const offlineTotalScore = isOfflineDisapproved ? 0 : (offlineAverageScore * 5);
-        const offlineAverageScoreCalculated = isOfflineDisapproved ? '0.0' : offlineAverageScore.toFixed(1);
         const isReadOnly = user?.role === 'Admin' || hasConfirmed || offlineZoomPhoto.graded;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-            <div className="relative w-full max-w-[95%] lg:max-w-7xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col lg:flex-row my-8 h-auto max-h-[90vh] lg:h-[90vh] overflow-y-auto lg:overflow-hidden mx-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto text-left">
+            <div className="relative w-full max-w-[96%] lg:max-w-7xl bg-[#0b0f19] text-white border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row my-6 h-auto max-h-[92vh] lg:h-[90vh] mx-auto">
               
-              {/* Close button */}
-              <button
-                onClick={() => setOfflineZoomPhoto(null)}
-                className="absolute top-4 right-4 z-10 p-2 bg-slate-950/60 hover:bg-slate-950 text-white rounded-full cursor-pointer transition-colors"
-              >
-                <X size={20} />
-              </button>
-
-              {/* Left Side: Photo Zoom Detailed View */}
-              <div className="w-full lg:flex-1 bg-slate-950 relative overflow-hidden flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800 h-auto shrink-0">
-                <div className="grow flex items-center justify-center p-2 sm:p-4 min-h-[260px]">
-                  <div className="relative w-full h-[40vh] sm:h-[50vh] lg:h-[65vh] flex items-center justify-center group cursor-zoom-in shrink-0">
-                    <WatermarkPreview 
-                      src={getBackendUrl(offlineZoomPhoto.fileUrl)} 
-                      className="w-full h-full rounded-xl shadow-2xl" 
-                      enableZoom={true} 
-                      objectFit="contain"
-                    />
+              {/* LEFT MEDIA DISPLAY & METADATA AREA */}
+              <div className="w-full lg:flex-1 bg-[#090d16] flex flex-col justify-between overflow-y-auto lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800/80">
+                
+                {/* Media Container */}
+                <div className="grow flex items-center justify-center p-3 relative min-h-[350px] lg:min-h-[480px] bg-slate-950 w-full h-full">
+                  <div className="relative w-full h-full max-h-[68vh] flex items-center justify-center cursor-zoom-in">
+                    {isVideoAsset(offlineZoomPhoto) ? (
+                      <video
+                        src={getBackendUrl(offlineZoomPhoto.fileUrl)}
+                        controls
+                        controlsList="nodownload"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        preload="metadata"
+                        className="max-w-full max-h-[68vh] w-auto h-auto object-contain rounded-2xl mx-auto shadow-2xl"
+                      />
+                    ) : (
+                      <WatermarkPreview
+                        src={getBackendUrl(offlineZoomPhoto.fileUrl)}
+                        className="w-full h-full max-h-[68vh]"
+                        enableZoom={true}
+                        objectFit="contain"
+                      />
+                    )}
                   </div>
                 </div>
 
-                {/* Photo parameters & Status Badges below photo */}
-                <div className="bg-slate-900/90 backdrop-blur border-t border-white/5 p-4 sm:p-5 flex flex-col gap-3 text-white">
-                  {/* Status Badges Displayed Below Photo */}
-                  <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-white/10">
-                    <span className="bg-slate-800 text-slate-200 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-slate-700">
-                      Offline Zoom Mode
+                {/* Bottom Dark Metadata Panel */}
+                <div className="bg-[#0b0f19] border-t border-slate-800/80 p-5 flex flex-col gap-4">
+                  
+                  {/* Mode & Status Badges */}
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                      OFFLINE ZOOM MODE
                     </span>
-                    <span className={`text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full ${
-                      offlineApprovalStatus === 'Approved'
-                        ? 'bg-emerald-600 text-white'
-                        : offlineApprovalStatus === 'Disapproved'
-                        ? 'bg-red-600 text-white'
-                        : offlineZoomPhoto.graded 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-amber-600 text-white'
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      offlineApprovalStatus === 'Approved' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
                     }`}>
-                      {offlineApprovalStatus === 'Approved' ? 'Approved' : offlineApprovalStatus === 'Disapproved' ? 'Disapproved' : offlineZoomPhoto.graded ? 'Assessment Completed' : 'Pending Review'}
+                      {offlineApprovalStatus === 'Approved' ? 'APPROVED' : 'REJECTED'}
                     </span>
                   </div>
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex flex-col gap-0.5 text-left">
-                      <h3 className="font-display font-extrabold text-sm tracking-wide">{offlineZoomPhoto.title}</h3>
-                      <span className="text-[10px] text-indigo-400 font-extrabold uppercase tracking-wider">{offlineZoomPhoto.category}</span>
+
+                  {/* Title, Category & Participant */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-display font-black text-lg text-white leading-tight">
+                        {offlineZoomPhoto.title}
+                      </h3>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                        {offlineZoomPhoto.category}
+                      </span>
                     </div>
-                    <div className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded uppercase shrink-0">
-                      By: {offlineZoomPhoto.participantName}
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-800/60 px-3 py-1 rounded-lg text-slate-400 border border-slate-700/50">
+                      BY: {offlineZoomPhoto.participantName}
+                    </span>
+                  </div>
+
+                  {/* 4-Column Camera Details Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#070a10] p-3.5 rounded-2xl border border-slate-800/60 text-[10px]">
+                    <div>
+                      <span className="text-[9px] font-extrabold uppercase text-slate-500 block">CAMERA BRAND</span>
+                      <span className="font-bold text-slate-200">{offlineZoomPhoto.cameraBrand || 'Unknown'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-extrabold uppercase text-slate-500 block">CAMERA MODEL</span>
+                      <span className="font-bold text-slate-200">{offlineZoomPhoto.cameraModel || 'Unknown'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-extrabold uppercase text-slate-500 block">LENS CONFIGURATION</span>
+                      <span className="font-bold text-slate-200">{offlineZoomPhoto.lensConfig || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-extrabold uppercase text-slate-500 block">DATE CAPTURED</span>
+                      <span className="font-bold text-slate-200">{offlineZoomPhoto.dateCaptured || 'N/A'}</span>
                     </div>
                   </div>
 
-                  {offlineZoomPhoto.customFields && offlineZoomPhoto.customFields.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3 bg-slate-950/60 p-3 rounded-2xl border border-white/5 text-[10px]">
-                      {offlineZoomPhoto.customFields.map((cf, idx) => (
-                        <div key={idx} className="flex flex-col gap-0.5 min-w-0 text-left">
-                          <span className="text-slate-500 uppercase text-[8px] font-bold">{cf.label}</span>
-                          <span className="font-extrabold text-slate-300 wrap-break-word">{cf.value || 'N/A'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/60 p-3 rounded-2xl border border-white/5 text-[10px]">
-                      <div className="flex flex-col gap-0.5 text-left">
-                        <span className="text-slate-500 uppercase text-[8px] font-bold">Camera brand</span>
-                        <span className="font-extrabold truncate">{offlineZoomPhoto.cameraBrand || 'N/A'}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5 text-left">
-                        <span className="text-slate-500 uppercase text-[8px] font-bold">Camera model</span>
-                        <span className="font-extrabold truncate">{offlineZoomPhoto.cameraModel || 'N/A'}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5 text-left">
-                        <span className="text-slate-500 uppercase text-[8px] font-bold">Lens configuration</span>
-                        <span className="font-semibold truncate">{offlineZoomPhoto.lensUsed || 'N/A'}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5 text-left">
-                        <span className="text-slate-500 uppercase text-[8px] font-bold">Date captured</span>
-                        <span className="font-semibold">
-                          {offlineZoomPhoto.dateCaptured ? new Date(offlineZoomPhoto.dateCaptured).toLocaleDateString() : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  <div className="w-full text-left flex flex-col gap-1 shrink-0 border-t border-white/5 pt-2.5">
-                    <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
-                      Photo Description
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed font-medium italic text-left">
-                      "{offlineZoomPhoto.description || 'No description shared.'}"
+                  {/* Photo Description Box */}
+                  <div className="bg-[#070a10] p-3.5 rounded-2xl border border-slate-800/60 text-[10px]">
+                    <span className="text-[9px] font-extrabold uppercase text-slate-500 block mb-1">PHOTO DESCRIPTION</span>
+                    <p className="text-slate-300 font-medium italic">
+                      "{offlineZoomPhoto.description || offlineZoomPhoto.title || 'No description provided.'}"
                     </p>
                   </div>
+
                 </div>
+
               </div>
 
-              {/* Right Side: Grading Sheet Card */}
-              <div className="w-full lg:w-95 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 p-6 h-auto lg:h-full lg:overflow-y-auto text-left flex flex-col gap-5 bg-slate-50/30 dark:bg-slate-900/30">
-                <div>
-                  <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Grading Sheet (Offline)</h3>
-                  <span className="text-[10px] text-slate-400 font-semibold line-clamp-1 mt-0.5">"{offlineZoomPhoto.title}"</span>
-                </div>
+              {/* RIGHT WHITE OFFLINE GRADING SIDEBAR */}
+              <div className="w-full lg:w-[420px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 flex flex-col justify-between shrink-0 h-auto lg:h-full overflow-y-auto relative">
+                
+                {/* Close Button */}
+                <button
+                  onClick={() => setOfflineZoomPhoto(null)}
+                  className="absolute top-5 right-5 w-9 h-9 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full flex items-center justify-center cursor-pointer transition-colors z-10"
+                >
+                  <X size={18} />
+                </button>
 
-                <form onSubmit={handleSaveOfflineScoring} className="flex flex-col gap-4 text-xs">
+                <div className="flex flex-col gap-5">
                   
-                  {error && (
-                    <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 p-2.5 rounded-xl text-[10px] font-semibold leading-relaxed">
-                      {error}
-                    </div>
-                  )}
-
-                  {/* Approval Status switches */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wider">Evaluation Status</label>
-                    <div className="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                      <button
-                        type="button"
-                        disabled={isReadOnly}
-                        onClick={() => setOfflineApprovalStatus('Approved')}
-                        className={`flex-1 py-2 font-display font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer ${
-                          offlineApprovalStatus === 'Approved' ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                      >
-                        Approve Frame
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isReadOnly}
-                        onClick={() => setOfflineApprovalStatus('Disapproved')}
-                        className={`flex-1 py-2 font-display font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer ${
-                          offlineApprovalStatus === 'Disapproved' ? 'bg-red-500 text-white' : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                      >
-                        Reject Frame
-                      </button>
-                    </div>
+                  {/* Grading Sheet Header */}
+                  <div>
+                    <h3 className="font-display font-black text-xl text-slate-900 dark:text-white">
+                      Grading Sheet (Offline)
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium truncate">
+                      "{offlineZoomPhoto.title}"
+                    </p>
                   </div>
 
-                  {/* Average Grade Dropdown */}
-                  {offlineApprovalStatus !== 'Disapproved' ? (
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wider">Average Grade *</label>
+                  <form onSubmit={handleSaveOfflineScoring} className="flex flex-col gap-5 text-xs">
+                    
+                    {/* Evaluation Status Toggle Pills */}
+                    <div>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
+                        EVALUATION STATUS
+                      </label>
+                      <div className="flex bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <button
+                          type="button"
+                          disabled={isReadOnly}
+                          onClick={() => setOfflineApprovalStatus('Approved')}
+                          className={`flex-1 py-2.5 font-display font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                            offlineApprovalStatus === 'Approved'
+                              ? 'bg-emerald-500 text-white shadow-md'
+                              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          APPROVE FRAME
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isReadOnly}
+                          onClick={() => setOfflineApprovalStatus('Disapproved')}
+                          className={`flex-1 py-2.5 font-display font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                            offlineApprovalStatus === 'Disapproved'
+                              ? 'bg-rose-500 text-white shadow-md'
+                              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          REJECT FRAME
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Average Grade Dropdown */}
+                    <div>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">
+                        AVERAGE GRADE *
+                      </label>
                       <select
                         disabled={isReadOnly}
                         value={offlineAverageScore}
                         onChange={(e) => setOfflineAverageScore(parseInt(e.target.value))}
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-bold dark:text-white cursor-pointer"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs font-black text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
                       >
                         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
                           <option key={val} value={val}>{val} / 10</option>
                         ))}
                       </select>
                     </div>
-                  ) : (
-                    <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/50 p-4 rounded-2xl flex items-start gap-2.5 text-[11px] text-red-700 dark:text-red-400 leading-relaxed font-semibold">
-                      <ShieldAlert className="shrink-0 mt-0.5 text-red-600" size={16} />
-                      <p>Frame will be scored as 0. An explanation / justification remarks is required below to submit the rejection.</p>
-                    </div>
-                  )}
 
-                  {/* Score summary */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 rounded-2xl flex justify-between items-center text-center mt-2">
+                    {/* Total & Average Score Stats Card */}
+                    <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                      <div>
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+                          TOTAL SCORE
+                        </span>
+                        <span className="font-mono text-2xl font-black text-slate-900 dark:text-white">
+                          {isOfflineDisapproved ? 0 : offlineAverageScore * 5} <span className="text-xs text-slate-400 font-bold">/50</span>
+                        </span>
+                      </div>
+                      <div className="text-right border-l border-slate-200 dark:border-slate-700/60 pl-3">
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+                          AVERAGE SCORE
+                        </span>
+                        <span className="font-mono text-xl font-black text-purple-600 dark:text-purple-400 flex items-center justify-end gap-1">
+                          <Star size={16} className="fill-current text-purple-600 dark:text-purple-400" />
+                          <span>{isOfflineDisapproved ? '0.0' : offlineAverageScore.toFixed(1)}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Remarks / Explanation Textarea */}
                     <div>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Total Score</span>
-                      <p className="font-display font-black text-xl text-slate-800 dark:text-slate-100">{offlineTotalScore} <span className="text-slate-400 text-xs">/ 50</span></p>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">
+                        Remarks / Explanation
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={offlineRemarks}
+                        onChange={(e) => setOfflineRemarks(e.target.value)}
+                        disabled={isReadOnly}
+                        placeholder="Provide constructive feedback for the photographer..."
+                        className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none font-medium text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 resize-none"
+                      />
                     </div>
-                    <div className="w-px h-8 bg-slate-200 dark:bg-slate-850"></div>
-                    <div>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Average Score</span>
-                      <p className="font-display font-black text-xl text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-0.5">
-                        <Star size={16} className="fill-current text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        {offlineAverageScoreCalculated}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col gap-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-200">Remarks / Explanation</label>
-                    <textarea
-                      value={offlineRemarks}
-                      onChange={(e) => setOfflineRemarks(e.target.value)}
-                      placeholder={offlineApprovalStatus === 'Disapproved' ? 'Please provide explanation for disapproval...' : user?.role === 'Admin' ? 'No remarks provided yet.' : 'Provide constructive feedback for the photographer...'}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl h-20 focus:outline-none focus:border-indigo-600 text-[11px]"
-                      required={user?.role !== 'Admin' && offlineApprovalStatus === 'Disapproved'}
-                      disabled={isReadOnly}
-                    />
-                  </div>
+                    {/* Read-Only Admin Mode Banner or Submit Button */}
+                    {isReadOnly ? (
+                      <div className="bg-[#fef7ea] dark:bg-amber-950/40 border border-amber-300/60 dark:border-amber-900/50 p-3.5 rounded-2xl text-center text-amber-800 dark:text-amber-300 font-bold text-xs shadow-2xs mt-2">
+                        Evaluation Read-Only (Admin Mode)
+                      </div>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer text-xs mt-2 self-start"
+                      >
+                        Submit Grade
+                      </button>
+                    )}
 
-                  {isReadOnly ? (
-                    <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold py-2.5 rounded-xl text-center text-[10px] flex flex-col gap-1 items-center justify-center">
-                      {offlineZoomPhoto.score?.approvalStatus === 'Disapproved' && (
-                        <span className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-0.5">Disapproved Entry</span>
-                      )}
-                      <span>
-                        {hasConfirmed 
-                          ? 'Evaluation Read-Only (Signed Off)' 
-                          : offlineZoomPhoto.score?.approvalStatus === 'Disapproved'
-                            ? 'Evaluation Read-Only (Disapproved)'
-                            : 'Evaluation Read-Only (Admin Mode)'}
-                      </span>
-                    </div>
-                  ) : (
-                    <button
-                      type="submit"
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md cursor-pointer transition-colors text-center"
-                    >
-                      Submit Grade Evaluation
-                    </button>
-                  )}
-                </form>
+                  </form>
+                </div>
+
               </div>
 
             </div>
@@ -2140,762 +3016,98 @@ export default function JudgeDashboard() {
         );
       })()}
 
-      {/* SIGN OFF CONFIRMATION MODAL */}
+      {/* ════════════════════ CONFIRMATION MODALS ════════════════════ */}
       {showSignOffModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-[95%] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 flex flex-col gap-6 animate-in zoom-in-95 duration-200 mx-auto animate-in fade-in zoom-in-95">
-            <div className="text-center flex flex-col gap-2 items-center">
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-2xl mb-2">
-                <AlertTriangle size={28} />
-              </div>
-              <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">
-                Final Sign Off Confirmation
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                SIGN OFF: This will finalize all your scores for this event. You cannot change your grades after signing off. Proceed?
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowSignOffModal(false)}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold py-2.5 px-4 rounded-xl transition-all cursor-pointer text-xs text-center"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={executeConfirmGrading}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer text-xs text-center"
-              >
-                Yes, Sign Off
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full text-center flex flex-col gap-4 shadow-2xl">
+            <AlertTriangle size={32} className="text-amber-500 mx-auto" />
+            <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">Confirm Sign Off</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              This action will finalize and lock your evaluation scores for this event. Do you wish to proceed?
+            </p>
+            <div className="flex gap-3 mt-2">
+              <button onClick={() => setShowSignOffModal(false)} className="flex-1 bg-slate-100 dark:bg-slate-800 py-2.5 rounded-xl font-bold text-xs text-slate-700 dark:text-slate-200 cursor-pointer">Cancel</button>
+              <button onClick={executeConfirmGrading} className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-md">Sign Off</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* SUCCESS MESSAGE MODAL */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-[95%] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 flex flex-col gap-6 animate-in zoom-in-95 duration-200 mx-auto">
-            <div className="text-center flex flex-col gap-2 items-center">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 rounded-2xl mb-2">
-                <CheckCircle2 size={28} />
-              </div>
-              <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">
-                {successTitle}
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                {successMessage}
-              </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full text-center flex flex-col gap-4 shadow-2xl">
+            <CheckCircle2 size={32} className="text-emerald-500 mx-auto" />
+            <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">{successTitle}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{successMessage}</p>
+            <button onClick={() => setShowSuccessModal(false)} className="w-auto px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs cursor-pointer shadow-md mt-2 mx-auto">Understood</button>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ EVENT STATUS MODAL POPUP (Archived / Draft / Completed) ════════════════════ */}
+      {showStatusModal && statusModalEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col items-center text-center shadow-2xl relative">
+            
+            {/* Top Close X Button */}
+            <button
+              onClick={() => setShowStatusModal(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Status Icon Badge */}
+            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-4 shadow-lg ${
+              (statusModalEvent.status || '').toLowerCase() === 'completed'
+                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-emerald-500/10'
+                : (statusModalEvent.status || '').toLowerCase() === 'draft'
+                  ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shadow-indigo-500/10'
+                  : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-amber-500/10'
+            }`}>
+              {(statusModalEvent.status || '').toLowerCase() === 'completed' ? (
+                <CheckCircle2 size={32} />
+              ) : (statusModalEvent.status || '').toLowerCase() === 'draft' ? (
+                <Clock size={32} />
+              ) : (
+                <AlertTriangle size={32} />
+              )}
             </div>
 
+            {/* Event Title & Status Pill */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
+              <span className={`px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                (statusModalEvent.status || '').toLowerCase() === 'completed'
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : (statusModalEvent.status || '').toLowerCase() === 'draft'
+                    ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              }`}>
+                {statusModalEvent.status} Event
+              </span>
+            </div>
+
+            <h3 className="font-display font-black text-xl text-slate-900 dark:text-white mb-2 leading-snug">
+              {statusModalEvent.title}
+            </h3>
+
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6">
+              {statusModalEvent.message}
+            </p>
+
+            {/* Action Button */}
             <button
               type="button"
-              onClick={() => setShowSuccessModal(false)}
-              className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer text-xs text-center"
+              onClick={() => setShowStatusModal(false)}
+              className="w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer text-xs"
             >
-              Awesome, Understood
+              Understood &amp; Close
             </button>
+
           </div>
         </div>
       )}
 
-      {/* SIGNED OFF BLOCK MODAL */}
-      {showSignedOffBlockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-[95%] sm:max-w-md shadow-2xl text-center flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 mx-auto">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center text-red-500 text-3xl font-bold">
-              🛑
-            </div>
-            <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">
-              Evaluation Locked
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              You have already signed off on your evaluations for this event. Editing evaluations is no longer allowed.
-            </p>
-            <button
-              onClick={() => setShowSignedOffBlockModal(false)}
-              className="mt-2 w-full bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center transition-all cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {judgeDashboardTab === "event_history" && (() => {
-        const targetEventId = userSelectedEventId || historySelectedEventId;
-        const selectedHistoryEvent = targetEventId ? events.find(e => e._id === targetEventId) : null;
-
-        if (!selectedHistoryEvent) {
-          return (
-            <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 my-6 shadow-sm animate-in fade-in duration-200">
-              <div className="p-4 bg-amber-500 text-white rounded-2xl shrink-0 shadow-md animate-bounce">
-                <AlertTriangle size={32} />
-              </div>
-              <div>
-                <h3 className="font-display font-black text-slate-900 dark:text-white text-xl">
-                  Please Select an Event
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mt-1.5 font-semibold leading-relaxed">
-                  Please select an assigned event from the top right dropdown menu to view event history and statistics.
-                </p>
-              </div>
-            </div>
-          );
-        }
-
-        const historyPhotos = allPhotographsByEvent[selectedHistoryEvent._id] || (selectedHistoryEvent._id === event?._id ? photographs : []);
-        const totalHistoryPhotos = historyPhotos.length;
-        const gradedHistoryPhotos = historyPhotos.filter(p => p.graded).length;
-        const disapprovedHistoryPhotos = historyPhotos.filter(p => p.graded && p.score?.approvalStatus === 'Disapproved').length;
-        const approvedHistoryPhotos = historyPhotos.filter(p => p.graded && p.score?.approvalStatus !== 'Disapproved').length;
-        const avgHistoryScore = totalHistoryPhotos > 0 && gradedHistoryPhotos > 0
-          ? (historyPhotos.reduce((sum, p) => sum + (p.score?.averageScore || 0), 0) / gradedHistoryPhotos).toFixed(1)
-          : '—';
-        const isHistorySignedOff = selectedHistoryEvent.confirmedJudges?.includes(user?.id) || false;
-
-        return (
-          <div className="animate-in fade-in duration-200 flex flex-col gap-6">
-            {/* Header & Event Selector ("My Judging History & Details" card - Prominent style) */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-r from-emerald-50 via-teal-50/60 to-indigo-50/40 dark:from-emerald-950/50 dark:via-teal-950/30 dark:to-slate-900/80 p-6 sm:p-7 rounded-3xl border-2 border-emerald-300 dark:border-emerald-700 shadow-md">
-              <div className="flex items-center gap-3.5">
-                <div className="p-3.5 bg-emerald-600 dark:bg-emerald-500 text-white rounded-2xl shrink-0 shadow-sm">
-                  <History size={24} />
-                </div>
-                <div className="text-left">
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-widest block mb-0.5">
-                    Jury Archives
-                  </span>
-                  <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">My Judging History & Details</h2>
-                  <p className="text-sm text-black dark:text-slate-400 mt-0.5">View complete evaluation statistics, graded photographs, scores breakdown, and sign-off status event-wise</p>
-                </div>
-              </div>
-            </div>
-              <div className="flex flex-col gap-6">
-                
-                {/* 1. Status Overview & Event Metrics */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex flex-col gap-6">
-                  
-                  {/* Event Title Banner */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-5">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
-                          {selectedHistoryEvent.eventType || 'Photography'}
-                        </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                          selectedHistoryEvent.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' :
-                          selectedHistoryEvent.status === 'Completed' ? 'bg-purple-50 text-purple-600 dark:bg-purple-950/30' :
-                          selectedHistoryEvent.status === 'Closed' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' :
-                          'bg-slate-100 text-slate-600 dark:bg-slate-800'
-                        }`}>
-                          {selectedHistoryEvent.status}
-                        </span>
-                      </div>
-                      <h3 className="font-display font-black text-xl text-slate-900 dark:text-white">
-                        {selectedHistoryEvent.title}
-                      </h3>
-                      {selectedHistoryEvent.theme && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
-                          <span className="font-semibold">Theme:</span> {selectedHistoryEvent.theme}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Sign Off Status / Action */}
-                    <div className="flex flex-col sm:items-end gap-2 shrink-0">
-                      <span className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
-                        isHistorySignedOff
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                      }`}>
-                        {isHistorySignedOff ? (
-                          <><Check size={14} /> Signed Off & Locked</>
-                        ) : (
-                          <><Clock size={14} /> Pending Sign-Off</>
-                        )}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Deadline: {selectedHistoryEvent.deadline ? new Date(selectedHistoryEvent.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 4 Metric Cards for Selected Event */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-2xl flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned Entries</span>
-                      <span className="text-2xl font-black text-slate-900 dark:text-white">{totalHistoryPhotos}</span>
-                      <span className="text-[10px] text-slate-400">Total photos assigned</span>
-                    </div>
-
-                    <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Graded Entries</span>
-                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{gradedHistoryPhotos}</span>
-                      <span className="text-[10px] text-emerald-600/70">{totalHistoryPhotos > 0 ? `${Math.round((gradedHistoryPhotos / totalHistoryPhotos) * 100)}% completed` : '0%'}</span>
-                    </div>
-
-                    <div className="p-4 bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Disapproved</span>
-                      <span className="text-2xl font-black text-red-500">{disapprovedHistoryPhotos}</span>
-                      <span className="text-[10px] text-red-400">{approvedHistoryPhotos} Approved</span>
-                    </div>
-
-                    <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Average Score</span>
-                      <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{avgHistoryScore} <span className="text-xs font-normal text-slate-400">/ 10</span></span>
-                      <span className="text-[10px] text-indigo-500/70">Your average score</span>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  {totalHistoryPhotos > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between text-xs font-bold text-slate-500">
-                        <span>Evaluation Completion</span>
-                        <span>{gradedHistoryPhotos} / {totalHistoryPhotos} ({Math.round((gradedHistoryPhotos / totalHistoryPhotos) * 100)}%)</span>
-                      </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.round((gradedHistoryPhotos / totalHistoryPhotos) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Evaluated Photographs Details Table */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex flex-col gap-5">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                      <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
-                        Evaluated Entries & Score Breakdown ({gradedHistoryPhotos})
-                      </h3>
-                      <p className="text-sm text-black mt-0.5">
-                        Detailed breakdown of scores, criteria, remarks, and approval statuses given by you for {selectedHistoryEvent.title}
-                      </p>
-                    </div>
-                  </div>
-
-                  {gradedHistoryPhotos === 0 ? (
-                    <div className="p-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                      <ListChecks size={28} className="text-slate-300" />
-                      <span>No evaluated photographs found for this event yet. Get started in the Evaluation Workspace tab!</span>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto w-full border border-slate-200/60 dark:border-slate-800 rounded-2xl">
-                      <table className="w-full text-xs text-left border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
-                            <th className="py-3.5 px-4">Photograph</th>
-                            <th className="py-3.5 px-4">Title & Details</th>
-                            <th className="py-3.5 px-4 text-center">Individual Criteria</th>
-                            <th className="py-3.5 px-4 text-center">Avg Score</th>
-                            <th className="py-3.5 px-4 text-center">Status</th>
-                            <th className="py-3.5 px-4">Graded Date</th>
-                            <th className="py-3.5 px-4">Remarks / Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
-                          {historyPhotos.filter(p => p.graded).map((item, idx) => {
-                            const sc = item.score || {};
-                            const isDisapproved = sc.approvalStatus === 'Disapproved';
-                            return (
-                              <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
-                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                  <div className="w-20 h-14 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
-                                    {item.mediaType === 'video' || item.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i) || item.fileUrl?.includes('/video/upload/') ? (
-                                      <video 
-                                        src={getBackendUrl(item.fileUrl)} 
-                                        autoPlay 
-                                        loop 
-                                        muted 
-                                        playsInline 
-                                        crossOrigin="anonymous"
-                                        referrerPolicy="no-referrer"
-                                        preload="metadata"
-                                        className="w-full h-full object-cover" 
-                                      />
-                                    ) : (
-                                      <img src={getBackendUrl(item.fileUrl)} alt={item.title} className="w-full h-full object-cover" />
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <span className="font-extrabold text-slate-900 dark:text-white block text-sm max-w-60 truncate">
-                                    {item.title || 'Untitled'}
-                                  </span>
-                                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold block mt-0.5">
-                                    {item.category || item.contestType || 'General Category'}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4 text-center">
-                                  <div className="flex flex-wrap justify-center gap-1.5 max-w-48 mx-auto">
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-bold rounded text-slate-600 dark:text-slate-300">
-                                      Tech: {sc.technicalQuality ?? '—'}
-                                    </span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-bold rounded text-slate-600 dark:text-slate-300">
-                                      Comp: {sc.composition ?? '—'}
-                                    </span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-bold rounded text-slate-600 dark:text-slate-300">
-                                      Creat: {sc.creativity ?? '—'}
-                                    </span>
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-bold rounded text-slate-600 dark:text-slate-300">
-                                      Imp: {sc.overallImpact ?? '—'}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="py-3.5 px-4 text-center">
-                                  <span className={`text-sm font-black ${isDisapproved ? 'text-slate-400 line-through' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                    {sc.averageScore?.toFixed(1) || '0.0'}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4 text-center">
-                                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
-                                    isDisapproved 
-                                      ? 'bg-red-50 text-red-600 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50' 
-                                      : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50'
-                                  }`}>
-                                    {isDisapproved ? <XCircle size={10} /> : <CheckCircle2 size={10} />}
-                                    {sc.approvalStatus || 'Approved'}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4 text-[10px] text-slate-500 whitespace-nowrap font-medium">
-                                  {sc.updatedAt || sc.createdAt 
-                                    ? new Date(sc.updatedAt || sc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                    : 'N/A'
-                                  }
-                                </td>
-                                <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300 max-w-56">
-                                  {sc.remarks ? (
-                                    <span className="italic text-[11px]">"{sc.remarks}"</span>
-                                  ) : (
-                                    <span className="text-slate-400 text-[10px]">—</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-              </div>
-          </div>
-        );
-      })()}
-
-      {/* JUDGE NOTIFICATION MANAGEMENT TAB */}
-      {judgeDashboardTab === "notifications" && (
-        <div className="animate-in fade-in duration-200 flex flex-col gap-6 text-left">
-          {/* Header Banner */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-r from-indigo-600 via-indigo-700 to-purple-800 p-6 sm:p-8 rounded-3xl text-white shadow-lg relative overflow-hidden">
-            <div className="relative z-10">
-              <span className="text-[10px] text-indigo-200 font-extrabold uppercase tracking-widest block mb-1">
-                Communication Portal
-              </span>
-              <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
-                Notification Management
-              </h1>
-              <p className="text-xs text-indigo-100 mt-1 max-w-xl">
-                Send broadcast announcements or direct messages to competition participants and system administrators.
-              </p>
-            </div>
-            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white shrink-0">
-              <Bell size={28} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Form Card: Send Notification */}
-            <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
-                  <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                    <Send size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
-                      Dispatch Notification
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Compose message to send to target audience
-                    </p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSendBroadcast} className="flex flex-col gap-4 text-xs">
-                  {/* Select Event Scope */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-bold text-slate-600 dark:text-slate-300">
-                      Scope / Event Selection
-                    </label>
-                    <select
-                      value={broadcastEventId}
-                      onChange={(e) => setBroadcastEventId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                    >
-                      <option value="">--Select--</option>
-                      <option value="all">All Events</option>
-                      {events.map(ev => (
-                        <option key={ev._id} value={ev._id}>{ev.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Target Audience */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-bold text-slate-600 dark:text-slate-300">
-                      Target Audience
-                    </label>
-                    <select
-                      value={broadcastRecipient}
-                      onChange={(e) => setBroadcastRecipient(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                    >
-                      <option value="Participant">All Event Participants</option>
-                      <option value="Admin">System Administrator</option>
-                      <option value="Both">Both Participants & Admin</option>
-                      <option value="Specific">Specific Participant</option>
-                    </select>
-                  </div>
-
-                  {/* Specific Participant Selection */}
-                  {broadcastRecipient === 'Specific' && (
-                    <div className="flex flex-col gap-1.5 animate-in fade-in duration-150">
-                      <label className="font-bold text-slate-600 dark:text-slate-300">
-                        Select Participant
-                      </label>
-                      <select
-                        value={broadcastParticipantId}
-                        onChange={(e) => setBroadcastParticipantId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                      >
-                        <option value="">-- Choose Participant --</option>
-                        {participants.map(p => (
-                          <option key={p.userId || p.submissionId} value={p.userId || p.submissionId}>
-                            {p.name} ({p.submissionId ? `Sub: ${p.submissionId.slice(-5)}` : 'Enrolled'})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Notification Message Text Area */}
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="font-bold text-slate-600 dark:text-slate-300">
-                        Notification Message
-                      </label>
-                      <span className="text-[10px] text-slate-400 font-semibold">
-                        {broadcastMessage.length}/500
-                      </span>
-                    </div>
-                    <textarea
-                      rows={4}
-                      maxLength={500}
-                      value={broadcastMessage}
-                      onChange={(e) => setBroadcastMessage(e.target.value)}
-                      placeholder="Type your notification message here (e.g. Evaluation feedback update, contest instructions, or direct inquiry)..."
-                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={broadcastSubmitting}
-                    className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-indigo-500/25 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <Send size={15} />
-                    <span>{broadcastSubmitting ? 'Dispatching Message...' : 'Send Notification'}</span>
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* History Table Card */}
-            <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl">
-                      <History size={20} />
-                    </div>
-                    <div>
-                      <h3 className="font-display font-black text-base text-slate-900 dark:text-white">
-                        Sent Notifications History
-                      </h3>
-                      <p className="text-xs text-slate-400">
-                        History of messages dispatched by your judge account
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800">
-                    {broadcasts.length} Dispatched
-                  </span>
-                </div>
-
-                {broadcasts.length === 0 ? (
-                  <div className="py-16 text-center text-slate-400 flex flex-col items-center gap-3">
-                    <Bell size={36} className="text-slate-300 dark:text-slate-700 stroke-[1.5]" />
-                    <p className="text-xs font-semibold">No notifications dispatched yet.</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3.5 max-h-[480px] overflow-y-auto pr-1">
-                    {broadcasts.map((b) => (
-                      <div
-                        key={b._id}
-                        className="bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 p-4 rounded-2xl flex items-start justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-600 transition-all"
-                      >
-                        <div className="flex flex-col gap-2 grow text-left">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
-                              b.recipientType === 'Admin'
-                                ? 'bg-purple-500/10 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 border border-purple-500/20'
-                                : b.recipientType === 'Both'
-                                ? 'bg-amber-500/10 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-500/20'
-                                : 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-500/20'
-                            }`}>
-                              Target: {b.recipientType}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {new Date(b.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
-                            {b.message}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteBroadcast(b._id)}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all cursor-pointer shrink-0"
-                          title="Delete Record"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB: PROFILE SETTINGS */}
-      {judgeDashboardTab === 'profile_settings' && (
-        <div className="max-w-7xl mx-auto animate-in fade-in duration-200 text-left my-6">
-          <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 bg-white dark:bg-slate-900">
-            <div>
-              <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">Jury Profile Settings</h3>
-              <p className="text-sm text-black mt-0.5">Manage your jury member account credentials and personal details</p>
-            </div>
-
-            {judgeProfileError && (
-              <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 p-3 rounded-xl text-xs text-red-600 dark:text-red-400">
-                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                <span>{judgeProfileError}</span>
-              </div>
-            )}
-
-            {/* Profile Photo Upload Section */}
-            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <div className="relative group shrink-0">
-                <div className="w-20 h-20 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-md overflow-hidden border-2 border-indigo-500">
-                  {user?.avatar ? (
-                    <img
-                      src={getBackendUrl(user.avatar)}
-                      alt={user.name}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <span>{user?.name ? user.name.charAt(0).toUpperCase() : 'J'}</span>
-                  )}
-                </div>
-                <label className="absolute inset-0 rounded-full bg-slate-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <Camera size={18} />
-                  <span className="text-[9px] font-bold mt-0.5">Change</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleJudgeAvatarUpload}
-                    disabled={uploadingJudgeAvatar}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-1">
-                <h4 className="font-display font-bold text-xs text-slate-900 dark:text-white">Profile Photo</h4>
-                <p className="text-[11px] text-slate-700 max-w-sm">
-                  Upload a jury panel member photo. This photo will appear in your top navigation bar and jury scorecards.
-                </p>
-                <label className="mt-1.5 inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer">
-                  <span>{uploadingJudgeAvatar ? 'Uploading Photo...' : 'Upload Photo'}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleJudgeAvatarUpload}
-                    disabled={uploadingJudgeAvatar}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <form onSubmit={handleUpdateJudgeProfile} className="flex flex-col gap-5 text-xs">
-              {/* All 3 Fields in ONE LINE: Jury Member Name, Mobile Number, Email Address */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-slate-500">Jury Member Name</label>
-                  <input
-                    type="text"
-                    value={judgeProfileName}
-                    onChange={(e) => setJudgeProfileName(e.target.value)}
-                    placeholder="Judge Name"
-                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-slate-500">Mobile Number</label>
-                  <input
-                    type="tel"
-                    value={judgeProfileMobile}
-                    onChange={handleJudgeMobileChange}
-                    maxLength={10}
-                    pattern="[0-9]{10}"
-                    placeholder="9876543210"
-                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-slate-500">Email Address (Read-Only)</label>
-                  <input
-                    type="email"
-                    value={judgeProfileEmail}
-                    disabled
-                    className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 font-semibold cursor-not-allowed"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-slate-500">New Password (Optional)</label>
-                  <input
-                    type="password"
-                    value={judgeProfilePassword}
-                    onChange={(e) => setJudgeProfilePassword(e.target.value)}
-                    placeholder="Leave blank to keep current password"
-                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-slate-500">Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={judgeProfileConfirmPassword}
-                    onChange={(e) => setJudgeProfileConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                    className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 font-semibold focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-2">
-                <button
-                  type="submit"
-                  disabled={judgeProfileSubmitting}
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {judgeProfileSubmitting ? 'Saving Profile...' : 'Save Profile Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* JUDGE EVALUATION & DEADLINE ALERT CENTERED MODAL POPUP */}
-      {showJudgeAlertModal && (() => {
-        const closedEvents = events.filter(e => {
-          const isPastDeadline = e.deadline && new Date() >= new Date(e.deadline);
-          const isSignedOff = e.gradingConfirmed || (e.confirmedJudges && (e.confirmedJudges.includes(user?.id) || e.confirmedJudges.includes(user?._id)));
-          return isPastDeadline && !isSignedOff;
-        });
-        if (closedEvents.length === 0) return null;
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col gap-6 text-center animate-in zoom-in-95 duration-200">
-              <button
-                onClick={() => setShowJudgeAlertModal(false)}
-                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Close alert"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="mx-auto p-4 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-2xl w-max shadow-sm border border-amber-200/60 dark:border-amber-800/60">
-                <Clock size={32} className="animate-pulse" />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 py-1 px-3 rounded-full w-max mx-auto border border-amber-200/50">
-                  Judges Action Required ({closedEvents.length} Contests)
-                </span>
-                <h3 className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-snug">
-                  Submission Deadlines Passed
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                  Submissions are closed for the following assigned contests. Please complete evaluation and scoring for all assigned entries:
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2.5 max-h-56 overflow-y-auto pr-1 text-left">
-                {closedEvents.map(e => (
-                  <div key={e._id} className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3">
-                    <div className="flex flex-col">
-                      <span className="font-extrabold text-xs text-slate-900 dark:text-white">{e.title}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                        Deadline: {new Date(e.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                    </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                      Evaluation Pending
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowJudgeAlertModal(false)}
-                  className="w-full py-3 px-5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl shadow-md transition-all cursor-pointer text-xs text-center flex items-center justify-center gap-2"
-                >
-                  <span>Understood, Proceed to Evaluation</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-      </div>
     </div>
   );
 }
-

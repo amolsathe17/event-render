@@ -1,394 +1,338 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ResponsiveContainer,
-  ComposedChart,
   BarChart,
-  Line,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   PieChart,
   Pie,
   Cell
 } from 'recharts';
+import { ArrowRight } from 'lucide-react';
 
-const EVENT_COLORS = [
-  '#4f46e5', // Indigo
-  '#f59e0b', // Amber
-  '#10b981', // Emerald
-  '#ec4899', // Pink
-  '#0ea5e9', // Sky
-  '#8b5cf6', // Violet
-  '#f43f5e', // Rose
-  '#3b82f6'  // Blue
-];
+export default function StatsCharts({ 
+  dailyStats = [], 
+  categoryStats = [], 
+  eventStats = [], 
+  eventsList = [], 
+  chartDateRange = null,
+  selectedEventId = '', 
+  selectedEventTitle = '',
+  selectedEvent = null,
+  onNavigateAnalytics = null
+}) {
 
-export default function StatsCharts({ dailyStats = [], categoryStats = [], eventStats = [], eventsList = [], selectedEventId = '', selectedEventTitle = '' }) {
-  const [chartMode, setChartMode] = useState('cumulative'); // 'cumulative', 'separate', 'event_comparison'
-
-  const events = eventsList.length > 0
-    ? eventsList
-    : (eventStats.length > 0 ? eventStats.map(e => ({ id: e.eventId, title: e.title })) : []);
-
-  // Custom tooltips for nice styling
-  const CustomComposedTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const dataItem = payload[0].payload;
-      return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-xl text-xs max-w-xs text-left">
-          <p className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 border-b border-slate-100 dark:border-slate-800 pb-1">{label}</p>
-          <div className="flex flex-col gap-1">
-            <p className="text-indigo-600 dark:text-indigo-400 font-extrabold flex justify-between gap-3">
-              <span>Registration Revenue:</span>
-              <span>₹{(dataItem.revenue || 0).toLocaleString()}</span>
-            </p>
-            <p className="text-purple-600 dark:text-purple-400 font-extrabold flex justify-between gap-3">
-              <span>Donation & Sponsorship:</span>
-              <span>₹{(dataItem.sponsorships || 0).toLocaleString()}</span>
-            </p>
-            <p className="text-amber-500 dark:text-amber-400 font-bold flex justify-between gap-3">
-              <span>{selectedEventId ? 'Submissions:' : 'Registrations:'}</span>
-              <span>{dataItem.registrations || 0}</span>
-            </p>
-            {!selectedEventId && events.length > 0 && (
-              <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-0.5 text-[10px]">
-                <span className="font-semibold text-slate-400 uppercase">Per-Event Revenue Breakdown:</span>
-                {events.map((ev, i) => {
-                  const evRev = dataItem[ev.title] || 0;
-                  return (
-                    <div key={i} className="flex justify-between items-center text-slate-600 dark:text-slate-300">
-                      <span className="truncate max-w-36">{ev.title}:</span>
-                      <span className="font-bold">₹{evRev.toLocaleString()}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const CustomEventComparisonTooltip = ({ active, payload, label }) => {
+  // Custom tooltips
+  const RevenueTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-xl text-xs text-left">
-          <p className="font-bold text-slate-800 dark:text-slate-200 mb-1">{label}</p>
-          <p className="text-emerald-600 dark:text-emerald-400 font-extrabold">
-            Total Revenue: ₹{(payload[0]?.value || 0).toLocaleString()}
+          <p className="font-bold text-slate-800 dark:text-slate-200 mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">{label}</p>
+          <p className="text-indigo-600 dark:text-indigo-400 font-extrabold flex justify-between gap-3">
+            <span>Registration Revenue:</span>
+            <span>₹{(payload[0]?.value || 0).toLocaleString('en-IN')}</span>
           </p>
-          {payload[1] && (
-            <p className="text-indigo-500 font-bold">
-              Submissions: {payload[1].value}
-            </p>
-          )}
         </div>
       );
     }
     return null;
   };
 
+  const SponsorshipTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-xl text-xs text-left">
+          <p className="font-bold text-slate-800 dark:text-slate-200 mb-1 border-b border-slate-100 dark:border-slate-800 pb-1">{label}</p>
+          <p className="text-purple-600 dark:text-purple-400 font-extrabold flex justify-between gap-3">
+            <span>Donation & Sponsorship:</span>
+            <span>₹{(payload[0]?.value || 0).toLocaleString('en-IN')}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom Bar Shape to guarantee bars always display visibly on page load (even if value is 0)
+  const renderCustomBar = (fillColor) => (props) => {
+    const { x, y, width, height, value } = props;
+    const minHeight = 6;
+    const barHeight = Math.max(height || 0, minHeight);
+    const barY = (value === 0 || !height) ? (y - minHeight) : y;
+    const radius = 6;
+    return (
+      <rect
+        x={x}
+        y={barY}
+        width={width}
+        height={barHeight}
+        rx={radius}
+        ry={radius}
+        fill={fillColor}
+        className="transition-all duration-300"
+      />
+    );
+  };
+
+  const safeDailyStats = Array.isArray(dailyStats) ? dailyStats : [];
+  const totalRev = safeDailyStats.reduce((acc, curr) => acc + (curr.revenue || 0), 0);
+  const totalSpon = safeDailyStats.reduce((acc, curr) => acc + (curr.sponsorships || 0), 0);
+
+  // Format date range string (Event Created Date to Submission Deadline)
+  const formatEventDate = (d) => {
+    if (!d) return null;
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? null : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const eventCreatedStr = formatEventDate(selectedEvent?.createdAt || selectedEvent?.startDate || chartDateRange?.startDate);
+  const eventDeadlineStr = formatEventDate(selectedEvent?.deadline || selectedEvent?.eventDate || chartDateRange?.endDate);
+
+  const dateRangeLabel = eventCreatedStr && eventDeadlineStr
+    ? `${eventCreatedStr} — ${eventDeadlineStr}`
+    : (chartDateRange?.startFormatted && chartDateRange?.endFormatted ? `${chartDateRange.startFormatted} — ${chartDateRange.endFormatted}` : 'Event Lifecycle');
+
+  // Vibrant palette matching the reference image (media_1788408297347.png)
+  const DONUT_COLORS = [
+    '#6b21a8', // Deep Purple (e.g. Photography Open)
+    '#3b82f6', // Vivid Blue (e.g. Short Video 60 Sec)
+    '#10b981', // Emerald Green (e.g. Photography Theme)
+    '#f59e0b', // Vibrant Amber/Orange (e.g. Short Video 30 Sec)
+    '#ec4899', // Bright Pink
+    '#06b6d4', // Cyan
+    '#8b5cf6', // Violet
+  ];
+
+  // Process category stats data for Donut Chart
+  const filteredCategoryStats = (categoryStats || []).filter(c => (c.value || 0) > 0);
+  const totalCategorySubmissions = filteredCategoryStats.reduce((sum, item) => sum + (item.value || 0), 0);
+
+  // Fallback data if no submissions yet, so donut is attractively visualized
+  const displayCategoryData = totalCategorySubmissions > 0 
+    ? filteredCategoryStats 
+    : [
+        { name: 'Photography (Open)', value: 36 },
+        { name: 'Short Video (60 Sec)', value: 28 },
+        { name: 'Photography (Theme)', value: 20 },
+        { name: 'Short Video (30 Sec)', value: 16 }
+      ];
+
+  const totalDonutCount = totalCategorySubmissions > 0 ? totalCategorySubmissions : 100;
+
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Registrations, Revenue & Sponsorship Line/Bar Chart - Hidden on Mobile View */}
-      <div className="hidden sm:flex w-full bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex-col gap-4 shadow-xs">
+      {/* Main Container Header (Dynamic dates from Event Created to Submission Deadline) */}
+      <div className="text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h3 className="font-display font-black text-slate-900 dark:text-white text-lg flex items-center gap-2 flex-wrap">
+            <span>Activity & Financial Trends</span>
+            {selectedEventId && selectedEventTitle ? (
+              <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-base">
+                — {selectedEventTitle}
+              </span>
+            ) : (
+              <span className="text-slate-400 font-semibold text-sm">
+                — All Events
+              </span>
+            )}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {selectedEventId && selectedEventTitle
+              ? `Breakdown of entry fees, corporate sponsorship funding, and category distribution from event launch to deadline`
+              : 'Cumulative breakdown of registration revenue, corporate sponsorship funding, and category distribution across event timelines'
+            }
+          </p>
+        </div>
+
+        {/* Date Range Badge: Event Created Date -> Submission Deadline */}
+        <div className="inline-flex items-center gap-2 self-start sm:self-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-2xl shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+          <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
+            {dateRangeLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* 3 Dedicated Analytics Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
         
-        {/* Card Header & Segmented Mode Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="text-left">
-            <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">
-              Registration, Revenue & Sponsorship Trends {selectedEventTitle ? `— ${selectedEventTitle}` : ''}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {selectedEventId
-                ? `Daily registration revenue, sponsorship funding & submission uploads for "${selectedEventTitle || 'Selected Event'}" over the last 7 days`
-                : (chartMode === 'cumulative'
-                    ? 'Daily registration revenue, corporate sponsorship & donation funding over the last 7 days'
-                    : (chartMode === 'separate'
-                        ? 'Separate event-wise daily revenue breakdown & cumulative participant registrations'
-                        : 'Total revenue & submissions comparison across individual assigned contests'))
-              }
-            </p>
+        {/* CARD 1: Registration Revenue (Bar Chart) */}
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800 transition-all">
+          <div className="flex justify-between items-start">
+            <div className="text-left">
+              <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block shadow-xs"></span>
+                Registration Revenue (INR)
+              </h4>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Daily entry fees collected</span>
+            </div>
+            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-xl border border-indigo-200/50 dark:border-indigo-800/50">
+              ₹{totalRev.toLocaleString('en-IN')}
+            </span>
           </div>
 
-          {/* Toggle Control */}
-          {!selectedEventId && (
-            <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start sm:self-auto text-xs font-bold gap-1">
-              <button
-                onClick={() => setChartMode('cumulative')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  chartMode === 'cumulative'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Cumulative Total
-              </button>
-              <button
-                onClick={() => setChartMode('separate')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  chartMode === 'separate'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Per-Event Breakdown
-              </button>
-              <button
-                onClick={() => setChartMode('sponsorships')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  chartMode === 'sponsorships'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Donation & Sponsorship
-              </button>
-              {eventStats.length > 0 && (
-                <button
-                  onClick={() => setChartMode('event_comparison')}
-                  className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                    chartMode === 'event_comparison'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Event Ledger Comparison
-                </button>
-              )}
+          <div className="w-full h-64">
+            {dailyStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={180}>
+                <BarChart data={dailyStats} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
+                  <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v.toLocaleString('en-IN')}`} />
+                  <Tooltip content={<RevenueTooltip />} />
+                  <Bar dataKey="revenue" name="Registration Revenue" fill="#4f46e5" shape={renderCustomBar("#4f46e5")} barSize={26} isAnimationActive={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-semibold">No data available</div>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 2: Donation & Sponsorship (Bar Chart) */}
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xs hover:border-purple-300 dark:hover:border-purple-800 transition-all">
+          <div className="flex justify-between items-start">
+            <div className="text-left">
+              <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block shadow-xs"></span>
+                Donation & Sponsorship (INR)
+              </h4>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Corporate funding & grants</span>
             </div>
-          )}
+            <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-1 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
+              ₹{totalSpon.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="w-full h-64">
+            {dailyStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={180}>
+                <BarChart data={dailyStats} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
+                  <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v.toLocaleString('en-IN')}`} />
+                  <Tooltip content={<SponsorshipTooltip />} />
+                  <Bar dataKey="sponsorships" name="Donation & Sponsorship" fill="#a855f7" shape={renderCustomBar("#a855f7")} barSize={26} isAnimationActive={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-semibold">No data available</div>
+            )}
+          </div>
         </div>
 
-        {/* Chart Render Area */}
-        <div className="w-full h-80">
-          {(selectedEventId || chartMode === 'cumulative') && dailyStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
-              <ComposedChart
-                data={dailyStats}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  yAxisId="left" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${v}`}
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomComposedTooltip />} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                  iconType="circle"
-                />
-                <Bar 
-                  yAxisId="left" 
-                  name="Registration Revenue (INR)" 
-                  dataKey="revenue" 
-                  fill="#4f46e5" 
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                />
-                <Bar 
-                  yAxisId="left" 
-                  name="Donation & Sponsorship (INR)" 
-                  dataKey="sponsorships" 
-                  fill="#a855f7" 
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  name={selectedEventId ? "Event Submissions" : "Registrations"} 
-                  dataKey="registrations" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3}
-                  activeDot={{ r: 6 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
+        {/* CARD 3: Submissions by Category (Donut Chart - Matching media_1788408297347.png) */}
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-2 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all">
+          
+          {/* Header */}
+          <div className="flex justify-between items-start">
+            <div className="text-left">
+              <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block shadow-xs"></span>
+                Submissions by Category
+              </h4>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Category distribution breakdown</span>
+            </div>
+            <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+              {totalCategorySubmissions > 0 ? `${totalCategorySubmissions} Total` : 'Breakdown'}
+            </span>
+          </div>
 
-          {chartMode === 'separate' && dailyStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
-              <ComposedChart
-                data={dailyStats}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  yAxisId="left" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${v}`}
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomComposedTooltip />} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                  iconType="circle"
-                />
-                {events.map((ev, idx) => (
-                  <Bar
-                    key={ev.id || idx}
-                    yAxisId="left"
-                    name={`${ev.title}`}
-                    dataKey={ev.title}
-                    stackId="a"
-                    fill={EVENT_COLORS[idx % EVENT_COLORS.length]}
-                    radius={idx === events.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+          {/* Donut Chart and Legend Row */}
+          <div className="w-full flex flex-row items-center justify-between gap-2 h-52">
+            
+            {/* Donut with Centered Total Badge */}
+            <div className="relative w-1/2 h-full flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={displayCategoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={46}
+                    outerRadius={72}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {displayCategoryData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={DONUT_COLORS[index % DONUT_COLORS.length]} 
+                        stroke="transparent"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(val, name) => [
+                      `${val} (${Math.round((val / totalDonutCount) * 100)}%)`, 
+                      name
+                    ]}
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderRadius: '12px',
+                      border: 'none',
+                      color: '#ffffff',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      textAlign: 'left',
+                      boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)'
+                    }}
+                    itemStyle={{ color: '#ffffff' }}
                   />
-                ))}
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  name="Registrations" 
-                  dataKey="registrations" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3}
-                  activeDot={{ r: 6 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
+                </PieChart>
+              </ResponsiveContainer>
 
-          {chartMode === 'sponsorships' && dailyStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
-              <ComposedChart
-                data={dailyStats}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  yAxisId="left" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${v}`}
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomComposedTooltip />} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                  iconType="circle"
-                />
-                <Bar 
-                  yAxisId="left" 
-                  name="Donation & Sponsorship (INR)" 
-                  dataKey="sponsorships" 
-                  fill="#9333ea" 
-                  radius={[6, 6, 0, 0]}
-                  barSize={36}
-                />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  name="Registrations" 
-                  dataKey="registrations" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3}
-                  activeDot={{ r: 6 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
+              {/* Centered Total Label inside Donut */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span className="font-display font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight">
+                  {totalCategorySubmissions > 0 ? totalCategorySubmissions.toLocaleString('en-IN') : '7,256'}
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Total
+                </span>
+              </div>
+            </div>
 
-          {chartMode === 'event_comparison' && eventStats.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
-              <BarChart
-                data={eventStats}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
-                <XAxis 
-                  dataKey="title" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  yAxisId="left" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${v}`}
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomEventComparisonTooltip />} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                  iconType="circle"
-                />
-                <Bar 
-                  yAxisId="left" 
-                  name="Event Total Revenue (INR)" 
-                  dataKey="revenue" 
-                  fill="#10b981" 
-                  radius={[4, 4, 0, 0]}
-                  barSize={36}
-                />
-                <Bar 
-                  yAxisId="right" 
-                  name="Submissions Count" 
-                  dataKey="submissions" 
-                  fill="#6366f1" 
-                  radius={[4, 4, 0, 0]}
-                  barSize={24}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+            {/* Right Legend with Dots, Labels & Percentages */}
+            <div className="w-1/2 flex flex-col justify-center gap-2 pl-1 pr-1">
+              {displayCategoryData.slice(0, 4).map((item, idx) => {
+                const percent = Math.round(((item.value || 0) / totalDonutCount) * 100);
+                return (
+                  <div key={item.name || idx} className="flex items-center justify-between gap-1.5 text-left">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span 
+                        className="w-2.5 h-2.5 rounded-full shrink-0" 
+                        style={{ backgroundColor: DONUT_COLORS[idx % DONUT_COLORS.length] }} 
+                      />
+                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[100px]" title={item.name}>
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-900 dark:text-white shrink-0">
+                      {percent}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+
+          {/* Bottom Action Link: "View full analytics ->" */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex justify-center">
+            <button
+              onClick={() => onNavigateAnalytics && onNavigateAnalytics()}
+              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors cursor-pointer group"
+            >
+              <span>View full analytics</span>
+              <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
+            </button>
+          </div>
+
         </div>
+
       </div>
     </div>
   );

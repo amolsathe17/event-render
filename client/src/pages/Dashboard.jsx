@@ -61,6 +61,12 @@ import {
   Upload,
   X,
   Sparkles,
+  LayoutDashboard,
+  SlidersHorizontal,
+  Filter,
+  Bell,
+  User,
+  ShieldAlert,
 } from "lucide-react";
 import DragDropUpload from "../components/DragDropUpload";
 import WatermarkPreview from "../components/WatermarkPreview";
@@ -120,6 +126,72 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([]);
   const [selectedTypeTab, setSelectedTypeTab] = useState('Photography');
   const [historySelectedEventId, setHistorySelectedEventId] = useState('');
+  const [userSelectedEventId, setUserSelectedEventId] = useState('');
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusModalEvent, setStatusModalEvent] = useState(null);
+  const [showAllPaidModal, setShowAllPaidModal] = useState(false);
+  const [showSelectEventModal, setShowSelectEventModal] = useState(false);
+
+  const checkPaymentPendingOrAllPaid = () => {
+    let pendingEvent = null;
+    let activeEventsList = eventsList.filter(e => (e.status || '').toLowerCase() === 'active' || !e.status);
+    if (activeEventsList.length === 0) activeEventsList = eventsList;
+
+    for (const ev of activeEventsList) {
+      const sub = allSubmissions.find(s => 
+        s.eventId === ev._id || 
+        (s.eventTitle && ev.title && s.eventTitle.trim().toLowerCase() === ev.title.trim().toLowerCase())
+      );
+      const isPaid = sub && sub.paymentStatus === 'Paid' && !!sub.paymentId;
+      if (!isPaid) {
+        pendingEvent = ev;
+        break;
+      }
+    }
+
+    if (pendingEvent) {
+      setEvent(pendingEvent);
+      setExpandedActiveEvents({ [pendingEvent._id]: true });
+    } else {
+      setEvent(null);
+      setExpandedActiveEvents({});
+      setShowAllPaidModal(true);
+    }
+  };
+
+  const handleEventDropdownChange = (eId) => {
+    setUserSelectedEventId(eId);
+    if (!eId || eId === 'all') {
+      if (dashboardTab === 'entries') {
+        checkPaymentPendingOrAllPaid();
+      } else if (dashboardTab === 'event_history') {
+        setEvent(null);
+        setShowSelectEventModal(true);
+      } else {
+        setEvent(null);
+      }
+    } else {
+      const selected = eventsList.find(e => e._id === eId);
+      if (selected) {
+        setEvent(selected);
+        setExpandedActiveEvents({ [selected._id]: true });
+        
+        const statusLower = (selected.status || '').toLowerCase();
+        if (['archived', 'draft', 'completed', 'closed'].includes(statusLower)) {
+          setStatusModalEvent({
+            title: selected.title,
+            status: selected.status || 'Archived',
+            message: statusLower === 'archived'
+              ? 'This contest has been Archived. Your submissions and performance stats for this event are available in read-only mode.'
+              : statusLower === 'draft'
+                ? 'This contest is currently in Draft mode. Official submission uploads and jury grading have not opened yet.'
+                : 'This contest has been Completed. All judge evaluations and final rankings are locked.'
+          });
+          setShowStatusModal(true);
+        }
+      }
+    }
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -903,94 +975,182 @@ export default function Dashboard() {
   const isFinalized = !!submission?.isFinalSubmitted || user?.isSuspended;
 
   return (
-    <div className="w-full bg-slate-100/90 dark:bg-slate-950 min-h-screen py-3 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
-        
-        {/* Dashboard Sub-navigation Tabs */}
-        <div className="w-full mb-2">
-          <div className="flex w-full bg-white/90 dark:bg-slate-900/80 p-1 sm:p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs gap-0.5 sm:gap-1">
+    <div className="w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row font-sans text-slate-800 dark:text-slate-200">
+      
+      {/* ════════════════════ FIXED LEFT SIDEBAR ════════════════════ */}
+      <aside className="w-full lg:w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between shrink-0 px-5 py-6 shadow-xl border-r border-slate-800 z-30 h-auto lg:h-full overflow-y-auto">
+        <div className="flex flex-col gap-6">
+          {/* Navigation Links */}
+          <nav className="flex flex-col gap-2">
             <button
               onClick={() => setDashboardTab("overview")}
-              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
                 dashboardTab === "overview"
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              Overview
+              <LayoutDashboard size={18} />
+              <span>Overview</span>
             </button>
+
             <button
               onClick={() => setDashboardTab("entries")}
-              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
                 dashboardTab === "entries"
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              My Entries
+              <Camera size={18} />
+              <span>My Entries</span>
             </button>
+
             <button
               onClick={() => setDashboardTab("certificates")}
-              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
                 dashboardTab === "certificates"
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              Digital Certificates
+              <Award size={18} />
+              <span>Digital Certificates</span>
             </button>
+
             <button
-              onClick={() => setDashboardTab("event_history")}
-              className={`flex-1 text-center py-2 px-1 sm:px-6 rounded-xl text-[10.5px] sm:text-xs font-bold cursor-pointer transition-all ${
+              onClick={() => {
+                setDashboardTab("event_history");
+                if (!userSelectedEventId || userSelectedEventId === "all") {
+                  setShowSelectEventModal(true);
+                }
+              }}
+              className={`w-full h-11 flex items-center gap-3.5 px-4 rounded-2xl text-xs font-bold transition-all cursor-pointer text-left ${
                 dashboardTab === "event_history"
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              Event History
+              <Calendar size={18} />
+              <span>Event History</span>
             </button>
+          </nav>
+        </div>
+
+        {/* Sidebar Promo Bottom Card (Event-Based Image & Requested Text matching media_1788334161170.png) */}
+        <div className="mt-8 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border border-indigo-500/30 rounded-3xl p-4 flex flex-col gap-3 text-left relative overflow-hidden shadow-lg group">
+          <div className="flex flex-col gap-1 z-10 relative">
+            <h4 className="font-display font-black text-sm text-white tracking-wide">
+              Unleash Creativity
+            </h4>
+            <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+              Empowering artists through meaningful competitions.
+            </p>
+          </div>
+
+          {/* Event Base Image Container */}
+          <div className="w-full h-24 rounded-2xl overflow-hidden relative border border-white/10 shadow-md mt-0.5">
+            <img
+              src={
+                event?.imageUrl || event?.bannerUrl || (allSubmissions.length > 0 && allSubmissions[0].photographs?.[0]?.fileUrl ? getBackendUrl(allSubmissions[0].photographs[0].fileUrl) : '/wild.jpg')
+              }
+              alt={event?.title || 'Art Competition'}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/wild.jpg'; }}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-2">
+              <span className="text-[9px] font-extrabold uppercase text-indigo-200 tracking-wider truncate">
+                {event?.title || 'Art & Photography Events'}
+              </span>
+            </div>
           </div>
         </div>
+      </aside>
+
+      {/* ════════════════════ SCROLLABLE RIGHT CONTENT AREA ════════════════════ */}
+      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 min-w-0 text-left">
+        
+        {/* HEADER / TITLE TOOLBAR */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
+              {dashboardTab === "overview" && "Dashboard"}
+              {dashboardTab === "entries" && "My Submissions & Uploads"}
+              {dashboardTab === "certificates" && "Digital Certificates"}
+              {dashboardTab === "event_history" && "My Contest History"}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+              Welcome back, {user?.name || "Participant"}!
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Session Date Badge (Left of Dropdown Menu) */}
+            <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
+              <Clock size={15} className="text-indigo-500 shrink-0" />
+              <span>Session: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+
+            {/* Event Selection Dropdown matching media_1788335227174.png */}
+            {eventsList.length > 0 && (
+              <div className="relative h-11 flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 sm:px-5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs shrink-0 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                <Calendar size={16} className="text-amber-500 shrink-0" />
+                <select
+                  value={userSelectedEventId || 'all'}
+                  onChange={(e) => handleEventDropdownChange(e.target.value)}
+                  className="bg-transparent font-extrabold text-xs text-slate-800 dark:text-slate-200 border-none outline-none cursor-pointer pr-6 appearance-none"
+                >
+                  <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold">
+                    All Events
+                  </option>
+                  {eventsList.map((e) => (
+                    <option key={e._id} value={e._id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold">
+                      {e.title} {e.status ? `(${e.status})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={15} className="text-slate-400 shrink-0 pointer-events-none absolute right-4" />
+              </div>
+            )}
+          </div>
+        </header>
 
       {dashboardTab === "overview" && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-200">
           {/* Top Banner Row: Left Welcome Card + Right 4 Stats Cards */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-3.5 items-stretch">
             {/* Left: Participant Dashboard Welcome Header */}
-            <div className="xl:col-span-5 bg-linear-to-br from-indigo-900/10 via-purple-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-center gap-2 text-left shadow-2xs">
+            <div className="xl:col-span-5 bg-linear-to-br from-indigo-900/10 via-purple-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-4.5 flex flex-col justify-center gap-1 text-left shadow-2xs">
               <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-widest">
                 Participant Dashboard
               </span>
-              <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
+              <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
                 Welcome back, {user?.name || "Participant"}!
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Manage your contest submissions, track payment invoices, view performance stats, and download certificates.
-              </p>
             </div>
 
             {/* Right: 4 Stats Cards placed right beside the Welcome Banner */}
-            <div className="xl:col-span-7 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-stretch">
+            <div className="xl:col-span-7 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
               {/* Card 1: Registered Contests */}
-              <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+              <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-3 sm:p-3.5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
                 <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">Registered Contests</span>
-                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{allSubmissions.length}</h3>
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{allSubmissions.length}</h3>
                 <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">Total events registered</span>
               </div>
               
               {/* Card 2: Total Uploads */}
-              <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-3 sm:p-3.5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
                 <span className="text-[10px] text-emerald-900/80 dark:text-emerald-300 font-extrabold uppercase tracking-wider">Total Uploads</span>
-                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                   {allSubmissions.reduce((acc, s) => acc + (s.photographs || []).length, 0)}
                 </h3>
                 <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">DSLR verified</span>
               </div>
 
               {/* Card 3: Fees Paid */}
-              <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
+              <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-3 sm:p-3.5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm">
                 <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">Fees Paid</span>
-                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-amber-600 dark:text-amber-500 whitespace-nowrap">
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-amber-600 dark:text-amber-500 whitespace-nowrap">
                   ₹{allSubmissions.reduce((acc, s) => acc + (s.paymentStatus === 'Paid' ? s.amount : 0), 0)}
                 </h3>
                 <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Successful payments</span>
@@ -1001,11 +1161,11 @@ export default function Dashboard() {
                 user?.isSuspended
                   ? 'bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700'
                   : 'bg-teal-50/70 dark:bg-teal-950/30 border-2 border-teal-300 dark:border-teal-700'
-              } rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm`}>
+              } rounded-2xl p-3 sm:p-3.5 text-left flex flex-col justify-between gap-1 shadow-xs transition-all hover:shadow-sm`}>
                 <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
                   user?.isSuspended ? 'text-red-900/80 dark:text-red-300' : 'text-teal-900/80 dark:text-teal-300'
                 }`}>Account Status</span>
-                <h3 className={`font-display font-extrabold text-lg sm:text-xl whitespace-nowrap flex items-center gap-1.5 ${
+                <h3 className={`font-display font-extrabold text-base sm:text-lg whitespace-nowrap flex items-center gap-1.5 ${
                   user?.isSuspended ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'
                 }`}>
                   {user?.isSuspended ? 'Suspended' : 'Active'}
@@ -2742,7 +2902,45 @@ export default function Dashboard() {
           );
         });
 
-        const selectedHistoryEvent = myEnrolledEvents.find(ev => ev._id === historySelectedEventId) || myEnrolledEvents[0];
+        const selectedHistoryEvent = (userSelectedEventId && userSelectedEventId !== 'all')
+          ? (myEnrolledEvents.find(ev => ev._id === userSelectedEventId) || eventsList.find(ev => ev._id === userSelectedEventId))
+          : null;
+
+        if (!selectedHistoryEvent) {
+          return (
+            <div className="animate-in fade-in duration-200 flex flex-col gap-6 text-left">
+              {/* Header Card */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-r from-indigo-50 via-purple-50/60 to-indigo-50/40 dark:from-indigo-950/50 dark:via-purple-950/30 dark:to-slate-900/80 p-6 sm:p-7 rounded-3xl border-2 border-indigo-300 dark:border-indigo-700 shadow-md">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3.5 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl shrink-0 shadow-sm">
+                    <History size={24} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold uppercase tracking-widest block mb-0.5">
+                      Contest Archives
+                    </span>
+                    <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">My Event History &amp; Details</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">View complete registration, payment, uploaded photos, and results for enrolled contests</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Select Event First Card */}
+              <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center flex flex-col items-center gap-4 shadow-2xs">
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-full border border-amber-200 dark:border-amber-900/30 shadow-xs">
+                  <Calendar size={36} />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-lg text-slate-900 dark:text-white">Select a Contest to View History</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 font-medium leading-relaxed">
+                    Please select a specific contest from the top <span className="font-bold text-slate-800 dark:text-slate-200">"All Events"</span> dropdown menu to display its full registration details, payment receipts, uploaded photos, and jury evaluations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const selectedHistorySub = allSubmissions.find(s => 
           selectedHistoryEvent && (s.eventId === selectedHistoryEvent._id || (s.eventTitle && s.eventTitle.trim().toLowerCase() === selectedHistoryEvent.title.trim().toLowerCase()))
         );
@@ -2768,28 +2966,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {myEnrolledEvents.length > 0 && (
-                <div className="w-full sm:w-auto shrink-0 text-left sm:text-right">
-                  <label className="text-[10px] font-extrabold text-indigo-900/70 dark:text-indigo-300 uppercase tracking-wider block mb-1">
-                    Select Enrolled Event ({myEnrolledEvents.length})
-                  </label>
-                  <select
-                    value={selectedHistoryEvent?._id || ''}
-                    onChange={(e) => setHistorySelectedEventId(e.target.value)}
-                    className="w-full sm:w-72 md:w-80 px-4 py-2.5 bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-xs"
-                  >
-                    {myEnrolledEvents.map(ev => {
-                      const sub = allSubmissions.find(s => s.eventId === ev._id || (s.eventTitle && s.eventTitle.trim().toLowerCase() === ev.title.trim().toLowerCase()));
-                      const statusTag = sub?.refundStatus === 'Approved' ? ' - [Refund Approved]' : sub?.refundStatus === 'Requested' || sub?.refundRequested ? ' - [Refund Requested]' : sub?.isWithdrawn || sub?.status === 'Withdrawn' ? ' - [Withdrawn]' : '';
-                      return (
-                        <option key={ev._id} value={ev._id}>
-                          {ev.title} ({ev.eventType || 'Contest'}){statusTag}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-              )}
             </div>
 
             {/* Empty State: No Enrolled Events */}
@@ -3323,8 +3499,6 @@ export default function Dashboard() {
         );
       })()}
 
-      </div>
-
       {/* PARTICIPANT CONTEST SUBMISSION GUIDANCE CENTED MODAL POPUP */}
       {showParticipantGuidanceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -3407,7 +3581,169 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-    </div>
-  );
+
+      {/* ════════════════════ EVENT STATUS MODAL POPUP (Archived / Draft / Completed) ════════════════════ */}
+      {showStatusModal && statusModalEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col items-center text-center shadow-2xl relative">
+            
+            {/* Top Close X Button */}
+            <button
+              onClick={() => setShowStatusModal(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Status Icon Badge */}
+            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-4 shadow-lg ${
+              (statusModalEvent.status || '').toLowerCase() === 'completed'
+                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-emerald-500/10'
+                : (statusModalEvent.status || '').toLowerCase() === 'draft'
+                  ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shadow-indigo-500/10'
+                  : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-amber-500/10'
+            }`}>
+              {(statusModalEvent.status || '').toLowerCase() === 'completed' ? (
+                <CheckCircle2 size={32} />
+              ) : (statusModalEvent.status || '').toLowerCase() === 'draft' ? (
+                <Clock size={32} />
+              ) : (
+                <AlertTriangle size={32} />
+              )}
+            </div>
+
+            {/* Event Title & Status Pill */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
+              <span className={`px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                (statusModalEvent.status || '').toLowerCase() === 'completed'
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : (statusModalEvent.status || '').toLowerCase() === 'draft'
+                    ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              }`}>
+                {statusModalEvent.status} Event
+              </span>
+            </div>
+
+            <h3 className="font-display font-black text-xl text-slate-900 dark:text-white mb-2 leading-snug">
+              {statusModalEvent.title}
+            </h3>
+
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6">
+              {statusModalEvent.message}
+            </p>
+
+            {/* Action Button */}
+            <button
+              type="button"
+              onClick={() => setShowStatusModal(false)}
+              className="w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer text-xs"
+            >
+              Understood &amp; Close
+            </button>
+
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ ALL PAYMENTS COMPLETED CENTED MODAL POPUP ════════════════════ */}
+      {showAllPaidModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col items-center text-center shadow-2xl relative">
+            
+            {/* Top Close X Button */}
+            <button
+              onClick={() => setShowAllPaidModal(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Status Icon Badge */}
+            <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-emerald-500/10 flex items-center justify-center mb-4 shadow-lg">
+              <CheckCircle2 size={34} />
+            </div>
+
+            {/* Status Pill */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
+              <span className="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                All Payments Verified
+              </span>
+            </div>
+
+            <h3 className="font-display font-black text-xl text-slate-900 dark:text-white mb-2 leading-snug">
+              All Contest Payments Completed
+            </h3>
+
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6">
+              You have successfully completed online entry payments for all your active contest registrations. You can review your submitted entries or upload media frames.
+            </p>
+
+            {/* Action Button */}
+            <button
+              type="button"
+              onClick={() => setShowAllPaidModal(false)}
+              className="w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer text-xs"
+            >
+              Understood &amp; Close
+            </button>
+
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ SELECT EVENT FIRST CENTED MODAL POPUP ════════════════════ */}
+      {showSelectEventModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col items-center text-center shadow-2xl relative">
+            
+            {/* Top Close X Button */}
+            <button
+              onClick={() => setShowSelectEventModal(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Status Icon Badge */}
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-amber-500/10 flex items-center justify-center mb-4 shadow-lg">
+              <Calendar size={32} />
+            </div>
+
+            {/* Status Pill */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
+              <span className="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                Event Selection Required
+              </span>
+            </div>
+
+            <h3 className="font-display font-black text-xl text-slate-900 dark:text-white mb-2 leading-snug">
+              Select an Event First
+            </h3>
+
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6">
+              Please select a specific contest from the top <span className="font-bold text-slate-900 dark:text-white">"All Events"</span> dropdown menu to view its detailed event history, scorecard breakdown, and jury results.
+            </p>
+
+            {/* Action Button */}
+            <button
+              type="button"
+              onClick={() => setShowSelectEventModal(false)}
+              className="w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer text-xs"
+            >
+              Understood &amp; Close
+            </button>
+
+          </div>
+        </div>
+      )}
+
+      {/* Footer inside right scrollable area */}
+      <footer className="mt-8 py-3 text-xs text-center text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800">
+        <p>&copy; {new Date().getFullYear()} sumbaran Art Society. All rights reserved.</p>
+      </footer>
+    </main>
+  </div>
+);
 }
 

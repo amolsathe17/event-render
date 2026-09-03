@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Phone, Lock, Building, Camera, CheckCircle2, ShieldAlert, Check, Upload } from 'lucide-react';
+import { Calendar, CheckCircle2, ShieldAlert, Check, Upload } from 'lucide-react';
 import { getBackendUrl } from '../utils/url';
 
 export default function Profile() {
   const { user, updateProfile, logout, apiFetch, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const profilePhotoInputRef = useRef(null);
+
   const [name, setName] = useState(user?.name || '');
   const [mobile, setMobile] = useState(user?.mobile || '');
   const [city, setCity] = useState(user?.city || '');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -58,13 +61,18 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !mobile || !city) {
+    if (!name || !mobile) {
       setError('Please fill in all required fields');
       return;
     }
 
     if (mobile.replace(/\D/g, '').length !== 10) {
       setError('Mobile number must be exactly 10 digits');
+      return;
+    }
+
+    if (password.trim() !== '' && password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
@@ -76,7 +84,7 @@ export default function Profile() {
       const data = await updateProfile({
         name,
         mobile,
-        city,
+        city: city || 'Not specified',
         password: password || undefined
       });
 
@@ -84,6 +92,7 @@ export default function Profile() {
         if (password.trim() !== '') {
           setShowSuccessModal(true);
           setPassword('');
+          setConfirmPassword('');
           setTimeout(() => {
             logout();
             navigate('/login');
@@ -100,172 +109,177 @@ export default function Profile() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-      <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-lg">
+    <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 text-left animate-in fade-in duration-200">
+      
+      {/* HEADER / TITLE TOOLBAR (Matching media_1788337965160.png) */}
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
+            Participant Profile Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+            Welcome back, {user?.name || "Participant"}!
+          </p>
+        </div>
+
+        {/* Current Session Badge */}
+        <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
+          <Calendar size={15} className="text-indigo-500 shrink-0" />
+          <span>Current Session: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        </div>
+      </header>
+
+      {/* Main Container Card (Matching media_1788337965160.png) */}
+      <div className="bg-[#f4f3ff] dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-sm flex flex-col gap-8">
         
-        {/* Header */}
-        <div className="flex items-center gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-          <div className="p-3 bg-indigo-600 rounded-2xl text-white">
-            <User size={24} />
-          </div>
-          <div>
-            <h2 className="font-display font-extrabold text-xl text-slate-900 dark:text-white">Profile Settings</h2>
-            <p className="text-xs text-slate-400">Manage your DSLR Contest Portal account details and profile photo</p>
-          </div>
-        </div>
-
-        {/* Profile Photo Upload Section */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-          <div className="relative group">
-            <div className="w-24 h-24 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-3xl shadow-md overflow-hidden border-2 border-indigo-500">
-              {user?.avatar ? (
-                <img
-                  src={getBackendUrl(user.avatar)}
-                  alt={user.name}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                <span>{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
-              )}
-            </div>
-            <label className="absolute inset-0 rounded-full bg-slate-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-              <Camera size={20} />
-              <span className="text-[10px] font-bold mt-1">Change</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                disabled={uploadingAvatar}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-1">
-            <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">Profile Photo</h3>
-            <p className="text-xs text-slate-400 max-w-sm">
-              Upload a clear photograph. This photo will appear in the blue circle avatar on your navigation bar and account profile.
-            </p>
-            <label className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer">
-              <Upload size={14} />
-              <span>{uploadingAvatar ? 'Uploading Photo...' : 'Upload New Photo'}</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                disabled={uploadingAvatar}
-                className="hidden"
-              />
-            </label>
-          </div>
-        </div>
-
         {error && (
-          <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 p-3 rounded-xl text-xs text-red-600 dark:text-red-400">
-            <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+          <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-2xl text-xs font-bold flex items-center gap-2">
+            <ShieldAlert size={16} className="shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/20 p-3 rounded-xl text-xs text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 size={16} className="shrink-0" />
             <span>{success}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8">
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">Full Name</label>
-              <div className="relative">
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                  required
-                />
+          {/* Profile Photo Upload Banner Box (Matching media_1788337965160.png) */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-16 h-16 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md overflow-hidden border-2 border-indigo-500 shrink-0">
+                {user?.avatar ? (
+                  <img
+                    src={getBackendUrl(user.avatar)}
+                    alt={user.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <span>{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
+                )}
+              </div>
+              <div>
+                <h4 className="font-display font-black text-base text-slate-900 dark:text-white">
+                  Profile Photo
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 max-w-md leading-relaxed">
+                  Upload a participant profile photo. This photo will appear in your top navigation bar and contest scorecards.
+                </p>
               </div>
             </div>
 
-            {/* Email (Disabled) */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-white">Email Address (Cannot Change)</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  value={user?.email}
-                  disabled
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-400 border border-slate-200 dark:border-slate-800 rounded-xl text-sm cursor-not-allowed"
-                />
-              </div>
-            </div>
+            <input
+              type="file"
+              ref={profilePhotoInputRef}
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              disabled={uploadingAvatar}
+              className="hidden"
+            />
 
-            {/* Mobile */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">Mobile Number</label>
-              <div className="relative">
-                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="tel"
-                  value={mobile}
-                  onChange={handleMobileChange}
-                  maxLength={10}
-                  pattern="[0-9]{10}"
-                  placeholder="9876543210"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* City */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">City</label>
-              <div className="relative">
-                <Building size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                  required
-                />
-              </div>
-            </div>
-
+            <button
+              type="button"
+              disabled={uploadingAvatar}
+              onClick={() => profilePhotoInputRef.current && profilePhotoInputRef.current.click()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 px-6 rounded-full transition-all shadow-md cursor-pointer shrink-0 self-start sm:self-center flex items-center gap-2"
+            >
+              <Upload size={14} />
+              <span>{uploadingAvatar ? 'Uploading...' : 'Upload Photo'}</span>
+            </button>
           </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col gap-3">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Change Password</h3>
-            <div className="flex flex-col gap-1.5 max-w-md">
-              <label className="text-xs font-semibold text-slate-500">New Password (Leave blank to keep current)</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                />
-              </div>
+          {/* Form Fields: Row 1 (3 Columns matching media_1788337965160.png) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Column 1: Participant Name */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                Participant Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Participant Name"
+                className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+
+            {/* Column 2: Mobile Number */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                Mobile Number
+              </label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={handleMobileChange}
+                placeholder="10-digit Mobile Number"
+                className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+
+            {/* Column 3: Email Address (Read-Only) */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                Email Address (Read-Only)
+              </label>
+              <input
+                type="email"
+                value={user?.email || ''}
+                readOnly
+                disabled
+                className="w-full p-3.5 bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-2xs"
+              />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="self-start bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-2 px-6 rounded-xl shadow hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
-          >
-            {loading ? 'Saving Changes...' : 'Save Settings'}
-          </button>
+          {/* Form Fields: Row 2 (2 Columns matching media_1788337965160.png) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Column 1: New Password (Optional) */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                New Password (Optional)
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave blank to keep current password"
+                className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400"
+              />
+            </div>
+
+            {/* Column 2: Confirm New Password */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="w-full p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-xs text-slate-900 dark:text-white shadow-2xs outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400"
+              />
+            </div>
+          </div>
+
+          {/* Right-Aligned Save Button (Matching media_1788337965160.png) */}
+          <div className="flex justify-end mt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <span>{loading ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+            </button>
+          </div>
 
         </form>
       </div>

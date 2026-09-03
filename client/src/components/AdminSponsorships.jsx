@@ -19,6 +19,9 @@ import {
   UserCheck,
   ShieldCheck,
   Award,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
   Layers,
   Sparkles,
   ChevronRight,
@@ -76,6 +79,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [noticeModalMessage, setNoticeModalMessage] = useState('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -509,131 +513,122 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
 
   return (
     <div className="space-y-6">
-      {/* Page Header Banner */}
-      <div className="relative overflow-hidden bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 rounded-full text-xs font-extrabold uppercase tracking-wider">
-                Financial Support & Grants
-              </span>
-              {selectedEventId && selectedEventId !== 'all' && (
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full text-xs font-bold">
-                  {activeEventTitle}
-                </span>
-              )}
-            </div>
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">
-              Donation & Sponsorship Management
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Track and manage corporate sponsorships, CSR funding, government schemes, institutional grants, foundation support, and individual donations event-wise.
-            </p>
-          </div>
+      {/* Action Toolbar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
+        <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">
+          {selectedEventId && selectedEventId !== 'all' && activeEventObj ? `${activeEventObj.title} - Sponsorships & Donations` : 'All Events Sponsorships & Donations'}
+        </h2>
 
-          <div className="relative z-10 flex flex-col items-end gap-2.5 self-start sm:self-center shrink-0">
-            {/* Top Row: Export Action Buttons (Excel, CSV, PDF, Print) */}
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleExportExcel}
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-                title="Export Excel"
-              >
-                <FileSpreadsheet size={14} /> Excel
-              </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            title="Export Excel"
+          >
+            <FileSpreadsheet size={14} /> Excel
+          </button>
 
-              <button
-                type="button"
-                onClick={handleExportCSV}
-                className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-                title="Export CSV"
-              >
-                <Download size={14} /> CSV
-              </button>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            title="Export CSV"
+          >
+            <Download size={14} /> CSV
+          </button>
 
-              <button
-                type="button"
-                onClick={handleExportPDF}
-                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-                title="Export PDF"
-              >
-                <FileText size={14} /> PDF
-              </button>
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            title="Export PDF"
+          >
+            <FileText size={14} /> PDF
+          </button>
 
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-                title="Print Donation & Sponsorship Report"
-              >
-                <Printer size={14} /> Print
-              </button>
-            </div>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            title="Print Donation & Sponsorship Report"
+          >
+            <Printer size={14} /> Print
+          </button>
 
-            {/* Bottom Row: Add Sponsorship / Donation Button (Right Aligned Under Export Group) */}
-            <div className="flex justify-end w-full">
-              <button
-                type="button"
-                onClick={handleOpenAddModal}
-                className="px-5 py-2.5 bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs sm:text-xs rounded-xl shadow-lg hover:shadow-indigo-500/25 transition-all flex items-center gap-2 shrink-0 cursor-pointer border border-indigo-400/30"
-              >
-                <Plus size={16} />
-                <span>Add Sponsorship / Donation</span>
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={handleOpenAddModal}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>Add Sponsorship / Donation</span>
+          </button>
         </div>
       </div>
 
-      {/* 3 Summary Cards in 1 Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {/* 3 Summary Cards in 1 Row (Matching media_1788406476286.jpg) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Card 1: Total Sponsorship / Donations */}
-        <div className="p-4 bg-linear-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">
+            <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               TOTAL SPONSORSHIP / DONATIONS
             </span>
-            <Building2 size={18} className="text-indigo-600 dark:text-indigo-400" />
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Building2 size={18} />
+            </div>
           </div>
-          <div className="mt-3">
-            <p className="font-display font-black text-2xl text-indigo-700 dark:text-indigo-300">
+          <div>
+            <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
               ₹{(summary?.totalFunding !== undefined ? summary.totalFunding : ((summary?.totalSponsorship || 0) + (summary?.totalDonations || 0))).toLocaleString('en-IN')}
             </p>
-            <span className="text-[10px] font-semibold text-indigo-600/80 dark:text-indigo-400/80">Corporate, CSR & Individual Grants</span>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+              <TrendingUp size={13} />
+              <span>Corporate, CSR & Individual Grants</span>
+            </div>
           </div>
         </div>
 
         {/* Card 2: Pending Funding */}
-        <div className="p-4 bg-linear-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-slate-900 border border-amber-200 dark:border-amber-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider">
+            <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               PENDING FUNDING
             </span>
-            <Clock size={18} className="text-amber-600 dark:text-amber-400" />
+            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Clock size={18} />
+            </div>
           </div>
-          <div className="mt-3">
-            <p className="font-display font-black text-2xl text-amber-700 dark:text-amber-400">
+          <div>
+            <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
               ₹{(summary?.pendingFunding || 0).toLocaleString('en-IN')}
             </p>
-            <span className="text-[10px] font-semibold text-amber-600/80 dark:text-amber-400/80">Committed / Unsettled Grants</span>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+              <AlertCircle size={13} />
+              <span>Committed / Unsettled Grants</span>
+            </div>
           </div>
         </div>
 
         {/* Card 3: Total No. of Sponsors / Donors */}
-        <div className="p-4 bg-linear-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/40 dark:to-slate-900 border border-purple-200 dark:border-purple-800/60 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-3 shadow-2xs transition-all hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-purple-900 dark:text-purple-300 uppercase tracking-wider">
+            <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               TOTAL NO. OF SPONSORS / DONORS
             </span>
-            <Building2 size={18} className="text-purple-600 dark:text-purple-400" />
+            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <Building2 size={18} />
+            </div>
           </div>
-          <div className="mt-3">
-            <p className="font-display font-black text-2xl text-purple-700 dark:text-purple-300">
+          <div>
+            <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
               {(summary?.sponsorCount || 0) + (summary?.donorCount || 0)}
             </p>
-            <span className="text-[10px] font-semibold text-purple-600/80 dark:text-purple-400/80">Corporate, CSR & Individual Partners</span>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-purple-600 dark:text-purple-400 mt-1">
+              <CheckCircle2 size={13} />
+              <span>Corporate, CSR & Individual Partners</span>
+            </div>
           </div>
         </div>
       </div>
@@ -811,21 +806,30 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
 
       {/* Add / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            >
-              <X size={20} />
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+            
+            {/* Fixed Header */}
+            <div className="shrink-0 bg-white dark:bg-slate-900 px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-4 z-10">
+              <div>
+                <h2 className="font-display font-black text-xl text-slate-900 dark:text-white mb-1">
+                  {editingRecord ? 'Edit Sponsorship / Donation Record' : 'Record New Sponsorship / Donation'}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Fill in complete details of financial support, donor/sponsor background, and agreement links.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-            <h2 className="font-display font-black text-xl text-slate-900 dark:text-white mb-1">
-              {editingRecord ? 'Edit Sponsorship / Donation Record' : 'Record New Sponsorship / Donation'}
-            </h2>
-            <p className="text-xs text-slate-500 mb-6">
-              Fill in complete details of financial support, donor/sponsor background, and agreement links.
-            </p>
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8">
 
             {error && (
               <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl text-xs font-semibold text-rose-600 dark:text-rose-400">
@@ -1084,6 +1088,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}

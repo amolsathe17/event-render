@@ -789,109 +789,85 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200 text-left">
       
-      {/* Top Header Banner with Dynamic Photography & Report Overlay Background */}
-      <div className="relative overflow-hidden bg-slate-950 text-white p-6 sm:p-7 rounded-3xl shadow-xl border border-indigo-900/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        {/* Background Image Layer */}
-        <img
-          src="/hero-bg.jpg"
-          alt="Reports & Analytics Background"
-          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity scale-105 pointer-events-none transition-transform duration-700"
-        />
-        
-        {/* Dark Gradient Overlay for optimal text readability */}
-        <div className="absolute inset-0 bg-linear-to-r from-slate-950 via-slate-900/90 to-indigo-950/80 pointer-events-none" />
-        
-        {/* Ambient Glow accents */}
-        <div className="absolute -right-16 -top-16 w-72 h-72 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute -left-16 -bottom-16 w-72 h-72 bg-emerald-600/15 blur-3xl rounded-full pointer-events-none" />
-
-        <div className="relative z-10">
-          <span className="px-2.5 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-xs">
-            Reports & Analytics Hub
-          </span>
-          <h2 className="font-display font-black text-2xl sm:text-3xl mt-1 text-white drop-shadow-xs">
-            {activeReportObj?.label} Report
-          </h2>
-          <p className="text-xs text-slate-300 mt-1 font-medium max-w-xl">
-            Comprehensive audit reports, financial ledgers, participant stats, winners, and system export logs.
-          </p>
-        </div>
-
-        <div className="relative z-10 flex items-center gap-2 self-start sm:self-center">
-          <button
-            onClick={handleExportExcel}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-            title="Export Excel"
-          >
-            <FileSpreadsheet size={14} /> Excel
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-            title="Export CSV"
-          >
-            <Download size={14} /> CSV
-          </button>
-
-          <button
-            onClick={handleExportPDF}
-            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-            title="Export PDF"
-          >
-            <FileText size={14} /> PDF
-          </button>
-
-          <button
-            onClick={handlePrint}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
-            title="Print Report"
-          >
-            <Printer size={14} /> Print
-          </button>
-        </div>
-      </div>
-
-      {/* Common Controls Toolbar on Every Report (Prominent Yellow Card) */}
+      {/* Common Controls Toolbar on Every Report with Search, Date Pickers, and Export Buttons */}
       <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700/80 rounded-3xl p-3.5 sm:p-4 shadow-sm print:hidden">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 sm:gap-3 w-full">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 w-full">
           
-          {/* 1. Search Input - FULL WIDTH AT TOP ON MOBILE */}
-          <div className="relative w-full lg:flex-1 lg:min-w-50">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400" />
-            <input
-              type="text"
-              placeholder="Search keyword..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-2xl text-xs outline-none focus:border-amber-500 font-bold shadow-xs placeholder-slate-400"
-            />
-          </div>
-
-          {/* 2 & 3. Date Pickers (From Date, To Date) */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 shrink-0 w-full lg:w-auto">
-            {/* From Date Picker */}
-            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-1.5 sm:px-3 py-1.5 rounded-2xl shadow-xs w-full">
-              <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">From:</span>
+          {/* Left Side: Search & From/To Date Pickers */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+            {/* 1. Search Input */}
+            <div className="relative flex-1 min-w-44">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400" />
               <input
-                type="date"
-                value={fromDate}
-                onChange={e => setFromDate(e.target.value)}
-                className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
+                type="text"
+                placeholder="Search keyword..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-2xl text-xs outline-none focus:border-amber-500 font-bold shadow-xs placeholder-slate-400"
               />
             </div>
 
-            {/* To Date Picker */}
-            <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-1.5 sm:px-3 py-1.5 rounded-2xl shadow-xs w-full">
-              <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">To:</span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={e => setToDate(e.target.value)}
-                className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
-              />
+            {/* 2 & 3. Date Pickers (From Date, To Date) */}
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* From Date Picker */}
+              <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
+                <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">From:</span>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={e => setFromDate(e.target.value)}
+                  className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
+                />
+              </div>
+
+              {/* To Date Picker */}
+              <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
+                <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">To:</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={e => setToDate(e.target.value)}
+                  className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
+                />
+              </div>
             </div>
           </div>
+
+          {/* Right Side: Action Export Buttons (Excel, CSV, PDF, Print) */}
+          <div className="grid grid-cols-2 min-[420px]:grid-cols-4 sm:flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleExportExcel}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-all hover:scale-105"
+              title="Export Excel"
+            >
+              <FileSpreadsheet size={14} /> Excel
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-all hover:scale-105"
+              title="Export CSV"
+            >
+              <Download size={14} /> CSV
+            </button>
+
+            <button
+              onClick={handleExportPDF}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-all hover:scale-105"
+              title="Export PDF"
+            >
+              <FileText size={14} /> PDF
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-all hover:scale-105"
+              title="Print Report"
+            >
+              <Printer size={14} /> Print
+            </button>
+          </div>
+
         </div>
       </div>
 

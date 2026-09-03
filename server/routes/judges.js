@@ -247,21 +247,44 @@ router.post('/broadcasts', protect, authorize('Judge', 'Admin'), async (req, res
     const Event = require('../models/Event');
     const Submission = require('../models/Submission');
 
+    const validRecipientTypes = ['Participant', 'Judge', 'Both', 'Admin', 'Graded', 'Ungraded', 'Specific'];
+    const finalRecipientType = validRecipientTypes.includes(recipientType) ? recipientType : 'Participant';
+
+    // Fetch event details if eventId provided
+    let eventTitle = '';
+    if (eventId && mongoose.Types.ObjectId.isValid(eventId)) {
+      const eDoc = await Event.findById(eventId);
+      if (eDoc) eventTitle = eDoc.title;
+    }
+
     const broadcast = await Broadcast.create({
       message: message.trim(),
-      recipientType: recipientType === 'Specific' ? 'Participant' : recipientType,
-      sentBy: req.user.name || 'Judge',
+      recipientType: finalRecipientType,
+      sentBy: req.user?.name || 'Judge',
+      eventTitle: eventTitle || null,
       ...(eventId ? { eventId } : {})
     });
 
     let targetUsers = [];
     if (recipientType === 'Specific' && participantId) {
-      targetUsers = await User.find({ _id: participantId });
+      if (mongoose.Types.ObjectId.isValid(participantId)) {
+        targetUsers = await User.find({ _id: participantId });
+      } else {
+        targetUsers = await User.find({ name: participantId });
+      }
     } else if (recipientType === 'Admin') {
       targetUsers = await User.find({ role: 'Admin' });
-    } else if (recipientType === 'Participant') {
+    } else if (recipientType === 'Graded') {
       if (eventId) {
-        const subs = await Submission.find({ eventId });
+        const subs = await Submission.find({ eventId, graded: true });
+        const pIds = [...new Set(subs.map(s => s.userId))];
+        targetUsers = await User.find({ _id: { $in: pIds }, role: 'Participant' });
+      } else {
+        targetUsers = await User.find({ role: 'Participant' });
+      }
+    } else if (recipientType === 'Ungraded') {
+      if (eventId) {
+        const subs = await Submission.find({ eventId, graded: false });
         const pIds = [...new Set(subs.map(s => s.userId))];
         targetUsers = await User.find({ _id: { $in: pIds }, role: 'Participant' });
       } else {
@@ -278,36 +301,41 @@ router.post('/broadcasts', protect, authorize('Judge', 'Admin'), async (req, res
       }
       const admins = await User.find({ role: 'Admin' });
       targetUsers = [...pUsers, ...admins];
-    }
-
-    // Fetch event details if eventId provided
-    let eventTitle = '';
-    if (eventId) {
-      const Event = require('../models/Event');
-      const eDoc = await Event.findById(eventId);
-      if (eDoc) eventTitle = eDoc.title;
+    } else {
+      // Default: Participant
+      if (eventId) {
+        const subs = await Submission.find({ eventId });
+        const pIds = [...new Set(subs.map(s => s.userId))];
+        targetUsers = await User.find({ _id: { $in: pIds }, role: 'Participant' });
+      } else {
+        targetUsers = await User.find({ role: 'Participant' });
+      }
     }
 
     for (const u of targetUsers) {
-      if (!u.notifications) u.notifications = [];
-      u.notifications.push({
-        _id: new mongoose.Types.ObjectId(),
-        message: message.trim(),
-        senderName: req.user?.name || 'Judge',
-        senderRole: 'Judge',
-        eventTitle: eventTitle,
-        eventId: eventId || '',
-        type: 'reminder',
-        isRead: false,
-        createdAt: new Date()
-      });
-      await u.save();
+      try {
+        if (!u.notifications) u.notifications = [];
+        u.notifications.push({
+          _id: new mongoose.Types.ObjectId(),
+          message: message.trim(),
+          senderName: req.user?.name || 'Judge',
+          senderRole: 'Judge',
+          eventTitle: eventTitle,
+          eventId: eventId || '',
+          type: 'reminder',
+          isRead: false,
+          createdAt: new Date()
+        });
+        await u.save({ validateBeforeSave: false });
+      } catch (uErr) {
+        console.error(`Error saving notification to user ${u._id}:`, uErr.message);
+      }
     }
 
     res.status(201).json({ success: true, message: 'Notification sent successfully', broadcast });
   } catch (error) {
     console.error('Judge Broadcast Error:', error);
-    res.status(500).json({ success: false, message: 'Failed to send notification' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to send notification' });
   }
 });
 

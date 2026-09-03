@@ -7,7 +7,7 @@ const BroadcastSchema = new mongoose.Schema({
   },
   recipientType: {
     type: String,
-    enum: ['Participant', 'Judge', 'Both'],
+    enum: ['Participant', 'Judge', 'Both', 'Admin', 'Graded', 'Ungraded', 'Specific'],
     required: true
   },
   eventId: {

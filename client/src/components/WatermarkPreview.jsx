@@ -84,7 +84,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
 
   return (
     <div 
-      className={`relative overflow-hidden w-full h-full min-h-[220px] ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
+      className={`relative overflow-hidden w-full h-full flex items-center justify-center ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchMove}
@@ -102,7 +102,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           preload="metadata"
-          className={`absolute inset-0 w-full h-full mx-auto pointer-events-none ${fitClass}`} 
+          className={`max-w-full max-h-full w-auto h-auto object-contain mx-auto my-auto pointer-events-none rounded-xl ${fitClass}`} 
         />
       ) : (
         <img 
@@ -110,7 +110,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
           alt="Image Preview" 
           onError={handleImgError}
           style={enableZoom ? zoomStyle : undefined}
-          className={`absolute inset-0 w-full h-full mx-auto ${fitClass}`} 
+          className={`max-w-full max-h-full w-auto h-auto object-contain mx-auto my-auto rounded-xl ${fitClass}`} 
         />
       )}
     </div>

@@ -338,21 +338,74 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       value: categoryStatsMap[name]
     }));
 
-    // 3. Daily Registrations & Revenue charts data (last 7 days) — with per-event breakdown
+    // 3. Daily Registrations & Revenue charts data — based on Event creation date to Submission Deadline
     const allEventsList = await Event.find({});
+    
+    // Determine start date and end date (event-wise or all events timeline)
+    let chartStartDate;
+    let chartEndDate;
+
+    if (eventId) {
+      const targetEvent = allEventsList.find(e => String(e._id) === String(eventId)) || await Event.findById(eventId);
+      if (targetEvent) {
+        chartStartDate = getStartOfDay(new Date(targetEvent.createdAt || targetEvent.startDate || Date.now()));
+        chartEndDate = getStartOfDay(new Date(targetEvent.deadline || targetEvent.eventDate || targetEvent.exhibitionToDate || Date.now()));
+      }
+    } else {
+      // For all events combined: find earliest created event and latest deadline
+      if (allEventsList.length > 0) {
+        const creationDates = allEventsList.map(e => new Date(e.createdAt || Date.now()).getTime()).filter(t => !isNaN(t));
+        const deadlineDates = allEventsList.map(e => new Date(e.deadline || e.eventDate || e.createdAt || Date.now()).getTime()).filter(t => !isNaN(t));
+        const minCreated = Math.min(...creationDates);
+        const maxDeadline = Math.max(...deadlineDates);
+        chartStartDate = getStartOfDay(new Date(minCreated));
+        chartEndDate = getStartOfDay(new Date(maxDeadline));
+      }
+    }
+
+    // Fallbacks if invalid dates
+    if (!chartStartDate || isNaN(chartStartDate.getTime())) {
+      const d = new Date();
+      d.setDate(d.getDate() - 6);
+      chartStartDate = getStartOfDay(d);
+    }
+    if (!chartEndDate || isNaN(chartEndDate.getTime())) {
+      chartEndDate = getStartOfDay(new Date());
+    }
+
+    // Ensure chartEndDate is not before chartStartDate
+    if (chartEndDate < chartStartDate) {
+      chartEndDate = new Date(chartStartDate);
+      chartEndDate.setDate(chartEndDate.getDate() + 1);
+    }
+
+    // Calculate total days in event period
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const totalDays = Math.max(1, Math.round((chartEndDate - chartStartDate) / msPerDay) + 1);
+    
+    // Cap step interval if event spans a very long timeframe to keep chart readable
+    let dayStep = 1;
+    if (totalDays > 60) dayStep = 7; // weekly buckets if > 60 days
+    else if (totalDays > 30) dayStep = 3; // 3-day buckets if > 30 days
+    else if (totalDays > 14) dayStep = 2; // 2-day buckets if > 14 days
+
+    // Pre-fetch all payments and sponsorships for this chart range
+    const sponFilter = eventId ? { eventId } : {};
+    const allSpons = await Sponsorship.find(sponFilter);
+
     const dailyStats = [];
-    for (let i = 6; i >= 0; i--) {
-      const day = new Date();
-      day.setDate(day.getDate() - i);
-      const dayStart = getStartOfDay(day);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
+    for (let currentMs = chartStartDate.getTime(); currentMs <= chartEndDate.getTime(); currentMs += (dayStep * msPerDay)) {
+      const dayStart = new Date(currentMs);
+      const dayEnd = new Date(Math.min(currentMs + (dayStep * msPerDay), chartEndDate.getTime() + msPerDay));
 
       let regCount;
       if (eventId) {
         regCount = await Submission.countDocuments({
           eventId,
-          createdAt: { $gte: dayStart, $lt: dayEnd }
+          $or: [
+            { createdAt: { $gte: dayStart, $lt: dayEnd } },
+            { submissionDate: { $gte: dayStart, $lt: dayEnd } }
+          ]
         });
       } else {
         regCount = await User.countDocuments({
@@ -364,30 +417,24 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       const dayPayments = await Payment.find({
         ...paymentFilter,
         status: 'Success',
-        paymentDate: { $gte: dayStart, $lt: dayEnd }
+        $or: [
+          { paymentDate: { $gte: dayStart, $lt: dayEnd } },
+          { createdAt: { $gte: dayStart, $lt: dayEnd } }
+        ]
       });
-      const revSum = dayPayments.reduce((acc, curr) => acc + curr.amount, 0);
-
-      const sponFilter = eventId ? { eventId } : {};
-      const allSpons = await Sponsorship.find(sponFilter);
-      const totalSponsSum = allSpons.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+      const revSum = dayPayments.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
       const daySponsorships = allSpons.filter(s => {
         const d = s.fundingDate || s.createdAt;
-        return d && d >= dayStart && d < dayEnd;
+        return d && new Date(d) >= dayStart && new Date(d) < dayEnd;
       });
-      let sponSum = daySponsorships.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-      
-      // Fallback: If sponsorships exist in DB but fall outside strict 7-day range, attach to recent date
-      if (sponSum === 0 && totalSponsSum > 0 && i === 0) {
-        sponSum = totalSponsSum;
-      }
+      const sponSum = daySponsorships.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
       // Per-event revenue breakdown
       const eventBreakdown = {};
       allEventsList.forEach(ev => {
         const evPayments = dayPayments.filter(p => String(p.eventId) === String(ev._id));
-        eventBreakdown[ev.title] = evPayments.reduce((acc, curr) => acc + curr.amount, 0);
+        eventBreakdown[ev.title] = evPayments.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
       });
 
       dailyStats.push({
@@ -434,6 +481,12 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
         dailyStats,
         categoryStats,
         eventStats,
+        chartDateRange: {
+          startDate: chartStartDate.toISOString(),
+          endDate: chartEndDate.toISOString(),
+          startFormatted: chartStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          endFormatted: chartEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        },
         eventsList: allEventsList.map(e => ({ id: String(e._id), title: e.title }))
       }
     });

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useEvent } from '../context/EventContext';
 import {
   BarChart,
+  LayoutDashboard,
   Users,
   Camera,
   Award,
@@ -2164,20 +2165,26 @@ export default function AdminDashboard() {
         }
         return res.blob();
       })
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const prefix = targetEventId ? 'event' : 'all-events';
-        a.download = `${prefix}-${reportType}-ledger.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      })
-      .catch(e => {
-        console.error(e);
-        alert(`Failed to export Excel / CSV: ${e.message}`);
-      });
+    setEditPrize2Reward(p2 ? p2.reward : '');
+    const p3 = e.prizes && e.prizes.find(p => p.rank === '3rd Prize');
+    setEditPrize3Reward(p3 ? p3.reward : '');
+    
+    if (e.packages && e.packages.length > 0) {
+      setEditEventPackages(e.packages.map(p => ({
+        name: p.name,
+        price: p.price,
+        maxPhotos: p.maxPhotos
+      })));
+    } else {
+      setEditEventPackages([
+        { name: 'Starter', price: 200, maxPhotos: 1 },
+        { name: 'Amateur', price: 300, maxPhotos: 2 },
+        { name: 'Pro', price: 400, maxPhotos: 5 }
+      ]);
+    }
+    setEditEventCertificates(e.certificates || { firstPrize: '', secondPrize: '', thirdPrize: '', participation: '' });
+    
+    setShowEditModal(true);
   };
 
   if (loading && !stats) {
@@ -2192,176 +2199,160 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#e3e7f0] dark:bg-slate-950 py-5 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-200">
+    <div className="w-full h-full overflow-hidden bg-[#f4f6fa] dark:bg-slate-950 flex flex-col lg:flex-row font-sans text-slate-800 dark:text-slate-200">
       
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Total operational control and performance ledger analytics</p>
+      {/* ════════════════════ FIXED LEFT SIDEBAR ════════════════════ */}
+      <aside className="w-full lg:w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between shrink-0 px-4 py-6 shadow-xl border-r border-slate-800 z-30 h-auto lg:h-full overflow-y-auto">
+        <div className="flex flex-col gap-5">
+          {/* Navigation Links (Starts directly at Top) */}
+          <nav className="flex flex-col gap-1.5">
+            {[
+              { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'events', label: 'Create Event', icon: Calendar },
+              { id: 'photographs', label: 'Submissions', icon: Camera },
+              { id: 'participants', label: 'Participants', icon: Users },
+              { id: 'judges', label: 'Judging', icon: Award },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'reports', label: 'Analytics', icon: BarChart },
+              { id: 'categories_config', label: 'Event Configuration', icon: Layers },
+              { id: 'expenses', label: 'Expenses', icon: Wallet },
+              { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+              { id: 'event_history', label: 'Event History', icon: History },
+              { id: 'profile_settings', label: 'Settings', icon: Sliders }
+            ].map(t => {
+              const IconComponent = t.icon;
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setActiveTab(t.id);
+                    if (t.id === 'overview') setSelectedEventId('');
+                    if (t.id === 'judges') setShowIncompleteGradingModal(true);
+                    if (t.id === 'event_history') fetchEventHistory();
+                  }}
+                  className={`w-full h-10 flex items-center gap-3 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-left ${
+                    isActive
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <IconComponent size={17} className={isActive ? 'text-white' : 'text-slate-400'} />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Global Event Selection Dropdown Menu - Hidden on Contests, Categories, and Event History Tabs */}
-        {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
-          <div className="relative flex items-center shrink-0 w-full sm:w-auto">
-            <select
-              value={selectedEventId || 'all'}
-              onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
-              className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[240px]"
-            >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
-                All Events (Combined Ledger)
-              </option>
-              {allEvents.map(ev => (
-                <option key={ev._id || ev.id} value={ev._id || ev.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
-                  {ev.title} {ev.status ? `(${ev.status})` : ''}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+        {/* Sidebar Promo Bottom Card */}
+        <div className="mt-8 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border border-indigo-500/30 rounded-3xl p-4 flex flex-col gap-3 text-left relative overflow-hidden shadow-lg group">
+          <div className="flex flex-col gap-1 z-10 relative">
+            <h4 className="font-display font-black text-sm text-white tracking-wide">
+              Unleash Creativity
+            </h4>
+            <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+              Empowering artists through meaningful competitions.
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      </aside>
 
-      {/* Navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
-      <div className="w-full mb-3">
-        {/* Mobile Select Dropdown Menu (< sm) */}
-        <div className="block sm:hidden w-full">
-          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
-            Select Admin Menu:
-          </label>
-          <div className="relative w-full">
-            <select
-              value={activeTab}
-              onChange={e => {
-                const newTab = e.target.value;
-                if (!newTab) return;
-                setActiveTab(newTab);
-                if (newTab === 'overview') {
-                  setSelectedEventId('');
-                }
-                if (newTab === 'judges') {
-                  setShowIncompleteGradingModal(true);
-                }
-                if (newTab === 'event_history') fetchEventHistory();
-              }}
-              className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-amber-500 appearance-none pr-9"
-            >
-              <option value="">-- Select --</option>
-              {[
-                { id: 'overview', label: 'Overview' },
-                { id: 'participants', label: 'Participants' },
-                { id: 'photographs', label: 'Photographs / Videos' },
-                { id: 'judges', label: 'Judges & Results' },
-                { id: 'events', label: 'Contests & Configuration' },
-                { id: 'categories_config', label: 'Categories' },
-                { id: 'expenses', label: 'Event Expenses' },
-                { id: 'sponsorships', label: 'Donation & Sponsorship' },
-                { id: 'reports', label: 'Reports' }
-              ].map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-amber-600 dark:text-amber-400 font-black text-xs">
-              ▼
+      {/* ════════════════════ SCROLLABLE RIGHT WORKSPACE ════════════════════ */}
+      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 min-w-0 text-left">
+        
+        {/* TOP HEADER / SEARCH & USER PROFILE BAR */}
+        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-2 border-b border-slate-200/60 dark:border-slate-800">
+          <div className="text-left">
+            <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-tight">
+              {activeTab === 'overview' && 'Dashboard'}
+              {activeTab === 'events' && 'Create Event'}
+              {activeTab === 'photographs' && 'Submissions Management'}
+              {activeTab === 'participants' && 'Registered Participants'}
+              {activeTab === 'judges' && 'Judges & Results'}
+              {activeTab === 'notifications' && 'Notification Management'}
+              {activeTab === 'reports' && 'Reports & Analytics'}
+              {activeTab === 'categories_config' && 'Event Configuration'}
+              {activeTab === 'expenses' && 'Event Expenses'}
+              {activeTab === 'sponsorships' && 'Donations & Sponsorships'}
+              {activeTab === 'event_history' && 'Events History'}
+              {activeTab === 'profile_settings' && 'Admin Settings'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              Welcome back, Admin {user?.name || "Amol Sathe"}!
+            </p>
+          </div>
+
+          {/* Right Header Bar: Event Selector Dropdown & Today's Date Badge */}
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
+              <div className="relative flex items-center shrink-0 w-full sm:w-auto">
+                <select
+                  value={selectedEventId || 'all'}
+                  onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
+                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[240px]"
+                >
+                  <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                    All Events (Combined Ledger)
+                  </option>
+                  {allEvents.map(ev => (
+                    <option key={ev._id || ev.id} value={ev._id || ev.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                      {ev.title} {ev.status ? `(${ev.status})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+              </div>
+            )}
+
+            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 shadow-xs">
+              <Calendar size={14} className="text-indigo-600" />
+              <span>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Desktop Horizontal Tabs (>= sm) */}
-        <div className="hidden sm:block w-full">
-          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs w-full justify-between items-center gap-0.5 sm:gap-1">
+        {/* Mobile Navigation Tabs Subnav (< lg) */}
+        <div className="block lg:hidden mb-6">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
             {[
-              { id: 'overview', label: 'Overview', icon: BarChart },
-              { id: 'participants', label: 'Participants', icon: Users },
-              { id: 'photographs', label: 'Photographs / Videos', icon: Camera },
-              { id: 'judges', label: 'Judges & Results', icon: Award },
-              { id: 'events', label: 'Contests & Configuration', icon: Calendar },
-              { id: 'categories_config', label: 'Categories', icon: Layers },
-              { id: 'expenses', label: 'Event Expenses', icon: Wallet },
-              { id: 'sponsorships', label: 'Donation & Sponsorship', icon: Building2 },
-              { id: 'reports', label: 'Reports', icon: FileText }
+              { id: 'overview', label: 'Dashboard' },
+              { id: 'events', label: 'Create Event' },
+              { id: 'photographs', label: 'Submissions' },
+              { id: 'participants', label: 'Participants' },
+              { id: 'judges', label: 'Judging' },
+              { id: 'notifications', label: 'Notifications' },
+              { id: 'reports', label: 'Analytics' },
+              { id: 'categories_config', label: 'Event Configuration' },
+              { id: 'expenses', label: 'Expenses' },
+              { id: 'sponsorships', label: 'Sponsorships' },
+              { id: 'event_history', label: 'History' },
+              { id: 'profile_settings', label: 'Settings' }
             ].map(t => (
               <button
                 key={t.id}
                 onClick={() => {
                   setActiveTab(t.id);
-                  if (t.id === 'overview') {
-                    setSelectedEventId('');
-                  }
-                  if (t.id === 'judges') {
-                    setShowIncompleteGradingModal(true);
-                  }
+                  if (t.id === 'overview') setSelectedEventId('');
+                  if (t.id === 'judges') setShowIncompleteGradingModal(true);
                   if (t.id === 'event_history') fetchEventHistory();
                 }}
-                className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 sm:px-2.5 lg:px-3 rounded-xl font-display text-[11px] lg:text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex-1 text-center ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === t.id
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <t.icon size={13} className="shrink-0" />
-                <span>{t.label}</span>
+                {t.label}
               </button>
             ))}
           </div>
         </div>
-      </div>
-
-
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-          
-          {/* Full-Width Administrator Control Panel Welcome Banner Card */}
-          <div className="w-full bg-linear-to-r from-amber-900/10 via-amber-950/5 to-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 text-left shadow-2xs">
-            {/* Left Side: Welcome & Overview Info */}
-            <div className="flex flex-col gap-2 max-w-2xl">
-              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-widest flex items-center gap-1.5">
-                <ShieldCheck size={14} className="text-amber-500" /> ADMINISTRATOR CONTROL PANEL
-              </span>
-              <h1 className="font-display font-black text-2xl sm:text-4xl text-slate-900 dark:text-white leading-tight">
-                Welcome back, Admin {user?.name || "Amol Sathe"}!
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                Manage DSLR photography contests, oversee contestant enrollments, monitor financial ledgers & sponsorships, assign jury panel judges, and review overall system performance.
-              </p>
-            </div>
 
-            {/* Right Side: 3 Export Action Buttons with Amber/Slate/Indigo solid color scheme */}
-            <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto">
-              <button
-                onClick={() => handleExportCSV('participants')}
-                className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
-                title="Export Participants List Excel/CSV"
-              >
-                <Download size={14} className="text-white" />
-                <span>Export Participants Excel/CSV</span>
-              </button>
-              <button
-                onClick={() => handleExportCSV('financial')}
-                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
-                title="Export Revenue Ledger Excel/CSV"
-              >
-                <Download size={14} className="text-white" />
-                <span>Export Revenue Ledger Excel/CSV</span>
-              </button>
-              <button
-                onClick={() => handleExportCSV('photographs')}
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-2xl text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
-                title="Export Photos Metadata Excel/CSV"
-              >
-                <Download size={14} className="text-white" />
-                <span>Export Photos Metadata Excel/CSV</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Row 1: Executive Financial Cards Grid - 4 Cards in a row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Financial Card 1: Total Revenue */}
             <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
@@ -2369,7 +2360,7 @@ export default function AdminDashboard() {
                 TOTAL REVENUE {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className="font-display font-black text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
-                ₹{(financialSummary.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
+                ₹{(financialSummary?.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
               </p>
               <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium">Successful payments volume</span>
             </div>
@@ -2380,7 +2371,7 @@ export default function AdminDashboard() {
                 DONATION & SPONSORSHIP {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className="font-display font-black text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
-                ₹{(financialSummary.totalFunding || 0).toLocaleString('en-IN')}
+                ₹{(financialSummary?.totalFunding || 0).toLocaleString('en-IN')}
               </p>
               <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">CSR, Corporate & Donor grants</span>
             </div>
@@ -2391,14 +2382,14 @@ export default function AdminDashboard() {
                 TOTAL EXPENSES {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className="font-display font-black text-2xl sm:text-3xl text-rose-600 dark:text-rose-400">
-                ₹{(financialSummary.totalExpenses || 0).toLocaleString('en-IN')}
+                ₹{(financialSummary?.totalExpenses || 0).toLocaleString('en-IN')}
               </p>
               <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-medium">Operational line items</span>
             </div>
 
             {/* Financial Card 4: Net Profit / Loss */}
             <div className={`border-2 rounded-2xl p-4 sm:p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm ${
-              (financialSummary.netProfitLoss || 0) >= 0
+              (financialSummary?.netProfitLoss || 0) >= 0
                 ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700'
                 : 'bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-700'
             }`}>
@@ -2406,12 +2397,12 @@ export default function AdminDashboard() {
                 NET PROFIT / LOSS {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className={`font-display font-black text-2xl sm:text-3xl ${
-                (financialSummary.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
+                (financialSummary?.netProfitLoss || 0) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-600 dark:text-red-400'
               }`}>
-                ₹{(financialSummary.netProfitLoss || 0).toLocaleString('en-IN')}
+                ₹{(financialSummary?.netProfitLoss || 0).toLocaleString('en-IN')}
               </p>
               <span className="text-[10px] text-slate-500 font-medium">
-                {(financialSummary.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
+                {(financialSummary?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
               </span>
             </div>
           </div>
@@ -2422,16 +2413,16 @@ export default function AdminDashboard() {
             <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
               <span className="text-[10px] text-indigo-900/80 dark:text-indigo-300 font-extrabold uppercase tracking-wider">TOTAL PARTICIPANTS</span>
               <p className="font-display font-extrabold text-2xl sm:text-3xl text-indigo-600 dark:text-indigo-400">
-                {stats.totalParticipants}
+                {stats?.totalParticipants || 0}
               </p>
-              <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">{stats.todayRegistrations} added today</span>
+              <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">{stats?.todayRegistrations || 0} added today</span>
             </div>
 
             {/* Card 2: Active Entries */}
             <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-5 text-left flex flex-col gap-1.5 shadow-xs transition-all hover:shadow-sm">
               <span className="text-[10px] text-amber-900/80 dark:text-amber-300 font-extrabold uppercase tracking-wider">ACTIVE ENTRIES</span>
               <p className="font-display font-extrabold text-2xl sm:text-3xl text-amber-600 dark:text-amber-500">
-                {stats.totalEntries}
+                {stats?.totalEntries || 0}
               </p>
               <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-medium">Locked submission folders</span>
             </div>
@@ -2443,10 +2434,10 @@ export default function AdminDashboard() {
               </span>
               <div className="flex items-baseline gap-2 flex-wrap">
                 <p className="font-display font-extrabold text-2xl sm:text-3xl text-purple-600 dark:text-purple-400">
-                  {(stats.totalPhotos || 0) + (stats.totalVideos || 0)}
+                  {(stats?.totalPhotos || 0) + (stats?.totalVideos || 0)}
                 </p>
                 <span className="text-xs font-bold text-purple-800 dark:text-purple-300 bg-purple-200/80 dark:bg-purple-900/60 px-2 py-0.5 rounded-lg border border-purple-300 dark:border-purple-700">
-                  {stats.totalPhotos || 0} Photos / {stats.totalVideos || 0} Videos
+                  {stats?.totalPhotos || 0} Photos / {stats?.totalVideos || 0} Videos
                 </span>
               </div>
               <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">
@@ -2460,7 +2451,7 @@ export default function AdminDashboard() {
                 PAID / SETTLED {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
               </span>
               <p className="font-display font-black text-2xl sm:text-3xl text-teal-600 dark:text-teal-400">
-                ₹{(financialSummary.paidExpenses || 0).toLocaleString('en-IN')}
+                ₹{(financialSummary?.paidExpenses || 0).toLocaleString('en-IN')}
               </p>
               <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 font-medium">Cleared vendor payouts</span>
             </div>
@@ -2468,20 +2459,19 @@ export default function AdminDashboard() {
 
           {/* Recharts Analytics Panel */}
           <StatsCharts 
-            dailyStats={charts.dailyStats} 
-            categoryStats={charts.categoryStats} 
-            eventStats={charts.eventStats}
-            eventsList={charts.eventsList}
+            dailyStats={charts?.dailyStats || []} 
+            categoryStats={charts?.categoryStats || []} 
+            eventStats={charts?.eventStats || []}
+            eventsList={charts?.eventsList || []}
             selectedEventId={selectedEventId}
             selectedEventTitle={selectedEvent?.title}
           />
-
         </div>
       )}
 
       {/* TAB 2: PARTICIPANTS */}
       {activeTab === 'participants' && (
-        <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-in fade-in duration-200 h-125 overflow-y-auto">
+        <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-in fade-in duration-200">
           
           {/* Filters row */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -7613,7 +7603,6 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-
               {/* Modal Footer */}
               <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
@@ -7628,7 +7617,81 @@ export default function AdminDashboard() {
         );
       })()}
 
-      </div>
+      {/* Export Action Buttons Bar directly over copyright footer (Dashboard tab only) */}
+      {activeTab === 'overview' && (
+        <div className="mt-10 mb-4 pt-6 border-t border-slate-200/80 dark:border-slate-800 flex flex-col items-center justify-center gap-4 text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-3xl">
+            <button
+              onClick={() => handleExportCSV('participants')}
+              className="w-full sm:w-auto bg-[#d97706] hover:bg-[#b45309] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
+              title="Export Participants List Excel/CSV"
+            >
+              <Download size={15} className="text-white" />
+              <span>Export Participants Excel/CSV</span>
+            </button>
+
+            <button
+              onClick={() => handleExportCSV('financial')}
+              className="w-full sm:w-auto bg-[#111625] hover:bg-slate-900 text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase border border-slate-700/60"
+              title="Export Revenue Ledger Excel/CSV"
+            >
+              <Download size={15} className="text-white" />
+              <span>Export Revenue Ledger Excel/CSV</span>
+            </button>
+
+            <button
+              onClick={() => handleExportCSV('photographs')}
+              className="w-full sm:w-auto bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
+              title="Export Photos Metadata Excel/CSV"
+            >
+              <Download size={15} className="text-white" />
+              <span>Export Photos Metadata Excel/CSV</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+
+      {/* Export Action Buttons Bar directly over copyright footer (Dashboard tab only) */}
+      {activeTab === 'overview' && (
+        <div className="mt-10 mb-4 pt-6 border-t border-slate-200/80 dark:border-slate-800 flex flex-col items-center justify-center gap-4 text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-3xl">
+            <button
+              onClick={() => handleExportCSV('participants')}
+              className="w-full sm:w-auto bg-[#d97706] hover:bg-[#b45309] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
+              title="Export Participants List Excel/CSV"
+            >
+              <Download size={15} className="text-white" />
+              <span>Export Participants Excel/CSV</span>
+            </button>
+
+            <button
+              onClick={() => handleExportCSV('financial')}
+              className="w-full sm:w-auto bg-[#111625] hover:bg-slate-900 text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase border border-slate-700/60"
+              title="Export Revenue Ledger Excel/CSV"
+            >
+              <Download size={15} className="text-white" />
+              <span>Export Revenue Ledger Excel/CSV</span>
+            </button>
+
+            <button
+              onClick={() => handleExportCSV('photographs')}
+              className="w-full sm:w-auto bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
+              title="Export Photos Metadata Excel/CSV"
+            >
+              <Download size={15} className="text-white" />
+              <span>Export Photos Metadata Excel/CSV</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Footer inside right scrollable area */}
+      <footer className="py-4 text-xs text-center text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800">
+        <p>&copy; {new Date().getFullYear()} sumbaran Art Society. All rights reserved.</p>
+      </footer>
+
+      </main>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History, Building2, Info, Trophy, ShieldCheck, Award, Sparkles } from 'lucide-react';
+import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History, Building2, Info, Trophy, ShieldCheck, Award, Sparkles, Mail } from 'lucide-react';
 import { getBackendUrl } from '../utils/url';
 
 export default function Navbar() {
@@ -284,7 +284,7 @@ export default function Navbar() {
 
   return (
     <nav className={`${navPosition} z-50 transition-all duration-300 ${navBg}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 transition-all duration-300">
           {/* Logo / User Info Left Section */}
           <div className="flex items-center">
@@ -338,6 +338,11 @@ export default function Navbar() {
               <span>Gallery &amp; Results</span>
             </Link>
 
+            <Link to="/contact" className={`flex items-center gap-1.5 ${navLinkClass('/contact')}`}>
+              <Mail size={16} />
+              <span>Contact Us</span>
+            </Link>
+
             {!user && (
               <Link to="/admin" state={{ forceAdmin: true }} onClick={handleAdminClick} className={`flex items-center gap-1.5 ${navLinkClass('/admin')}`}>
                 <ShieldCheck size={16} />
@@ -345,32 +350,25 @@ export default function Navbar() {
               </Link>
             )}
 
-            {(!user || user.role === 'Admin') && (
-              <Link to="/judge" state={{ forceJudge: true }} onClick={handleJudgeClick} className={`flex items-center gap-1.5 ${navLinkClass('/judge')}`}>
-                <Award size={16} />
-                <span>Judges Portal</span>
+            {/* Display Dashboard link in top nav bar ONLY on Content pages (Event Info, Gallery & Results, Contact Us, etc.), NOT on dashboard pages */}
+            {user && !['/dashboard', '/admin', '/judge', '/profile'].includes(location.pathname) && (
+              <Link
+                to={user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard'}
+                className={`flex items-center gap-1.5 ${navLinkClass(user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard')}`}
+              >
+                <LayoutDashboard size={16} />
+                <span>Dashboard</span>
               </Link>
             )}
-            
-            {user && (
-              <>
-                <Link
-                  to={user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard'}
-                  className={`flex items-center gap-1.5 ${navLinkClass(user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard')}`}
-                >
-                  <LayoutDashboard size={16} />
-                  <span>Dashboard</span>
-                </Link>
-                {onHero && (
-                  <button
-                    onClick={handleLogout}
-                    className={`flex items-center gap-1.5 ${navLinkClass('')}`}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                )}
-              </>
+
+            {user && onHero && (
+              <button
+                onClick={handleLogout}
+                className={`flex items-center gap-1.5 ${navLinkClass('')}`}
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
             )}
 
             {/* Auth Buttons — Hidden on hero page load, revealed on scroll or inner pages */}
@@ -543,6 +541,19 @@ export default function Navbar() {
               <span>Gallery &amp; Results</span>
             </Link>
 
+            <Link
+              to="/contact"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                isActive('/contact')
+                  ? 'bg-indigo-300 text-white shadow-md'
+                  : 'text-slate-200 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <Mail size={16} />
+              <span>Contact Us</span>
+            </Link>
+
             {!user && (
               <Link
                 to="/admin"
@@ -581,26 +592,12 @@ export default function Navbar() {
               </Link>
             )}
 
-            {user && user.role === 'Participant' && (
+            {user && !['/dashboard', '/admin', '/judge', '/profile'].includes(location.pathname) && (
               <Link
-                to="/dashboard"
+                to={user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard'}
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  isActive('/dashboard')
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>Dashboard</span>
-              </Link>
-            )}
-
-            {user && user.role === 'Judge' && (
-              <Link
-                to="/judge"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  isActive('/judge')
+                  isActive(user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard')
                     ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-200 hover:bg-white/10 hover:text-white'
                 }`}
