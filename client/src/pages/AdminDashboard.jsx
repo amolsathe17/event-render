@@ -7664,41 +7664,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-
-      {/* Export Action Buttons Bar directly over copyright footer (Dashboard tab only) */}
-      {activeTab === 'overview' && (
-        <div className="mt-10 mb-4 pt-6 border-t border-slate-200/80 dark:border-slate-800 flex flex-col items-center justify-center gap-4 text-center">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-3xl">
-            <button
-              onClick={() => handleExportCSV('participants')}
-              className="w-full sm:w-auto bg-[#d97706] hover:bg-[#b45309] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
-              title="Export Participants List Excel/CSV"
-            >
-              <Download size={15} className="text-white" />
-              <span>Export Participants Excel/CSV</span>
-            </button>
-
-            <button
-              onClick={() => handleExportCSV('financial')}
-              className="w-full sm:w-auto bg-[#111625] hover:bg-slate-900 text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase border border-slate-700/60"
-              title="Export Revenue Ledger Excel/CSV"
-            >
-              <Download size={15} className="text-white" />
-              <span>Export Revenue Ledger Excel/CSV</span>
-            </button>
-
-            <button
-              onClick={() => handleExportCSV('photographs')}
-              className="w-full sm:w-auto bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
-              title="Export Photos Metadata Excel/CSV"
-            >
-              <Download size={15} className="text-white" />
-              <span>Export Photos Metadata Excel/CSV</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Footer inside right scrollable area */}
       <footer className="py-4 text-xs text-center text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800">
         <p>&copy; {new Date().getFullYear()} sumbaran Art Society. All rights reserved.</p>
