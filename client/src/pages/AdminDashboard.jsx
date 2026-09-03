@@ -2357,15 +2357,10 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Financial Card 1: Total Revenue */}
-            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                  TOTAL REVENUE {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-                </span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
-                  <IndianRupee size={14} />
-                </div>
-              </div>
+            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                TOTAL REVENUE {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
+              </span>
               <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
                 ₹{(financialSummary?.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
               </p>
@@ -2373,15 +2368,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* Financial Card 2: Donation & Sponsorship */}
-            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                  DONATION & SPONSORSHIP {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-                </span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
-                  <Building2 size={14} />
-                </div>
-              </div>
+            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                DONATION & SPONSORSHIP {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
+              </span>
               <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
                 ₹{(financialSummary?.totalFunding || 0).toLocaleString('en-IN')}
               </p>
@@ -2389,15 +2379,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* Financial Card 3: Total Expenses */}
-            <div className="bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                  TOTAL EXPENSES {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-                </span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-rose-200/80 dark:bg-rose-900/60 flex items-center justify-center text-rose-700 dark:text-rose-300 shrink-0">
-                  <Wallet size={14} />
-                </div>
-              </div>
+            <div className="bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
+                TOTAL EXPENSES {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
+              </span>
               <p className="font-display font-black text-xl sm:text-2xl text-rose-950 dark:text-white">
                 ₹{(financialSummary?.totalExpenses || 0).toLocaleString('en-IN')}
               </p>
@@ -2405,19 +2390,14 @@ export default function AdminDashboard() {
             </div>
 
             {/* Financial Card 4: Net Profit / Loss */}
-            <div className={`border rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md ${
+            <div className={`border rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md ${
               (financialSummary?.netProfitLoss || 0) >= 0
                 ? 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800'
                 : 'bg-red-50/80 dark:bg-red-950/30 border-red-200 dark:border-red-800'
             }`}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
-                  NET PROFIT / LOSS {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-                </span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
-                  <TrendingUp size={14} />
-                </div>
-              </div>
+              <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
+                NET PROFIT / LOSS {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
+              </span>
               <p className={`font-display font-black text-xl sm:text-2xl ${
                 (financialSummary?.netProfitLoss || 0) >= 0 ? 'text-sky-950 dark:text-white' : 'text-red-950 dark:text-white'
               }`}>
@@ -2432,13 +2412,8 @@ export default function AdminDashboard() {
           {/* Row 2: Operational & Payout Cards Grid - 4 Cards below in a row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Total Participants */}
-            <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">TOTAL PARTICIPANTS</span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
-                  <Users size={14} />
-                </div>
-              </div>
+            <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">TOTAL PARTICIPANTS</span>
               <p className="font-display font-black text-xl sm:text-2xl text-sky-950 dark:text-white">
                 {stats?.totalParticipants || 0}
               </p>
@@ -2446,13 +2421,8 @@ export default function AdminDashboard() {
             </div>
 
             {/* Card 2: Active Entries */}
-            <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">ACTIVE ENTRIES</span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-amber-200/80 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-                  <CheckCircle size={14} />
-                </div>
-              </div>
+            <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">ACTIVE ENTRIES</span>
               <p className="font-display font-black text-xl sm:text-2xl text-amber-950 dark:text-white">
                 {stats?.totalEntries || 0}
               </p>
@@ -2460,15 +2430,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* Card 3: Total Photographs / Videos Combined */}
-            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                  TOTAL PHOTOGRAPHS / VIDEOS
-                </span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
-                  <Camera size={14} />
-                </div>
-              </div>
+            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                TOTAL PHOTOGRAPHS / VIDEOS
+              </span>
               <div className="flex items-baseline gap-2 flex-wrap">
                 <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
                   {(stats?.totalPhotos || 0) + (stats?.totalVideos || 0)}
@@ -2483,15 +2448,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* Card 4: Paid / Settled */}
-            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                  PAID / SETTLED {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-                </span>
-                <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
-                  <Award size={14} />
-                </div>
-              </div>
+            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+              <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
+                PAID / SETTLED {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
+              </span>
               <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
                 ₹{(financialSummary?.paidExpenses || 0).toLocaleString('en-IN')}
               </p>
@@ -2770,57 +2730,68 @@ export default function AdminDashboard() {
             return (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  <div className="flex items-center gap-3 bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-4 shadow-2xs">
-                    <div className="p-2.5 bg-emerald-500/10 rounded-xl">
-                      <ThumbsUp size={20} className="text-emerald-500 shrink-0" />
-                    </div>
-                    <div>
-                      <p className="font-display font-black text-2xl text-emerald-600 dark:text-emerald-400">{approvedPhotos.length}</p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-650/80 dark:text-emerald-400/80">Approved by Judges</span>
-                    </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                  {/* Card 1: Approved by Judges */}
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                      APPROVED BY JUDGES
+                    </span>
+                    <p className="font-display font-black text-xl sm:text-2xl text-emerald-600 dark:text-emerald-400">
+                      {approvedPhotos.length}
+                    </p>
+                    <span className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">
+                      Approved submission entries
+                    </span>
                   </div>
                   
-                  <div className="flex items-center gap-3 bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl px-4 py-4 shadow-2xs">
-                    <div className="p-2.5 bg-red-500/10 rounded-xl">
-                      <ThumbsDown size={20} className="text-red-500 shrink-0" />
-                    </div>
-                    <div>
-                      <p className="font-display font-black text-2xl text-red-500 dark:text-red-400">{disapprovedPhotos.length}</p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-red-600/80 dark:text-red-400/80">Disapproved by Judges</span>
-                    </div>
+                  {/* Card 2: Disapproved by Judges */}
+                  <div className="bg-red-50/70 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-red-800 dark:text-red-300">
+                      DISAPPROVED BY JUDGES
+                    </span>
+                    <p className="font-display font-black text-xl sm:text-2xl text-red-600 dark:text-red-400">
+                      {disapprovedPhotos.length}
+                    </p>
+                    <span className="text-[10px] font-semibold text-red-700/80 dark:text-red-300/80">
+                      Disapproved submission entries
+                    </span>
                   </div>
 
-                  {/* Pending Evaluation Card (Right side of Disapproved by Judges) */}
-                  <div className="flex items-center gap-3 bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl px-4 py-4 shadow-2xs">
-                    <div className="p-2.5 bg-amber-500/10 rounded-xl">
-                      <Clock size={20} className="text-amber-500 shrink-0" />
-                    </div>
-                    <div>
-                      <p className="font-display font-black text-2xl text-amber-600 dark:text-amber-400">{pendingPhotos.length}</p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600/80 dark:text-amber-400/80">Pending Evaluation</span>
-                    </div>
+                  {/* Card 3: Pending Evaluation */}
+                  <div className="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                      PENDING EVALUATION
+                    </span>
+                    <p className="font-display font-black text-xl sm:text-2xl text-amber-600 dark:text-amber-400">
+                      {pendingPhotos.length}
+                    </p>
+                    <span className="text-[10px] font-semibold text-amber-700/80 dark:text-amber-300/80">
+                      Awaiting judge evaluation
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-3 bg-slate-50/80 dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-4 shadow-2xs">
-                    <div className="p-2.5 bg-slate-500/10 rounded-xl">
-                      <Camera size={20} className="text-slate-500 shrink-0" />
-                    </div>
-                    <div>
-                      <p className="font-display font-black text-2xl text-slate-700 dark:text-slate-200">{judgedPhotos.length}</p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Evaluated</span>
-                    </div>
+                  {/* Card 4: Total Evaluated */}
+                  <div className="bg-sky-50/70 dark:bg-sky-950/30 border-2 border-sky-300 dark:border-sky-700 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-sky-900 dark:text-sky-300">
+                      TOTAL EVALUATED
+                    </span>
+                    <p className="font-display font-black text-xl sm:text-2xl text-sky-700 dark:text-sky-300">
+                      {judgedPhotos.length}
+                    </p>
+                    <span className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-300/80">
+                      Scored by jury panel
+                    </span>
                   </div>
 
-                  {/* TOTAL PHOTOGRAPHS / VIDEOS Card */}
-                  <div className="flex items-start flex-col justify-between bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-4 shadow-2xs">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">
+                  {/* Card 5: TOTAL PHOTOGRAPHS / VIDEOS Card */}
+                  <div className="bg-purple-50/70 dark:bg-purple-950/30 border-2 border-purple-300 dark:border-purple-700 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-purple-900 dark:text-purple-300">
                       {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'TOTAL VIDEOS' : 'TOTAL PHOTOGRAPHS / VIDEOS'}
                     </span>
-                    <p className="font-display font-black text-3xl sm:text-4xl text-purple-600 dark:text-purple-400 my-0.5">
+                    <p className="font-display font-black text-xl sm:text-2xl text-purple-600 dark:text-purple-400">
                       {filteredPhotos.length}
                     </p>
-                    <span className="text-[10px] font-medium text-purple-600/90 dark:text-purple-300/80 block truncate w-full">
+                    <span className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-300/80">
                       {(activeEvent && (activeEvent.mediaType === 'video' || String(activeEvent.eventType).toLowerCase().includes('video') || String(activeEvent.eventType).toLowerCase().includes('reel'))) ? 'Short video assets' : 'Verified submission assets'}
                     </span>
                   </div>

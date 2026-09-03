@@ -570,15 +570,10 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
       {/* 3 Summary Cards in 1 Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         {/* Card 1: Total Sponsorship / Donations */}
-        <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-[11px] font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider">
-              TOTAL SPONSORSHIP / DONATIONS
-            </span>
-            <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-purple-200/80 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
-              <Building2 size={14} />
-            </div>
-          </div>
+        <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md text-left">
+          <span className="text-[10px] sm:text-[11px] font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider">
+            TOTAL SPONSORSHIP / DONATIONS
+          </span>
           <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
             ₹{(summary?.totalFunding !== undefined ? summary.totalFunding : ((summary?.totalSponsorship || 0) + (summary?.totalDonations || 0))).toLocaleString('en-IN')}
           </p>
@@ -586,15 +581,10 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
         </div>
 
         {/* Card 2: Pending Funding */}
-        <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
-              PENDING FUNDING
-            </span>
-            <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-amber-200/80 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-              <Clock size={14} />
-            </div>
-          </div>
+        <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md text-left">
+          <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
+            PENDING FUNDING
+          </span>
           <p className="font-display font-black text-xl sm:text-2xl text-amber-950 dark:text-white">
             ₹{(summary?.pendingFunding || 0).toLocaleString('en-IN')}
           </p>
@@ -602,15 +592,10 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
         </div>
 
         {/* Card 3: Total No. of Sponsors / Donors */}
-        <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2 shadow-2xs transition-all hover:shadow-md text-left">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-900 dark:text-sky-300 uppercase tracking-wider">
-              TOTAL NO. OF SPONSORS / DONORS
-            </span>
-            <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-sky-200/80 dark:bg-sky-900/60 flex items-center justify-center text-sky-700 dark:text-sky-300 shrink-0">
-              <Building2 size={14} />
-            </div>
-          </div>
+        <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md text-left">
+          <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-900 dark:text-sky-300 uppercase tracking-wider">
+            TOTAL NO. OF SPONSORS / DONORS
+          </span>
           <p className="font-display font-black text-xl sm:text-2xl text-sky-950 dark:text-white">
             {(summary?.sponsorCount || 0) + (summary?.donorCount || 0)}
           </p>
