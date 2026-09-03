@@ -806,31 +806,6 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
                 className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-2xl text-xs outline-none focus:border-amber-500 font-bold shadow-xs placeholder-slate-400"
               />
             </div>
-
-            {/* 2 & 3. Date Pickers (From Date, To Date) */}
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 shrink-0">
-              {/* From Date Picker */}
-              <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
-                <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">From:</span>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={e => setFromDate(e.target.value)}
-                  className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
-                />
-              </div>
-
-              {/* To Date Picker */}
-              <div className="flex items-center gap-1 min-w-0 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 px-2 sm:px-3 py-1.5 rounded-2xl shadow-xs">
-                <span className="text-[10px] sm:text-xs font-black text-amber-950 dark:text-amber-300 shrink-0">To:</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={e => setToDate(e.target.value)}
-                  className="w-full bg-transparent text-[9px] min-[360px]:text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer min-w-0 p-0 border-none"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Right Side: Action Export Buttons (Excel, CSV, PDF, Print) */}
