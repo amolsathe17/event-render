@@ -785,6 +785,7 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
   };
 
   const activeReportObj = REPORT_TYPES.find(r => r.id === activeReport);
+  const activeEv = allEvents.find(e => (e._id === filterEventId || e.id === filterEventId || e._id === selectedEventId));
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200 text-left">
