@@ -991,7 +991,7 @@ export default function JudgeDashboard() {
             {/* Top 6 Metric Cards Row (Structured into 3 Column Pairs for Perfect Vertical Border Alignment) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
               {/* Pair 1: Column 1 Alignment (Card 1 & Card 2) */}
-              <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-3">
                 {/* Card 1: ASSIGNED CONTESTS */}
                 <div className="bg-[#f0edff] dark:bg-indigo-950/30 border border-[#e0d9ff] dark:border-indigo-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
                   <div className="flex justify-between items-start">
@@ -1034,7 +1034,7 @@ export default function JudgeDashboard() {
               </div>
 
               {/* Pair 2: Column 2 Alignment (Card 3 & Card 4) */}
-              <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-3">
                 {/* Card 3: UNGRADED PHOTOGRAPHS / VIDEOS */}
                 <div className="bg-[#e6f7ed] dark:bg-emerald-950/30 border border-[#b7ebc9] dark:border-emerald-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
                   <div className="flex justify-between items-start">
@@ -1077,7 +1077,7 @@ export default function JudgeDashboard() {
               </div>
 
               {/* Pair 3: Column 3 Alignment (Card 5 & Card 6) */}
-              <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-3">
                 {/* Card 5: TOTAL PHOTOGRAPHS */}
                 <div className="bg-[#ffe6ec] dark:bg-rose-950/30 border border-[#ffb3c6] dark:border-rose-800 rounded-2xl p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
                   <div className="flex justify-between items-start">
