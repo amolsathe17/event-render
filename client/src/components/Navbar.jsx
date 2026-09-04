@@ -626,8 +626,41 @@ export default function Navbar() {
                   </>
                 )}
 
+                {/* If logged in as Judge: render full Judge Dashboard tabs */}
+                {user && user.role === 'Judge' && (
+                  <>
+                    {[
+                      { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+                      { id: 'portal', label: 'Judging Portal', icon: Camera },
+                      { id: 'event_history', label: 'Events History', icon: Calendar },
+                      { id: 'notifications', label: 'Announcements', icon: Bell },
+                      { id: 'profile_settings', label: 'Profile Settings', icon: Sliders }
+                    ].map(tab => {
+                      const Icon = tab.icon;
+                      const active = location.pathname === '/judge' && (location.state?.tab || 'overview') === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setIsOpen(false);
+                            navigate('/judge', { state: { tab: tab.id } });
+                          }}
+                          className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                            active
+                              ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25'
+                              : 'text-slate-300 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          <Icon size={16} className={active ? 'text-white' : 'text-slate-400'} />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+
                 {/* If logged in as Contestant/User */}
-                {user && user.role !== 'Admin' && (
+                {user && user.role !== 'Admin' && user.role !== 'Judge' && (
                   <>
                     <button
                       onClick={() => {

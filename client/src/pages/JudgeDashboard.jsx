@@ -903,16 +903,6 @@ export default function JudgeDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 justify-start md:justify-end">
-            {/* Mobile Menu Toggle Button (< lg) */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden h-11 px-3.5 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-extrabold shadow-md cursor-pointer transition-all shrink-0"
-              title="Open Navigation Menu"
-            >
-              <Menu size={18} />
-              <span>Menu</span>
-            </button>
-
             {/* Current Session Date Badge */}
             <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
               <Calendar size={15} className="text-indigo-500 shrink-0" />
