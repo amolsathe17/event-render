@@ -2304,8 +2304,8 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Right panel: Submission info card, payment, finalize actions */}
-                                <div className="lg:col-span-4 flex flex-col gap-6">
+                                {/* Right panel: Submission info card (Fixed/Sticky), payment, finalize actions */}
+                                <div className="lg:col-span-4 flex flex-col gap-6 sticky top-4">
                                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-sm">
                                     <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
                                       <span className="text-[10px] text-slate-700 font-extrabold uppercase">Folder Config</span>
