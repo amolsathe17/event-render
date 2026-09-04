@@ -3130,13 +3130,15 @@ export default function AdminDashboard() {
             
             {/* Create Judge Account */}
             <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-              <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800 pr-3">
                 <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Contest Judges</h3>
                 <button
                   onClick={() => setShowJudgeModal(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white p-1 rounded-lg cursor-pointer"
+                  className="min-w-8 min-h-8 p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors shadow-2xs shrink-0"
+                  title="Create Judge Account"
+                  data-tooltip="Create Judge Account"
                 >
-                  <Plus size={16} />
+                  <Plus size={16} className="shrink-0" />
                 </button>
               </div>
 
