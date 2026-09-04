@@ -1021,6 +1021,146 @@ export default function AdminDashboard() {
       alert('Could not generate PDF for this event: ' + err.message);
     }
   };
+
+  const downloadWinnersPDF = async (e) => {
+    if (!e) return;
+    try {
+      let targetEvent = e;
+      if (!targetEvent.winners || targetEvent.winners.length === 0) {
+        try {
+          const fetched = await apiFetch(`/api/events/${e._id}`);
+          if (fetched && fetched.event) {
+            targetEvent = fetched.event;
+          }
+        } catch (err) {
+          console.warn('Could not fetch detailed event for winners PDF:', err);
+        }
+      }
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      let y = 20;
+
+      // Header Banner (Dark Indigo / Navy)
+      doc.setFillColor(30, 27, 75);
+      doc.rect(0, 0, 210, 36, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('OFFICIAL WINNERS & RANKINGS REPORT', 14, 18);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} | Sumbaran Art Society`, 14, 26);
+
+      // Event Information Card
+      doc.setFillColor(248, 250, 252);
+      doc.rect(14, 42, 182, 32, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.rect(14, 42, 182, 32, 'S');
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text(targetEvent.title || 'Untitled Contest', 18, 51);
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Status: ${targetEvent.status || 'Results Published'}   |   Type: ${targetEvent.eventType || 'Contest'}`, 18, 59);
+      doc.text(`Venue / Location: ${targetEvent.venue || 'Sumbaran Art Gallery, Sadashiv Peth, Pune'}`, 18, 65);
+
+      y = 82;
+
+      // Section Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('OFFICIAL WINNERS CIRCLE & RANKINGS', 14, y);
+      y += 8;
+
+      // Table Header Row
+      doc.setFillColor(79, 70, 229);
+      doc.rect(14, y, 182, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RANK', 18, y + 6);
+      doc.text('WINNER NAME', 55, y + 6);
+      doc.text('SUBMISSION TITLE', 115, y + 6);
+      doc.text('SCORE', 172, y + 6);
+      y += 9;
+
+      const winnersList = targetEvent.winners || [];
+      if (winnersList.length === 0) {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(14, y, 182, 10, 'F');
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(148, 163, 184);
+        doc.text('No winners rankings declared for this contest yet.', 18, y + 6);
+        y += 10;
+      } else {
+        winnersList.forEach((win, idx) => {
+          doc.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 250 : 255, idx % 2 === 0 ? 252 : 255);
+          doc.rect(14, y, 182, 11, 'F');
+          doc.setDrawColor(241, 245, 249);
+          doc.rect(14, y, 182, 11, 'S');
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(79, 70, 229);
+          doc.text(win.rank || `${idx + 1}${idx === 0 ? 'st' : idx === 1 ? 'nd' : idx === 2 ? 'rd' : 'th'} Place`, 18, y + 7);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42);
+          doc.text(win.userName || win.name || win.participantName || 'N/A', 55, y + 7);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          const photoTitleStr = win.photoTitle || win.title || 'Untitled';
+          doc.text(photoTitleStr.length > 30 ? photoTitleStr.substring(0, 28) + '...' : photoTitleStr, 115, y + 7);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(16, 185, 129);
+          doc.text(win.score ? `${win.score}/100` : 'N/A', 172, y + 7);
+
+          y += 11;
+        });
+      }
+
+      y += 15;
+      doc.setDrawColor(226, 232, 240);
+      doc.line(14, y, 196, y);
+      y += 6;
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text('This is an official computer-generated Winners Rankings Report certified by Sumbaran Art Society.', 14, y);
+
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(148, 163, 184);
+        doc.text('Official Winner Rankings Report - Sumbaran Art Society', 14, 287);
+        doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
+      }
+
+      const fileName = `${(targetEvent.title || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_Winners_Report.pdf`;
+      doc.save(fileName);
+    } catch (err) {
+      console.error('Error generating winners PDF:', err);
+      alert('Could not generate Winners PDF for this event: ' + err.message);
+    }
+  };
   
   // Selection/Modals
   const [selectedPhoto, setSelectedPhoto] = useState(null); // zoom / detail
@@ -3189,11 +3329,12 @@ export default function AdminDashboard() {
                       </div>
                       {e.winnersPublished ? (
                         <button
-                          onClick={() => handleExportCSV('winners', e._id)}
+                          onClick={() => downloadWinnersPDF(e)}
                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold cursor-pointer text-xs shadow-xs transition-all shrink-0"
+                          title="Download Winners Rankings PDF"
                         >
                           <Download size={13} />
-                          Export Winners CSV
+                          Export Winners PDF
                         </button>
                       ) : (
                         <span className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 px-2.5 py-1 rounded-xl text-[10px] font-bold shrink-0">
