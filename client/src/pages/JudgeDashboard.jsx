@@ -6,7 +6,7 @@ import {
   AlertTriangle, Clock, XCircle, ListChecks, History, Calendar, 
   Send, Bell, Trash2, Users, UserCheck, Search, Megaphone, Eye, 
   TrendingUp, Palette, LayoutDashboard, FileText, Sparkles, Filter, 
-  SlidersHorizontal, ArrowUpRight, Trophy, Play, Image as ImageIcon
+  SlidersHorizontal, ArrowUpRight, Trophy, Play, Image as ImageIcon, Menu, LogOut
 } from 'lucide-react';
 import WatermarkPreview from '../components/WatermarkPreview';
 import { getBackendUrl } from '../utils/url';
@@ -33,9 +33,10 @@ function ParticipantAvatar({ avatar, name, className = "w-7 h-7 text-[11px]", bg
 }
 
 export default function JudgeDashboard() {
-  const { apiFetch, user, updateProfile, refreshUser } = useAuth();
+  const { apiFetch, user, updateProfile, refreshUser, logout } = useAuth();
   const location = useLocation();
   
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [event, setEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [photographs, setPhotographs] = useState([]);
@@ -682,10 +683,10 @@ export default function JudgeDashboard() {
   return (
     <div className="w-full h-full overflow-hidden bg-[#f4f6fa] dark:bg-slate-950 flex flex-col lg:flex-row font-sans">
       
-      {/* ════════════════════ FIXED LEFT SIDEBAR (No Art Society Logo, Starts directly with Navigation) ════════════════════ */}
-      <aside className="w-full lg:w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between shrink-0 px-5 py-6 shadow-xl border-r border-slate-800 z-30 h-auto lg:h-full overflow-y-auto">
+      {/* ════════════════════ FIXED LEFT SIDEBAR (Desktop: hidden lg:flex) ════════════════════ */}
+      <aside className="hidden lg:flex w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex-col justify-between shrink-0 px-5 py-6 shadow-xl border-r border-slate-800 z-30 h-full overflow-y-auto">
         <div className="flex flex-col gap-4">
-          {/* Navigation Links (Starts at Top - Image 1 branding removed) */}
+          {/* Navigation Links */}
           <nav className="flex flex-col gap-2">
             <button
               onClick={() => {
@@ -759,7 +760,7 @@ export default function JudgeDashboard() {
           </nav>
         </div>
 
-        {/* Sidebar Promo Bottom Card (Event-Based Image & Requested Text matching media_1788334161170.png) */}
+        {/* Sidebar Promo Bottom Card */}
         <div className="mt-8 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border border-indigo-500/30 rounded-3xl p-4 flex flex-col gap-3 text-left relative overflow-hidden shadow-lg group">
           <div className="flex flex-col gap-1 z-10 relative">
             <h4 className="font-display font-black text-sm text-white tracking-wide">
@@ -789,10 +790,104 @@ export default function JudgeDashboard() {
         </div>
       </aside>
 
+      {/* ════════════════════ MOBILE SLIDE-OVER SIDEBAR DRAWER (< lg) ════════════════════ */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
+          {/* Backdrop Blur Overlay */}
+          <div
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer Sidebar Panel (Sliding in from Right) */}
+          <aside className="relative w-72 max-w-[85vw] bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between p-5 h-full overflow-y-auto z-50 shadow-2xl animate-in slide-in-from-right duration-200 border-l border-slate-800 text-left">
+            <div className="flex flex-col gap-5">
+              {/* Drawer User Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 border-2 border-indigo-400/50 flex items-center justify-center font-black text-sm text-white shadow-md overflow-hidden shrink-0">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'J'}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="font-display font-bold text-sm text-white leading-tight">
+                      {user?.name || 'Judge Portal'}
+                    </span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
+                      JUDGE
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center cursor-pointer transition-all"
+                  title="Close Menu"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Nav Links List inside Drawer */}
+              <nav className="flex flex-col gap-1.5">
+                {[
+                  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, onClick: () => { setJudgeDashboardTab('overview'); setUserSelectedEventId(''); } },
+                  { id: 'portal', label: 'Judging Portal', icon: Camera, onClick: () => setJudgeDashboardTab('portal') },
+                  { id: 'event_history', label: 'Events History', icon: Calendar, onClick: () => setJudgeDashboardTab('event_history') },
+                  { id: 'notifications', label: 'Announcements', icon: Bell, badge: broadcasts.length > 0 ? broadcasts.length : null, onClick: () => setJudgeDashboardTab('notifications') },
+                  { id: 'profile_settings', label: 'Settings', icon: SlidersHorizontal, onClick: () => setJudgeDashboardTab('profile_settings') },
+                ].map(t => {
+                  const IconComponent = t.icon;
+                  const isActive = judgeDashboardTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        t.onClick();
+                      }}
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center justify-between transition-all cursor-pointer text-left ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                          : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <IconComponent size={16} className={isActive ? 'text-white' : 'text-slate-400'} />
+                        <span>{t.label}</span>
+                      </div>
+                      {t.badge && (
+                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                          {t.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Logout at bottom of Drawer */}
+            {logout && (
+              <div className="mt-8 pt-4 border-t border-slate-800 flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-all cursor-pointer text-left"
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
+
       {/* ════════════════════ SCROLLABLE RIGHT CONTENT AREA ════════════════════ */}
       <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 min-w-0">
         
-        {/* HEADER / TITLE & TOOLBAR (Strict Top Horizontal Alignment) */}
+        {/* HEADER / TITLE & TOOLBAR */}
         <header className="flex flex-col md:flex-row items-start justify-between gap-4 mb-6">
           <div className="text-left flex flex-col justify-start">
             <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
@@ -808,6 +903,16 @@ export default function JudgeDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 justify-start md:justify-end">
+            {/* Mobile Menu Toggle Button (< lg) */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden h-11 px-3.5 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-extrabold shadow-md cursor-pointer transition-all shrink-0"
+              title="Open Navigation Menu"
+            >
+              <Menu size={18} />
+              <span>Menu</span>
+            </button>
+
             {/* Current Session Date Badge */}
             <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
               <Calendar size={15} className="text-indigo-500 shrink-0" />
