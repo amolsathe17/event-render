@@ -268,24 +268,39 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
     const todayStart = getStartOfDay(new Date());
     const { eventId } = req.query;
 
-    // Base filters scoped to event when provided
-    const submissionFilter = eventId ? { eventId } : {};
-    const paymentFilter = eventId ? { eventId } : {};
+    const isValidEventId = eventId && mongoose.Types.ObjectId.isValid(eventId);
+    const targetEventIdStr = isValidEventId ? String(eventId) : null;
 
-    const submissions = await Submission.find(submissionFilter);
+    // Filters
+    const submissionFilter = targetEventIdStr ? { eventId: targetEventIdStr } : {};
+    const paymentFilter = targetEventIdStr ? { eventId: targetEventIdStr } : {};
+    const sponFilter = targetEventIdStr ? { eventId: targetEventIdStr } : {};
+
+    // Execute parallel pre-fetches (only 5 fast queries total!)
+    const [
+      submissions,
+      successfulPayments,
+      allSpons,
+      allUsers,
+      allEventsList
+    ] = await Promise.all([
+      Submission.find(submissionFilter).lean(),
+      Payment.find({ ...paymentFilter, status: 'Success' }).lean(),
+      Sponsorship.find(sponFilter).lean(),
+      targetEventIdStr ? Promise.resolve([]) : User.find({ role: 'Participant' }).select('createdAt').lean(),
+      Event.find({}).select('title status createdAt startDate deadline eventDate exhibitionToDate').lean()
+    ]);
 
     // 1. Total Counts — scoped to event
     let totalParticipants;
-    if (eventId) {
-      const uniqueUserIds = [...new Set(submissions.map(s => s.userId))];
+    if (targetEventIdStr) {
+      const uniqueUserIds = [...new Set(submissions.map(s => String(s.userId)))];
       totalParticipants = uniqueUserIds.length;
     } else {
-      totalParticipants = await User.countDocuments({ role: 'Participant' });
+      totalParticipants = allUsers.length;
     }
 
-    const totalEntries = eventId
-      ? submissions.filter(s => s.isFinalSubmitted).length
-      : await Submission.countDocuments({ isFinalSubmitted: true });
+    const totalEntries = submissions.filter(s => s.isFinalSubmitted).length;
 
     let totalPhotos = 0;
     let totalVideos = 0;
@@ -317,37 +332,32 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       }
     });
 
-    const totalEvents = eventId ? 1 : await Event.countDocuments({});
+    const totalEvents = targetEventIdStr ? 1 : allEventsList.length;
 
-    // Today registrations (global — not event-scoped)
-    const todayRegistrations = await User.countDocuments({
-      role: 'Participant',
-      createdAt: { $gte: todayStart }
-    });
+    // Today registrations
+    const todayRegistrations = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= todayStart).length;
 
-    // Revenue and payments stats — scoped to event
-    const successfulPayments = await Payment.find({ ...paymentFilter, status: 'Success' });
-    const totalRevenue = successfulPayments.reduce((acc, curr) => acc + curr.amount, 0);
+    // Revenue and payments stats
+    const totalRevenue = successfulPayments.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
-    const todayPaymentsCount = await Payment.countDocuments({
-      ...paymentFilter,
-      status: 'Success',
-      paymentDate: { $gte: todayStart }
-    });
+    const todayPaymentsCount = successfulPayments.filter(p => {
+      const d = p.paymentDate || p.createdAt;
+      return d && new Date(d) >= todayStart;
+    }).length;
 
-    const todayRevenue = (await Payment.find({
-      ...paymentFilter,
-      status: 'Success',
-      paymentDate: { $gte: todayStart }
-    })).reduce((acc, curr) => acc + curr.amount, 0);
+    const todayRevenue = successfulPayments.filter(p => {
+      const d = p.paymentDate || p.createdAt;
+      return d && new Date(d) >= todayStart;
+    }).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
-    const pendingPaymentsCount = await Payment.countDocuments({ ...paymentFilter, status: 'Pending' });
+    const pendingPaymentsCount = (await Payment.countDocuments({ ...paymentFilter, status: 'Pending' })) || 0;
 
-    // 2. Category-wise statistics — scoped to event
+    // 2. Category-wise statistics
     const categoryStatsMap = {};
     submissions.forEach(s => {
-      s.photographs.forEach(p => {
-        categoryStatsMap[p.category] = (categoryStatsMap[p.category] || 0) + 1;
+      (s.photographs || []).forEach(p => {
+        const cat = p.category || 'General';
+        categoryStatsMap[cat] = (categoryStatsMap[cat] || 0) + 1;
       });
     });
     const categoryStats = Object.keys(categoryStatsMap).map(name => ({
@@ -355,32 +365,25 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       value: categoryStatsMap[name]
     }));
 
-    // 3. Daily Registrations & Revenue charts data — based on Event creation date to Submission Deadline
-    const allEventsList = await Event.find({});
-    
-    // Determine start date and end date (event-wise or all events timeline)
+    // 3. Daily Registrations & Revenue charts data
     let chartStartDate;
     let chartEndDate;
 
-    if (eventId) {
-      const targetEvent = allEventsList.find(e => String(e._id) === String(eventId)) || await Event.findById(eventId);
+    if (targetEventIdStr) {
+      const targetEvent = allEventsList.find(e => String(e._id) === targetEventIdStr);
       if (targetEvent) {
         chartStartDate = getStartOfDay(new Date(targetEvent.createdAt || targetEvent.startDate || Date.now()));
         chartEndDate = getStartOfDay(new Date(targetEvent.deadline || targetEvent.eventDate || targetEvent.exhibitionToDate || Date.now()));
       }
-    } else {
-      // For all events combined: find earliest created event and latest deadline
-      if (allEventsList.length > 0) {
-        const creationDates = allEventsList.map(e => new Date(e.createdAt || Date.now()).getTime()).filter(t => !isNaN(t));
-        const deadlineDates = allEventsList.map(e => new Date(e.deadline || e.eventDate || e.createdAt || Date.now()).getTime()).filter(t => !isNaN(t));
-        const minCreated = Math.min(...creationDates);
-        const maxDeadline = Math.max(...deadlineDates);
-        chartStartDate = getStartOfDay(new Date(minCreated));
-        chartEndDate = getStartOfDay(new Date(maxDeadline));
-      }
+    } else if (allEventsList.length > 0) {
+      const creationDates = allEventsList.map(e => new Date(e.createdAt || Date.now()).getTime()).filter(t => !isNaN(t));
+      const deadlineDates = allEventsList.map(e => new Date(e.deadline || e.eventDate || e.createdAt || Date.now()).getTime()).filter(t => !isNaN(t));
+      const minCreated = Math.min(...creationDates);
+      const maxDeadline = Math.max(...deadlineDates);
+      chartStartDate = getStartOfDay(new Date(minCreated));
+      chartEndDate = getStartOfDay(new Date(maxDeadline));
     }
 
-    // Fallbacks if invalid dates
     if (!chartStartDate || isNaN(chartStartDate.getTime())) {
       const d = new Date();
       d.setDate(d.getDate() - 6);
@@ -389,55 +392,37 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
     if (!chartEndDate || isNaN(chartEndDate.getTime())) {
       chartEndDate = getStartOfDay(new Date());
     }
-
-    // Ensure chartEndDate is not before chartStartDate
     if (chartEndDate < chartStartDate) {
       chartEndDate = new Date(chartStartDate);
       chartEndDate.setDate(chartEndDate.getDate() + 1);
     }
 
-    // Calculate total days in event period
     const msPerDay = 24 * 60 * 60 * 1000;
     const totalDays = Math.max(1, Math.round((chartEndDate - chartStartDate) / msPerDay) + 1);
     
-    // Cap step interval if event spans a very long timeframe to keep chart readable
     let dayStep = 1;
-    if (totalDays > 60) dayStep = 7; // weekly buckets if > 60 days
-    else if (totalDays > 30) dayStep = 3; // 3-day buckets if > 30 days
-    else if (totalDays > 14) dayStep = 2; // 2-day buckets if > 14 days
-
-    // Pre-fetch all payments and sponsorships for this chart range
-    const sponFilter = eventId ? { eventId } : {};
-    const allSpons = await Sponsorship.find(sponFilter);
+    if (totalDays > 60) dayStep = 7;
+    else if (totalDays > 30) dayStep = 3;
+    else if (totalDays > 14) dayStep = 2;
 
     const dailyStats = [];
     for (let currentMs = chartStartDate.getTime(); currentMs <= chartEndDate.getTime(); currentMs += (dayStep * msPerDay)) {
       const dayStart = new Date(currentMs);
       const dayEnd = new Date(Math.min(currentMs + (dayStep * msPerDay), chartEndDate.getTime() + msPerDay));
 
-      let regCount;
-      if (eventId) {
-        regCount = await Submission.countDocuments({
-          eventId,
-          $or: [
-            { createdAt: { $gte: dayStart, $lt: dayEnd } },
-            { submissionDate: { $gte: dayStart, $lt: dayEnd } }
-          ]
-        });
+      let regCount = 0;
+      if (targetEventIdStr) {
+        regCount = submissions.filter(s => {
+          const d = s.createdAt || s.submissionDate;
+          return d && new Date(d) >= dayStart && new Date(d) < dayEnd;
+        }).length;
       } else {
-        regCount = await User.countDocuments({
-          role: 'Participant',
-          createdAt: { $gte: dayStart, $lt: dayEnd }
-        });
+        regCount = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= dayStart && new Date(u.createdAt) < dayEnd).length;
       }
 
-      const dayPayments = await Payment.find({
-        ...paymentFilter,
-        status: 'Success',
-        $or: [
-          { paymentDate: { $gte: dayStart, $lt: dayEnd } },
-          { createdAt: { $gte: dayStart, $lt: dayEnd } }
-        ]
+      const dayPayments = successfulPayments.filter(p => {
+        const d = p.paymentDate || p.createdAt;
+        return d && new Date(d) >= dayStart && new Date(d) < dayEnd;
       });
       const revSum = dayPayments.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
@@ -447,7 +432,6 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       });
       const sponSum = daySponsorships.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
-      // Per-event revenue breakdown
       const eventBreakdown = {};
       allEventsList.forEach(ev => {
         const evPayments = dayPayments.filter(p => String(p.eventId) === String(ev._id));
@@ -463,23 +447,25 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       });
     }
 
-    // 4. Per-event revenue, sponsorships, and submissions comparison ledger
-    const eventStats = await Promise.all(allEventsList.map(async (ev) => {
-      const evPayments = await Payment.find({ eventId: ev._id, status: 'Success' });
-      const evSpons = await Sponsorship.find({ eventId: ev._id });
-      const evSubs = await Submission.find({ eventId: ev._id, isFinalSubmitted: true });
+    // 4. Per-event ledger calculated in memory (0 extra queries!)
+    const eventStats = allEventsList.map(ev => {
+      const evIdStr = String(ev._id);
+      const evPayments = successfulPayments.filter(p => String(p.eventId) === evIdStr);
+      const evSponsList = allSpons.filter(s => String(s.eventId) === evIdStr);
+      const evSubs = submissions.filter(s => String(s.eventId) === evIdStr && s.isFinalSubmitted);
       let evPhotos = 0;
       evSubs.forEach(s => { evPhotos += (s.photographs || []).length; });
+
       return {
-        eventId: String(ev._id),
+        eventId: evIdStr,
         title: ev.title,
         status: ev.status,
-        revenue: evPayments.reduce((acc, curr) => acc + curr.amount, 0),
-        sponsorships: evSpons.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0),
+        revenue: evPayments.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0),
+        sponsorships: evSponsList.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0),
         submissions: evSubs.length,
         photos: evPhotos
       };
-    }));
+    });
 
     res.json({
       success: true,
@@ -512,8 +498,8 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
       }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error in /dashboard-stats:', error);
+    res.status(500).json({ success: false, message: 'Server error: ' + error.message });
   }
 });
 
