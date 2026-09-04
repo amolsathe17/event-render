@@ -988,8 +988,8 @@ export default function JudgeDashboard() {
         {judgeDashboardTab === "overview" && (
           <div className="flex flex-col gap-6 animate-in fade-in duration-200">
             
-            {/* Top 6 Metric Cards Row (Structured into 3 Column Pairs for Perfect Vertical Border Alignment) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            {/* Top 6 Metric Cards Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
               {/* Pair 1: Column 1 Alignment (Card 1 & Card 2) */}
               <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-3">
                 {/* Card 1: ASSIGNED CONTESTS */}

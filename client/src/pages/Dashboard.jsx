@@ -2064,7 +2064,7 @@ export default function Dashboard() {
                               </div>
                             ) : (
                               /* STEP 2: Submission Folder is Active */
-                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left animate-in fade-in duration-200">
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start text-left animate-in fade-in duration-200">
                                 {/* Left panel: Submissions Upload Wizard */}
                                 <div className="lg:col-span-8 flex flex-col gap-6">
                                   {/* Upload form - display only if not finalized and package limit not met */}
