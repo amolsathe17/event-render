@@ -2219,14 +2219,14 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'events', label: 'Create Event', icon: Calendar },
-              { id: 'photographs', label: 'Submissions', icon: Camera },
-              { id: 'participants', label: 'Participants', icon: Users },
-              { id: 'judges', label: 'Judging', icon: Award },
-              { id: 'notifications', label: 'Notifications', icon: Bell },
-              { id: 'reports', label: 'Analytics', icon: BarChart },
               { id: 'categories_config', label: 'Event Configuration', icon: Layers },
+              { id: 'participants', label: 'Participants', icon: Users },
+              { id: 'photographs', label: 'Submissions', icon: Camera },
+              { id: 'judges', label: 'Judging', icon: Award },
+              { id: 'reports', label: 'Analytics', icon: BarChart },
               { id: 'expenses', label: 'Expenses', icon: Wallet },
               { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
               { id: 'event_history', label: 'Event History', icon: History }
             ].map(t => {
               const IconComponent = t.icon;
@@ -2300,14 +2300,14 @@ export default function AdminDashboard() {
                   { id: 'judges_portal', label: 'Judges Portal', icon: BookOpen, isExternal: true, path: '/judge/login' },
                   { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
                   { id: 'events', label: 'Create Event', icon: Calendar },
-                  { id: 'photographs', label: 'Submissions', icon: Camera },
-                  { id: 'participants', label: 'Participants', icon: Users },
-                  { id: 'judges', label: 'Judging', icon: Award },
-                  { id: 'notifications', label: 'Notifications', icon: Bell },
-                  { id: 'reports', label: 'Analytics', icon: BarChart },
                   { id: 'categories_config', label: 'Event Configuration', icon: Layers },
+                  { id: 'participants', label: 'Participants', icon: Users },
+                  { id: 'photographs', label: 'Submissions', icon: Camera },
+                  { id: 'judges', label: 'Judging', icon: Award },
+                  { id: 'reports', label: 'Analytics', icon: BarChart },
                   { id: 'expenses', label: 'Expenses', icon: Wallet },
                   { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+                  { id: 'notifications', label: 'Notifications', icon: Bell },
                   { id: 'event_history', label: 'All Events History', icon: History },
                   { id: 'profile_settings', label: 'Profile Settings', icon: Sliders }
                 ].map(t => {
@@ -2417,14 +2417,14 @@ export default function AdminDashboard() {
             items={[
               { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'events', label: 'Create Event', icon: Calendar },
-              { id: 'photographs', label: 'Submissions', icon: Camera },
-              { id: 'participants', label: 'Participants', icon: Users },
-              { id: 'judges', label: 'Judging', icon: Award },
-              { id: 'notifications', label: 'Notifications', icon: Bell },
-              { id: 'reports', label: 'Analytics', icon: BarChart },
               { id: 'categories_config', label: 'Event Config', icon: Layers },
+              { id: 'participants', label: 'Participants', icon: Users },
+              { id: 'photographs', label: 'Submissions', icon: Camera },
+              { id: 'judges', label: 'Judging', icon: Award },
+              { id: 'reports', label: 'Analytics', icon: BarChart },
               { id: 'expenses', label: 'Expenses', icon: Wallet },
               { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
               { id: 'event_history', label: 'History', icon: History }
             ]}
             activeId={activeTab}
