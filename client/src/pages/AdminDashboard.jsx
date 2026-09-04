@@ -1022,20 +1022,36 @@ export default function AdminDashboard() {
     }
   };
 
-  const downloadWinnersPDF = async (e) => {
-    if (!e) return;
+  const downloadWinnersPDF = async (targetEventParam = null) => {
     try {
-      let targetEvent = e;
-      if (!targetEvent.winners || targetEvent.winners.length === 0) {
+      const isAll = !targetEventParam || targetEventParam === 'all';
+      let eventsToInclude = [];
+
+      if (isAll) {
+        const published = events.filter(e => e.winnersPublished || (e.winners && e.winners.length > 0));
+        eventsToInclude = published.length > 0 ? published : events;
+      } else {
+        eventsToInclude = [targetEventParam];
+      }
+
+      if (eventsToInclude.length === 0) {
+        alert('No events available to export.');
+        return;
+      }
+
+      // Pre-fetch winners details if needed
+      eventsToInclude = await Promise.all(eventsToInclude.map(async (e) => {
+        if (e.winners && e.winners.length > 0) return e;
         try {
           const fetched = await apiFetch(`/api/events/${e._id}`);
-          if (fetched && fetched.event) {
-            targetEvent = fetched.event;
+          if (fetched && fetched.event && fetched.event.winners) {
+            return fetched.event;
           }
         } catch (err) {
-          console.warn('Could not fetch detailed event for winners PDF:', err);
+          console.warn(`Could not fetch details for event ${e._id}:`, err);
         }
-      }
+        return e;
+      }));
 
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -1043,122 +1059,181 @@ export default function AdminDashboard() {
         format: 'a4'
       });
 
-      let y = 20;
+      let y = 34;
 
-      // Header Banner (Dark Indigo / Navy)
-      doc.setFillColor(30, 27, 75);
-      doc.rect(0, 0, 210, 36, 'F');
+      const drawHeader = (pdfDoc) => {
+        // Top Left Header: SUMBARAN ART SOCIETY & Address (Matching Image 2)
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.setFontSize(14);
+        pdfDoc.setTextColor(15, 23, 42);
+        pdfDoc.text('SUMBARAN ART SOCIETY', 14, 14);
 
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('OFFICIAL WINNERS & RANKINGS REPORT', 14, 18);
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.setFontSize(7.5);
+        pdfDoc.setTextColor(71, 85, 105);
+        pdfDoc.text('Address: 1414/1A, Trio Chambers, Nr. Renuka Swaroop Girls High School, Sadashiv Peth, Pune - 411030.', 14, 19);
+        pdfDoc.text('Phone: +91 98765 43210  •  Email: support@sumbaranartsociety.com  •  Website: https://sumbaranartsociety.com', 14, 23.5);
 
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} | Sumbaran Art Society`, 14, 26);
+        // Top Right Header Badge (Matching Image 2)
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.setFontSize(9.5);
+        pdfDoc.setTextColor(15, 23, 42);
+        pdfDoc.text('OFFICIAL WINNERS REPORT', 196, 14, { align: 'right' });
 
-      // Event Information Card
-      doc.setFillColor(248, 250, 252);
-      doc.rect(14, 42, 182, 32, 'F');
-      doc.setDrawColor(226, 232, 240);
-      doc.rect(14, 42, 182, 32, 'S');
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.setFontSize(8);
+        pdfDoc.setTextColor(71, 85, 105);
+        const formattedDateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+        pdfDoc.text(`Generated: ${formattedDateStr}`, 196, 19, { align: 'right' });
 
-      doc.setTextColor(15, 23, 42);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text(targetEvent.title || 'Untitled Contest', 18, 51);
+        // Horizontal Line Divider across top (Matching Image 2)
+        pdfDoc.setDrawColor(15, 23, 42);
+        pdfDoc.setLineWidth(0.6);
+        pdfDoc.line(14, 27, 196, 27);
+      };
 
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(71, 85, 105);
-      doc.text(`Status: ${targetEvent.status || 'Results Published'}   |   Type: ${targetEvent.eventType || 'Contest'}`, 18, 59);
-      doc.text(`Venue / Location: ${targetEvent.venue || 'Sumbaran Art Gallery, Sadashiv Peth, Pune'}`, 18, 65);
+      const checkAddPage = (spaceNeeded = 25) => {
+        if (y + spaceNeeded > 270) {
+          doc.addPage();
+          drawHeader(doc);
+          y = 35;
+          return true;
+        }
+        return false;
+      };
 
-      y = 82;
+      // Draw Top Header on Page 1
+      drawHeader(doc);
+      y = 35;
 
-      // Section Title
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(15, 23, 42);
-      doc.text('OFFICIAL WINNERS CIRCLE & RANKINGS', 14, y);
-      y += 8;
+      if (isAll) {
+        // Master Summary Box for All Events
+        doc.setFillColor(248, 250, 252);
+        doc.rect(14, y, 182, 18, 'F');
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.3);
+        doc.rect(14, y, 182, 18, 'S');
 
-      // Table Header Row
-      doc.setFillColor(79, 70, 229);
-      doc.rect(14, y, 182, 9, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RANK', 18, y + 6);
-      doc.text('WINNER NAME', 55, y + 6);
-      doc.text('SUBMISSION TITLE', 115, y + 6);
-      doc.text('SCORE', 172, y + 6);
-      y += 9;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text('CUMULATIVE WINNERS REPORT (ALL EVENTS)', 18, y + 7);
 
-      const winnersList = targetEvent.winners || [];
-      if (winnersList.length === 0) {
-        doc.setFillColor(255, 255, 255);
-        doc.rect(14, y, 182, 10, 'F');
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(9);
-        doc.setTextColor(148, 163, 184);
-        doc.text('No winners rankings declared for this contest yet.', 18, y + 6);
-        y += 10;
-      } else {
-        winnersList.forEach((win, idx) => {
-          doc.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 250 : 255, idx % 2 === 0 ? 252 : 255);
-          doc.rect(14, y, 182, 11, 'F');
-          doc.setDrawColor(241, 245, 249);
-          doc.rect(14, y, 182, 11, 'S');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(67, 56, 202);
+        const totalWinnersCount = eventsToInclude.reduce((sum, eObj) => sum + (eObj.winners?.length || 0), 0);
+        doc.text(`Total Events Included: ${eventsToInclude.length}   •   Total Declared Winners: ${totalWinnersCount}`, 18, y + 13);
 
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(9);
-          doc.setTextColor(79, 70, 229);
-          doc.text(win.rank || `${idx + 1}${idx === 0 ? 'st' : idx === 1 ? 'nd' : idx === 2 ? 'rd' : 'th'} Place`, 18, y + 7);
-
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(15, 23, 42);
-          doc.text(win.userName || win.name || win.participantName || 'N/A', 55, y + 7);
-
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(71, 85, 105);
-          const photoTitleStr = win.photoTitle || win.title || 'Untitled';
-          doc.text(photoTitleStr.length > 30 ? photoTitleStr.substring(0, 28) + '...' : photoTitleStr, 115, y + 7);
-
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(16, 185, 129);
-          doc.text(win.score ? `${win.score}/100` : 'N/A', 172, y + 7);
-
-          y += 11;
-        });
+        y += 24;
       }
 
-      y += 15;
-      doc.setDrawColor(226, 232, 240);
-      doc.line(14, y, 196, y);
-      y += 6;
+      // Render Event Sections
+      eventsToInclude.forEach((eObj, eventIdx) => {
+        checkAddPage(40);
 
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
-      doc.text('This is an official computer-generated Winners Rankings Report certified by Sumbaran Art Society.', 14, y);
+        // Event Box Header (Matching Image 2 Contest Box)
+        doc.setFillColor(248, 250, 252);
+        doc.rect(14, y, 182, 15, 'F');
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.4);
+        doc.rect(14, y, 182, 15, 'S');
 
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(71, 85, 105);
+        doc.text('NAME OF CONTEST', 18, y + 5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        const contestTitleText = `${eventIdx + 1}. ${eObj.title || 'Untitled Contest'}`;
+        doc.text(contestTitleText.length > 55 ? contestTitleText.substring(0, 52) + '...' : contestTitleText, 18, y + 11);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(67, 56, 202);
+        doc.text(`${(eObj.winners || []).length} Winners Declared`, 190, y + 9, { align: 'right' });
+
+        y += 20;
+
+        // Table Header Row
+        checkAddPage(15);
+        doc.setFillColor(79, 70, 229);
+        doc.rect(14, y, 182, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('RANK', 18, y + 5.5);
+        doc.text('WINNER NAME', 55, y + 5.5);
+        doc.text('SUBMISSION TITLE', 115, y + 5.5);
+        doc.text('SCORE', 172, y + 5.5);
+        y += 8;
+
+        const winnersList = eObj.winners || [];
+        if (winnersList.length === 0) {
+          checkAddPage(10);
+          doc.setFillColor(255, 255, 255);
+          doc.rect(14, y, 182, 9, 'F');
+          doc.setDrawColor(241, 245, 249);
+          doc.rect(14, y, 182, 9, 'S');
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(8.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text('No winners declared for this contest yet.', 18, y + 6);
+          y += 12;
+        } else {
+          winnersList.forEach((win, idx) => {
+            checkAddPage(11);
+            doc.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 250 : 255, idx % 2 === 0 ? 252 : 255);
+            doc.rect(14, y, 182, 10, 'F');
+            doc.setDrawColor(241, 245, 249);
+            doc.rect(14, y, 182, 10, 'S');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(79, 70, 229);
+            doc.text(win.rank || `${idx + 1}${idx === 0 ? 'st' : idx === 1 ? 'nd' : idx === 2 ? 'rd' : 'th'} Place`, 18, y + 6.5);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(15, 23, 42);
+            doc.text(win.userName || win.name || win.participantName || 'N/A', 55, y + 6.5);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(71, 85, 105);
+            const photoTitleStr = win.photoTitle || win.title || 'Untitled';
+            doc.text(photoTitleStr.length > 30 ? photoTitleStr.substring(0, 28) + '...' : photoTitleStr, 115, y + 6.5);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(16, 185, 129);
+            doc.text(win.score ? `${win.score}/100` : 'N/A', 172, y + 6.5);
+
+            y += 10;
+          });
+          y += 6;
+        }
+      });
+
+      // Add Page Numbers & Footer to all pages (Matching Image 2)
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.4);
+        doc.line(14, 280, 196, 280);
+
         doc.setFontSize(8);
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(148, 163, 184);
-        doc.text('Official Winner Rankings Report - Sumbaran Art Society', 14, 287);
-        doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
+        doc.text('Official Winner Rankings Report  •  Sumbaran Art Society', 14, 286);
+        doc.text(`Page ${i} of ${pageCount}`, 196, 286, { align: 'right' });
       }
 
-      const fileName = `${(targetEvent.title || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_Winners_Report.pdf`;
+      const fileName = isAll ? `All_Events_Winners_Report.pdf` : `${(eventsToInclude[0]?.title || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_Winners_Report.pdf`;
       doc.save(fileName);
     } catch (err) {
       console.error('Error generating winners PDF:', err);
-      alert('Could not generate Winners PDF for this event: ' + err.message);
+      alert('Could not generate Winners PDF: ' + err.message);
     }
   };
   
@@ -3309,13 +3384,29 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Results Exporter - Display only selected event */}
-            <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-              <h3 className="font-display font-bold text-slate-900 dark:text-white text-base pb-3 border-b border-slate-100 dark:border-slate-800">Winner Rankings Export</h3>
-              <div className="flex flex-col gap-3 mt-4">
+            {/* Results Exporter - Display selected event or all events */}
+            <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+              <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Winner Rankings Export</h3>
+                  <p className="text-[11px] text-slate-400">Download official PDF reports for contest winner rankings</p>
+                </div>
+                {(!selectedEventId || selectedEventId === 'all') && (
+                  <button
+                    onClick={() => downloadWinnersPDF('all')}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl flex items-center justify-center gap-1.5 font-bold cursor-pointer text-xs shadow-xs transition-all shrink-0"
+                    title="Export All Events Winners PDF"
+                  >
+                    <Download size={14} />
+                    <span>Export All Events Winners PDF</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-3">
                 {(() => {
-                  const targetEvent = events.find(e => e._id === selectedEventId) || events[0];
-                  const eventsToDisplay = targetEvent ? [targetEvent] : [];
+                  const targetEvent = events.find(e => e._id === selectedEventId);
+                  const eventsToDisplay = targetEvent ? [targetEvent] : events;
 
                   if (eventsToDisplay.length === 0) {
                     return <p className="text-xs text-slate-400 text-center py-4">No events found.</p>;
@@ -3331,7 +3422,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={() => downloadWinnersPDF(e)}
                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold cursor-pointer text-xs shadow-xs transition-all shrink-0"
-                          title="Download Winners Rankings PDF"
+                          title="Download Event Winners PDF"
                         >
                           <Download size={13} />
                           Export Winners PDF
