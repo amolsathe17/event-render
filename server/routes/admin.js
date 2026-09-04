@@ -306,7 +306,11 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
     let totalVideos = 0;
     let gradedCount = 0;
     let ungradedCount = 0;
+    let ungradedPhotosCount = 0;
+    let ungradedVideosCount = 0;
     let unpaidCount = 0;
+    let unpaidPhotosCount = 0;
+    let unpaidVideosCount = 0;
 
     submissions.forEach(s => {
       if (Array.isArray(s.photographs)) {
@@ -323,10 +327,20 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
             gradedCount += 1;
           } else {
             ungradedCount += 1;
+            if (isVid) {
+              ungradedVideosCount += 1;
+            } else {
+              ungradedPhotosCount += 1;
+            }
           }
 
           if (p.paymentStatus === 'Pending' || s.paymentStatus === 'Pending' || s.isPaid === false) {
             unpaidCount += 1;
+            if (isVid) {
+              unpaidVideosCount += 1;
+            } else {
+              unpaidPhotosCount += 1;
+            }
           }
         });
       }
@@ -473,7 +487,11 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
         totalEvents,
         gradedCount,
         ungradedCount,
+        ungradedPhotosCount,
+        ungradedVideosCount,
         unpaidCount,
+        unpaidPhotosCount,
+        unpaidVideosCount,
         totalParticipants,
         totalEntries,
         totalPhotos,
