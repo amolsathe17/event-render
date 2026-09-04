@@ -2064,9 +2064,9 @@ export default function Dashboard() {
                               </div>
                             ) : (
                               /* STEP 2: Submission Folder is Active */
-                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch text-left animate-in fade-in duration-200">
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start text-left animate-in fade-in duration-200">
                                 {/* Left panel: Submissions Upload Wizard */}
-                                <div className="lg:col-span-8 flex flex-col gap-6 h-full">
+                                <div className="lg:col-span-8 flex flex-col gap-6">
                                   {/* Upload form - display only if not finalized and package limit not met */}
                                   {!isFinalized &&
                                     submission.photographs.length < selectedPackage?.maxPhotos && (
@@ -2216,7 +2216,7 @@ export default function Dashboard() {
                                         </p>
                                       </div>
                                     ) : (
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch h-full">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch h-full">
                                         {submission.photographs.map((photo) => (
                                           <div key={photo.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm h-full">
                                             {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
@@ -2305,13 +2305,13 @@ export default function Dashboard() {
                                 </div>
 
                                 {/* Right panel: Submission info card (Fixed/Sticky), payment, finalize actions */}
-                                <div className="lg:col-span-4 flex flex-col gap-4 sticky top-4 h-full">
+                                <div className="lg:col-span-4 flex flex-col gap-4 sticky top-4">
                                   {((!isFinalized && submission.photographs.length >= selectedPackage?.maxPhotos) || isFinalized) && (
                                     <h3 className="font-display font-black text-slate-900 dark:text-white text-xs">
                                       Folder Configuration
                                     </h3>
                                   )}
-                                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-4 shadow-sm h-full">
+                                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-sm">
                                     <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
                                       <span className="text-[10px] text-slate-700 font-extrabold uppercase">Folder Config</span>
                                       <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${isPaid ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
