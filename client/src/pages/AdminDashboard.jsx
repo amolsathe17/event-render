@@ -2941,51 +2941,47 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleExportCSV = (reportType, overrideEventId = '') => {
-    const targetEventId = overrideEventId || selectedEventId || '';
-    const token = localStorage.getItem('token');
-    const baseUrl = getApiBaseUrl();
-    const query = targetEventId ? `?eventId=${targetEventId}` : '';
-    
-    // Map reportType names to valid server routes
-    let mappedType = reportType;
-    if (reportType === 'financial') mappedType = 'revenue';
-    if (reportType === 'photographs') mappedType = 'submissions';
+  const handleExportCSV = async (reportType, overrideEventId = '') => {
+    try {
+      const targetEventId = overrideEventId || selectedEventId || '';
+      const token = localStorage.getItem('token') || '';
+      const baseUrl = getApiBaseUrl();
+      const query = targetEventId ? `?eventId=${targetEventId}` : '';
+      
+      // Map reportType names to valid server routes
+      let mappedType = reportType;
+      if (reportType === 'financial') mappedType = 'revenue';
+      if (reportType === 'photographs') mappedType = 'submissions';
 
-    const path = `${baseUrl}/api/reports/${mappedType}${query}`;
-    
-    // Trigger download with headers
-    fetch(path, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Failed to export report: ${res.statusText}`);
+      const path = `${baseUrl}/api/reports/${mappedType}${query}`;
+      
+      const response = await fetch(path, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        return res.blob();
-      })
-    setEditPrize2Reward(p2 ? p2.reward : '');
-    const p3 = e.prizes && e.prizes.find(p => p.rank === '3rd Prize');
-    setEditPrize3Reward(p3 ? p3.reward : '');
-    
-    if (e.packages && e.packages.length > 0) {
-      setEditEventPackages(e.packages.map(p => ({
-        name: p.name,
-        price: p.price,
-        maxPhotos: p.maxPhotos
-      })));
-    } else {
-      setEditEventPackages([
-        { name: 'Starter', price: 200, maxPhotos: 1 },
-        { name: 'Amateur', price: 300, maxPhotos: 2 },
-        { name: 'Pro', price: 400, maxPhotos: 5 }
-      ]);
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Export error:', errorText);
+        alert('Failed to export report: ' + (errorText || response.statusText));
+        return;
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const fileName = `${reportType}-export-${targetEventId || 'all'}.csv`;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error('Export CSV error:', err);
+      alert('Error downloading export file: ' + err.message);
     }
-    setEditEventCertificates(e.certificates || { firstPrize: '', secondPrize: '', thirdPrize: '', participation: '' });
-    
-    setShowEditModal(true);
   };
 
   if (loading && !stats) {
