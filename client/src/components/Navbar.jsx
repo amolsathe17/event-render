@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History, Building2, Info, Trophy, ShieldCheck, Award, Sparkles, Mail } from 'lucide-react';
+import { Camera, Sun, Moon, Menu, X, LogOut, LayoutDashboard, User, Bell, BellRing, CheckCheck, Check, Trash2, ChevronDown, History, Building2, Info, Trophy, ShieldCheck, Award, Sparkles, Mail, Calendar, Layers, Wallet, BarChart, Sliders, BookOpen } from 'lucide-react';
 import { getBackendUrl } from '../utils/url';
 
 export default function Navbar() {
@@ -509,176 +509,222 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Slide-Over Menu Drawer (Matching Image 2) */}
       {isOpen && (
-        <div className="md:hidden bg-slate-900/90 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-white rounded-b-none overflow-hidden">
-          <div className="px-4 pt-3 pb-6 space-y-2 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex justify-end md:hidden">
+          {/* Backdrop Blur Overlay */}
+          <div
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setIsOpen(false)}
+          />
 
+          {/* Drawer Sidebar Panel (Sliding in from Right) */}
+          <aside className="relative w-72 max-w-[85vw] bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between p-5 h-full overflow-y-auto z-50 shadow-2xl animate-in slide-in-from-right duration-200 border-l border-slate-800 text-left">
+            <div className="flex flex-col gap-5">
+              {/* Header User Badge + Close X Button */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+                {user ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 border-2 border-indigo-400/50 flex items-center justify-center font-black text-sm text-white shadow-md overflow-hidden shrink-0">
+                      {user.avatar ? (
+                        <img
+                          src={getBackendUrl(user.avatar)}
+                          alt={user.name}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                      )}
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="font-display font-bold text-sm text-white leading-tight">
+                        {user.name}
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
+                        {user.role}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="font-display font-extrabold text-sm text-white">
+                    SumbaContest
+                  </span>
+                )}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center cursor-pointer transition-all shrink-0"
+                  title="Close Menu"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-            <Link
-              to="/info"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                isActive('/info')
-                  ? 'bg-indigo-300 text-white shadow-md'
-                  : 'text-slate-200 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Info size={16} />
-              <span>Event Info</span>
-            </Link>
+              {/* Drawer Links List */}
+              <nav className="flex flex-col gap-1">
+                {/* Public Links */}
+                {[
+                  { label: 'Event Info', icon: Info, path: '/info' },
+                  { label: 'Gallery & Results', icon: Trophy, path: '/gallery' },
+                  { label: 'Contact Us', icon: Mail, path: '/contact' }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate(item.path);
+                      }}
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                        active
+                          ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25'
+                          : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon size={16} className={active ? 'text-white' : 'text-slate-400'} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
 
-            <Link
-              to="/gallery"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                isActive('/gallery')
-                  ? 'bg-indigo-300 text-white shadow-md'
-                  : 'text-slate-200 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Trophy size={16} />
-              <span>Gallery &amp; Results</span>
-            </Link>
+                {!user && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleAdminClick();
+                        setIsOpen(false);
+                        navigate('/admin', { state: { forceAdmin: true } });
+                      }}
+                      className="w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left text-slate-300 hover:text-white hover:bg-white/10"
+                    >
+                      <ShieldCheck size={16} className="text-slate-400" />
+                      <span>Admin Portal</span>
+                    </button>
 
-            <Link
-              to="/contact"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                isActive('/contact')
-                  ? 'bg-indigo-300 text-white shadow-md'
-                  : 'text-slate-200 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Mail size={16} />
-              <span>Contact Us</span>
-            </Link>
+                    <button
+                      onClick={() => {
+                        handleJudgeClick();
+                        setIsOpen(false);
+                        navigate('/judge', { state: { forceJudge: true } });
+                      }}
+                      className="w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left text-slate-300 hover:text-white hover:bg-white/10"
+                    >
+                      <BookOpen size={16} className="text-slate-400" />
+                      <span>Judges Portal</span>
+                    </button>
+                  </>
+                )}
 
-            {!user && (
-              <Link
-                to="/admin"
-                state={{ forceAdmin: true }}
-                onClick={() => {
-                  handleAdminClick();
-                  setIsOpen(false);
-                }}
-                className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  isActive('/admin')
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <ShieldCheck size={16} />
-                <span>Admin Portal</span>
-              </Link>
-            )}
+                {/* If logged in as Admin: render full Admin Dashboard tabs */}
+                {user && user.role === 'Admin' && (
+                  <>
+                    {[
+                      { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+                      { id: 'events', label: 'Create Event', icon: Calendar },
+                      { id: 'photographs', label: 'Submissions', icon: Camera },
+                      { id: 'participants', label: 'Participants', icon: Users },
+                      { id: 'judges', label: 'Judging', icon: Award },
+                      { id: 'notifications', label: 'Notifications', icon: Bell },
+                      { id: 'reports', label: 'Analytics', icon: BarChart },
+                      { id: 'categories_config', label: 'Event Configuration', icon: Layers },
+                      { id: 'expenses', label: 'Expenses', icon: Wallet },
+                      { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+                      { id: 'event_history', label: 'All Events History', icon: History },
+                      { id: 'profile_settings', label: 'Profile Settings', icon: Sliders }
+                    ].map(tab => {
+                      const Icon = tab.icon;
+                      const active = location.pathname === '/admin' && (location.state?.tab || 'overview') === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setIsOpen(false);
+                            navigate('/admin', { state: { tab: tab.id } });
+                          }}
+                          className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                            active
+                              ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25'
+                              : 'text-slate-300 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          <Icon size={16} className={active ? 'text-white' : 'text-slate-400'} />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
 
-            {(!user || user.role === 'Admin') && (
-              <Link
-                to="/judge"
-                state={{ forceJudge: true }}
-                onClick={() => {
-                  handleJudgeClick();
-                  setIsOpen(false);
-                }}
-                className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  isActive('/judge')
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <Award size={16} />
-                <span>Judges Portal</span>
-              </Link>
-            )}
+                {/* If logged in as Contestant/User */}
+                {user && user.role !== 'Admin' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate('/dashboard');
+                      }}
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                        isActive('/dashboard')
+                          ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md'
+                          : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <LayoutDashboard size={16} className="text-slate-400" />
+                      <span>Dashboard</span>
+                    </button>
 
-            {user && !['/dashboard', '/admin', '/judge', '/profile'].includes(location.pathname) && (
-              <Link
-                to={user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard'}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  isActive(user.role === 'Admin' ? '/admin' : user.role === 'Judge' ? '/judge' : '/dashboard')
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>Dashboard</span>
-              </Link>
-            )}
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate('/profile');
+                      }}
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                        isActive('/profile')
+                          ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md'
+                          : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <User size={16} className="text-slate-400" />
+                      <span>Profile Settings</span>
+                    </button>
+                  </>
+                )}
 
-            <div className="pt-3 mt-2 border-t border-slate-800/80">
-              {user ? (
-                <div className="space-y-2">
+                {/* Auth Actions */}
+                {user ? (
                   <button
                     onClick={() => {
                       setIsOpen(false);
-                      if (user.role === 'Admin') {
-                        navigate('/admin', { state: { tab: 'profile_settings' } });
-                      } else {
-                        navigate('/profile');
-                      }
+                      handleLogout();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-200 hover:bg-white/10 transition-all text-left cursor-pointer"
+                    className="w-full mt-3 py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20"
                   >
-                    <User size={18} className="text-indigo-400" />
-                    <span>Profile Settings</span>
-                  </button>
-
-                  {user.role === 'Admin' && (
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/admin', { state: { tab: 'event_history' } });
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-200 hover:bg-white/10 transition-all text-left cursor-pointer"
-                    >
-                      <History size={18} className="text-indigo-400" />
-                      <span>All Events History</span>
-                    </button>
-                  )}
-
-                  {user.role === 'Admin' && (
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/admin', { state: { tab: 'notifications' } });
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-200 hover:bg-white/10 transition-all text-left cursor-pointer"
-                    >
-                      <Bell size={18} className="text-indigo-400" />
-                      <span>Notifications</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-rose-400 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
-                  >
-                    <LogOut size={18} />
+                    <LogOut size={16} />
                     <span>Logout</span>
                   </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <Link
-                    to="/login"
-                    state={{ forceContestant: true }}
-                    onClick={() => setIsOpen(false)}
-                    className="text-center py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsOpen(false)}
-                    className="text-center py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
-                  >
-                    Register
-                  </Link>
-                </div>
-              )}
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-800">
+                    <Link
+                      to="/login"
+                      state={{ forceContestant: true }}
+                      onClick={() => setIsOpen(false)}
+                      className="text-center py-2 px-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-extrabold transition-all shadow-md"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="text-center py-2 px-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-extrabold transition-all shadow-md"
+                    >
+                      Register
+                    </Link>
+                  </div>
+                )}
+              </nav>
             </div>
-          </div>
+          </aside>
         </div>
       )}
 
