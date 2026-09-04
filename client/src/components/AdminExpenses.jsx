@@ -716,7 +716,7 @@ export default function AdminExpenses({ allEvents = [], selectedEventId = '', se
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
           >
             <Plus size={16} />
             <span>Add New Expense</span>
