@@ -523,7 +523,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
           <button
             type="button"
             onClick={handleExportExcel}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
             title="Export Excel"
           >
             <FileSpreadsheet size={14} /> Excel
@@ -541,7 +541,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
           <button
             type="button"
             onClick={handleExportPDF}
-            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
             title="Export PDF"
           >
             <FileText size={14} /> PDF
@@ -550,7 +550,7 @@ export default function AdminSponsorships({ allEvents = [], selectedEventId = 'a
           <button
             type="button"
             onClick={handlePrint}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
             title="Print Donation & Sponsorship Report"
           >
             <Printer size={14} /> Print
