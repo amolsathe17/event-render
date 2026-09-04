@@ -3326,7 +3326,7 @@ export default function AdminDashboard() {
               <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
                 TOTAL PHOTOGRAPHS / VIDEOS
               </span>
-              <div className="flex items-baseline gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
                   {(stats?.totalPhotos || 0) + (stats?.totalVideos || 0)}
                 </p>
