@@ -5554,7 +5554,7 @@ export default function AdminDashboard() {
                 <p className="text-[10px] text-slate-400 mt-2">Leave blank if you do not want to change your password.</p>
               </div>
 
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-start mt-4">
                 <button
                   type="submit"
                   disabled={profileSubmitting}
@@ -5649,7 +5649,7 @@ export default function AdminDashboard() {
                   <button
                     type="submit"
                     disabled={broadcastSubmitting || !broadcastMessage.trim()}
-                    className="mt-2 w-full bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-sky-500/25 transition-all cursor-pointer disabled:opacity-50"
+                    className="mt-2 w-auto self-start bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-bold py-3 px-6 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-sky-500/25 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Send size={15} />
                     <span>{broadcastSubmitting ? 'Dispatching Message...' : 'Send Broadcast Notification'}</span>

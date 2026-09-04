@@ -443,7 +443,7 @@ export default function Login() {
                         </div>
                       </div>
 
-                      <div className="flex justify-center">
+                      <div className="flex justify-start">
                         <button
                           type="submit"
                           disabled={loading}
@@ -472,7 +472,7 @@ export default function Login() {
                         </div>
                       </div>
 
-                      <div className="flex justify-center">
+                      <div className="flex justify-start">
                         <button
                           type="submit"
                           disabled={loading}
@@ -510,7 +510,7 @@ export default function Login() {
                     />
                   </div>
 
-                  <div className="flex justify-center">
+                  <div className="flex justify-start">
                     <button
                       type="submit"
                       disabled={loading}

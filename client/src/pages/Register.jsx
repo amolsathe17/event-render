@@ -424,7 +424,7 @@ export default function Register() {
                         </div>
                       </div>
 
-                      <div className="flex justify-center">
+                      <div className="flex justify-start">
                         <button
                           type="submit"
                           disabled={loading}
@@ -485,7 +485,7 @@ export default function Register() {
                         </div>
                       </div>
 
-                      <div className="flex justify-center">
+                      <div className="flex justify-start">
                         <button
                           type="submit"
                           disabled={loading}
@@ -523,7 +523,7 @@ export default function Register() {
                     />
                   </div>
 
-                  <div className="flex justify-center">
+                  <div className="flex justify-start">
                     <button
                       type="submit"
                       disabled={loading}
