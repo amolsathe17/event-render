@@ -5571,23 +5571,6 @@ export default function AdminDashboard() {
       {/* TAB 8: NOTIFICATIONS */}
       {activeTab === 'notifications' && (
         <div className="max-w-7xl mx-auto animate-in fade-in duration-200 text-left flex flex-col gap-6">
-          {/* Header Banner */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-r from-sky-600 via-cyan-600 to-blue-700 p-6 sm:p-8 rounded-3xl text-white shadow-lg relative overflow-hidden">
-            <div className="relative z-10">
-              <span className="text-[10px] text-sky-200 font-extrabold uppercase tracking-widest block mb-1">
-                System Broadcast Center
-              </span>
-              <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
-                Notification Management
-              </h1>
-              <p className="text-xs text-sky-100 mt-1 max-w-xl">
-                Compose announcements, contest rule updates, or direct messages and dispatch them to contestants, judges, or specific users.
-              </p>
-            </div>
-            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white shrink-0">
-              <Bell size={28} />
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Form Card: Dispatch Notification */}
