@@ -469,23 +469,7 @@ export default function Gallery() {
                                         </div>
                                         <p className="text-[10px] text-slate-400 font-semibold mt-1">
                                           By {photo.participantName}
-                                        </p>
-
-                                        {/* Disapproval reasons */}
-                                        <div className="mt-2 pt-2 border-t border-red-200/40 dark:border-red-900/20 text-[10px] bg-red-50/50 dark:bg-red-950/10 p-2.5 rounded-lg border">
-                                          <span className="font-extrabold text-red-600 dark:text-red-400 flex items-center gap-1">
-                                            ⚠️ Entry Disapproved by Judge
-                                          </span>
-                                          <div className="flex flex-col gap-1.5 mt-1 text-slate-650 dark:text-slate-400">
-                                            {disapprovals.map((s, idx) => (
-                                              <div key={idx} className="border-t border-red-100/30 dark:border-red-900/10 pt-1.5 first:border-0 first:pt-0">
-                                                <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">Explanation Remarks ({s.judgeName || 'Panel Judge'}):</span>
-                                                <p className="italic mt-0.5">"{s.remarks || 'No remarks provided.'}"</p>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      </div>
+                                        </p>                                       </div>
 
                                       {/* Exif details footer */}
                                       <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-center text-[9px] text-slate-450 uppercase tracking-wider font-bold">
@@ -727,6 +711,41 @@ export default function Gallery() {
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Description</span>
                     <p className="text-slate-500 leading-relaxed mt-0.5">{selectedPhoto.description || 'No description shared.'}</p>
                   </div>
+
+                  {/* Disapproval Feedback in Modal */}
+                  {(() => {
+                    const modalDisapprovals = selectedPhoto.scores?.filter(s => s.approvalStatus === 'Disapproved') || [];
+                    const isDisapproved = selectedPhoto.status === 'Rejected' || selectedPhoto.status === 'Disapproved' || modalDisapprovals.length > 0;
+                    if (!isDisapproved) return null;
+
+                    return (
+                      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 p-3.5 rounded-2xl text-[11px] text-red-800 dark:text-red-300 shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold mb-1.5 text-red-900 dark:text-red-200">
+                          <AlertTriangle size={14} className="text-red-600 shrink-0" />
+                          <span>Entry Disapproved by Judge</span>
+                        </div>
+                        <div className="flex flex-col gap-2 mt-1">
+                          {modalDisapprovals.length > 0 ? (
+                            modalDisapprovals.map((s, idx) => (
+                              <div key={idx} className="border-t border-red-200/40 dark:border-red-900/20 pt-1.5 first:border-0 first:pt-0">
+                                <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">
+                                  EXPLANATION REMARKS ({s.judgeName || 'PANEL JUDGE'}):
+                                </span>
+                                <p className="italic mt-0.5 text-red-900 dark:text-red-200 font-semibold">"{s.remarks || 'No remarks provided.'}"</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="pt-1">
+                              <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">
+                                EXPLANATION REMARKS:
+                              </span>
+                              <p className="italic mt-0.5 text-red-900 dark:text-red-200 font-semibold">"{selectedPhoto.remarks || 'This entry was marked as disapproved by the jury panel.'}"</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 dark:border-slate-850">
                     <span className="font-bold text-slate-400 uppercase tracking-wide text-[10px]">EXIF Capture Info</span>
