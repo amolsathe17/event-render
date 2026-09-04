@@ -25,8 +25,10 @@ import {
   Eye,
   Check,
   Building2,
-  AlertCircle
+  AlertCircle,
+  ShieldAlert
 } from 'lucide-react';
+import ScrollableTabs from './ScrollableTabs';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../context/AuthContext';
 import { getBackendUrl } from '../utils/url';
@@ -837,54 +839,13 @@ export default function AdminReports({ allEvents = [], selectedEventId = '', set
         </div>
       </div>
 
-      {/* Sub-Reports Navigation Tabs: Mobile Dropdown View (< sm) vs Desktop Buttons (>= sm) */}
+      {/* Sub-Reports Navigation Tabs with Left and Right Arrows */}
       <div className="w-full print:hidden">
-        {/* Mobile Dropdown Menu (< sm) */}
-        <div className="block sm:hidden w-full">
-          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">
-            Select Report Tab:
-          </label>
-          <div className="relative w-full">
-            <select
-              value={activeReport}
-              onChange={e => {
-                if (!e.target.value) return;
-                setActiveReport(e.target.value);
-              }}
-              className="w-full py-2.5 px-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/50 dark:border-indigo-700 rounded-2xl text-xs font-black text-slate-900 dark:text-white outline-none cursor-pointer shadow-xs focus:ring-2 focus:ring-indigo-500 appearance-none pr-9"
-            >
-              <option value="" disabled>-- Select Report Tab --</option>
-              {REPORT_TYPES.map(rpt => (
-                <option key={rpt.id} value={rpt.id}>
-                  {rpt.label}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-600 dark:text-indigo-400 font-black text-xs">
-              ▼
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Horizontal Tabs (>= sm) */}
-        <div className="hidden sm:block w-full overflow-x-auto">
-          <div className="flex bg-white/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs min-w-max overflow-x-auto gap-1">
-            {REPORT_TYPES.map(rpt => (
-              <button
-                key={rpt.id}
-                onClick={() => setActiveReport(rpt.id)}
-                className={`flex items-center gap-1.5 py-2 px-3.5 rounded-xl font-display text-xs font-bold transition-all cursor-pointer ${
-                  activeReport === rpt.id
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                <rpt.icon size={14} />
-                {rpt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ScrollableTabs
+          items={REPORT_TYPES}
+          activeId={activeReport}
+          onSelect={setActiveReport}
+        />
       </div>
 
       {/* Main Report Render Content Card (580px min height on mobile, 500px on desktop) */}

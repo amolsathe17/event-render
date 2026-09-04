@@ -52,20 +52,28 @@ import {
   Lock,
   Eye,
   IndianRupee,
-  CheckCircle
+  CheckCircle,
+  Menu,
+  LogOut,
+  Info,
+  Mail,
+  BookOpen
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import StatsCharts from '../components/StatsCharts';
 import AdminExpenses from '../components/AdminExpenses';
 import AdminSponsorships from '../components/AdminSponsorships';
 import AdminReports from '../components/AdminReports';
+import ScrollableTabs from '../components/ScrollableTabs';
 import { getBackendUrl, getApiBaseUrl } from '../utils/url';
 
 export default function AdminDashboard() {
-  const { apiFetch, user, updateProfile } = useAuth();
+  const { apiFetch, user, logout, updateProfile } = useAuth();
   const { allEvents, selectedEvent, selectedEventId, setSelectedEventId, refreshEvents } = useEvent();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(location.state?.tab || 'overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (location.state?.tab) {
@@ -2203,8 +2211,8 @@ export default function AdminDashboard() {
   return (
     <div className="w-full h-full overflow-hidden bg-[#f4f6fa] dark:bg-slate-950 flex flex-col lg:flex-row font-sans text-slate-800 dark:text-slate-200">
       
-      {/* ════════════════════ FIXED LEFT SIDEBAR ════════════════════ */}
-      <aside className="w-full lg:w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between shrink-0 px-4 py-6 shadow-xl border-r border-slate-800 z-30 h-auto lg:h-full overflow-y-auto">
+      {/* ════════════════════ FIXED LEFT SIDEBAR (DESKTOP) ════════════════════ */}
+      <aside className="hidden lg:flex w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex-col justify-between shrink-0 px-4 py-6 shadow-xl border-r border-slate-800 z-30 h-full overflow-y-auto">
         <div className="flex flex-col gap-5">
           {/* Navigation Links (Starts directly at Top) */}
           <nav className="flex flex-col gap-1.5">
@@ -2260,33 +2268,147 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
+      {/* ════════════════════ MOBILE SLIDE-OVER SIDEBAR DRAWER (< lg) ════════════════════ */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          {/* Backdrop Blur Overlay */}
+          <div
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer Sidebar Panel */}
+          <aside className="relative w-72 max-w-[85vw] bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between p-5 h-full overflow-y-auto z-50 shadow-2xl animate-in slide-in-from-left duration-200 border-r border-slate-800 text-left">
+            <div className="flex flex-col gap-5">
+              {/* Drawer User Header (Matching Image 1) */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 border-2 border-indigo-400/50 flex items-center justify-center font-black text-sm text-white shadow-md overflow-hidden shrink-0">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="font-display font-bold text-sm text-white leading-tight">
+                      {user?.name || "Amol Sathe"}
+                    </span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
+                      ADMIN
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center cursor-pointer transition-all"
+                  title="Close Menu"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Nav Links List inside Drawer */}
+              <nav className="flex flex-col gap-1">
+                {[
+                  { id: 'event_info', label: 'Event Info', icon: Info, isExternal: true, path: '/' },
+                  { id: 'gallery_results', label: 'Gallery & Results', icon: Award, isExternal: true, path: '/gallery' },
+                  { id: 'contact_us', label: 'Contact Us', icon: Mail, isExternal: true, path: '/contact' },
+                  { id: 'judges_portal', label: 'Judges Portal', icon: BookOpen, isExternal: true, path: '/judge/login' },
+                  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+                  { id: 'events', label: 'Create Event', icon: Calendar },
+                  { id: 'photographs', label: 'Submissions', icon: Camera },
+                  { id: 'participants', label: 'Participants', icon: Users },
+                  { id: 'judges', label: 'Judging', icon: Award },
+                  { id: 'notifications', label: 'Notifications', icon: Bell },
+                  { id: 'reports', label: 'Analytics', icon: BarChart },
+                  { id: 'categories_config', label: 'Event Configuration', icon: Layers },
+                  { id: 'expenses', label: 'Expenses', icon: Wallet },
+                  { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+                  { id: 'event_history', label: 'All Events History', icon: History },
+                  { id: 'profile_settings', label: 'Profile Settings', icon: Sliders }
+                ].map(t => {
+                  const IconComponent = t.icon;
+                  const isActive = !t.isExternal && activeTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        if (t.isExternal) {
+                          navigate(t.path);
+                          return;
+                        }
+                        setActiveTab(t.id);
+                        if (t.id === 'overview') setSelectedEventId('');
+                        if (t.id === 'judges') setShowIncompleteGradingModal(true);
+                        if (t.id === 'event_history') fetchEventHistory();
+                      }}
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                          : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <IconComponent size={16} className={isActive ? 'text-white' : 'text-slate-400'} />
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (logout) logout();
+                    navigate('/login');
+                  }}
+                  className="w-full mt-3 py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20"
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </nav>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* ════════════════════ SCROLLABLE RIGHT WORKSPACE ════════════════════ */}
       <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 min-w-0 text-left">
         
         {/* TOP HEADER / SEARCH & USER PROFILE BAR */}
-        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-2 border-b border-slate-200/60 dark:border-slate-800">
-          <div className="text-left">
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-tight">
-              {activeTab === 'overview' && 'Dashboard'}
-              {activeTab === 'events' && 'Create Event'}
-              {activeTab === 'photographs' && 'Submissions Management'}
-              {activeTab === 'participants' && 'Registered Participants'}
-              {activeTab === 'judges' && 'Judges & Results'}
-              {activeTab === 'notifications' && 'Notification Management'}
-              {activeTab === 'reports' && 'Reports & Analytics'}
-              {activeTab === 'categories_config' && 'Event Configuration'}
-              {activeTab === 'expenses' && 'Event Expenses'}
-              {activeTab === 'sponsorships' && 'Donations & Sponsorships'}
-              {activeTab === 'event_history' && 'Events History'}
-              {activeTab === 'profile_settings' && 'Admin Settings'}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Welcome back, Admin {user?.name || "Amol Sathe"}!
-            </p>
+        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
+          <div className="flex items-center gap-3 text-left w-full md:w-auto justify-between md:justify-start">
+            {/* Hamburger Toggle Button for Mobile (< lg) */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex lg:hidden items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+              title="Open Navigation Menu"
+              aria-label="Toggle Menu"
+            >
+              <Menu size={22} className="text-indigo-600 dark:text-indigo-400" />
+            </button>
+
+            <div>
+              <h1 className="font-display font-black text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-white leading-tight">
+                {activeTab === 'overview' && 'Dashboard'}
+                {activeTab === 'events' && 'Create Event'}
+                {activeTab === 'photographs' && 'Submissions Management'}
+                {activeTab === 'participants' && 'Registered Participants'}
+                {activeTab === 'judges' && 'Judges & Results'}
+                {activeTab === 'notifications' && 'Notification Management'}
+                {activeTab === 'reports' && 'Reports & Analytics'}
+                {activeTab === 'categories_config' && 'Event Configuration'}
+                {activeTab === 'expenses' && 'Event Expenses'}
+                {activeTab === 'sponsorships' && 'Donations & Sponsorships'}
+                {activeTab === 'event_history' && 'Events History'}
+                {activeTab === 'profile_settings' && 'Admin Settings'}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5 hidden sm:block">
+                Welcome back, Admin {user?.name || "Amol Sathe"}!
+              </p>
+            </div>
           </div>
 
           {/* Right Header Bar: Event Selector Dropdown & Today's Date Badge */}
-          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-between sm:justify-end">
             {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
               <div className="relative flex items-center shrink-0 w-full sm:w-auto">
                 <select
@@ -2314,41 +2436,31 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Mobile Navigation Tabs Subnav (< lg) */}
-        <div className="block lg:hidden mb-6">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-            {[
-              { id: 'overview', label: 'Dashboard' },
-              { id: 'events', label: 'Create Event' },
-              { id: 'photographs', label: 'Submissions' },
-              { id: 'participants', label: 'Participants' },
-              { id: 'judges', label: 'Judging' },
-              { id: 'notifications', label: 'Notifications' },
-              { id: 'reports', label: 'Analytics' },
-              { id: 'categories_config', label: 'Event Configuration' },
-              { id: 'expenses', label: 'Expenses' },
-              { id: 'sponsorships', label: 'Sponsorships' },
-              { id: 'event_history', label: 'History' },
-              { id: 'profile_settings', label: 'Settings' }
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setActiveTab(t.id);
-                  if (t.id === 'overview') setSelectedEventId('');
-                  if (t.id === 'judges') setShowIncompleteGradingModal(true);
-                  if (t.id === 'event_history') fetchEventHistory();
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === t.id
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+        {/* Mobile Navigation Tabs Subnav with Left & Right Arrows (< lg) */}
+        <div className="block lg:hidden mb-5">
+          <ScrollableTabs
+            items={[
+              { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'events', label: 'Create Event', icon: Calendar },
+              { id: 'photographs', label: 'Submissions', icon: Camera },
+              { id: 'participants', label: 'Participants', icon: Users },
+              { id: 'judges', label: 'Judging', icon: Award },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'reports', label: 'Analytics', icon: BarChart },
+              { id: 'categories_config', label: 'Event Config', icon: Layers },
+              { id: 'expenses', label: 'Expenses', icon: Wallet },
+              { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
+              { id: 'event_history', label: 'History', icon: History },
+              { id: 'profile_settings', label: 'Settings', icon: Sliders }
+            ]}
+            activeId={activeTab}
+            onSelect={(id) => {
+              setActiveTab(id);
+              if (id === 'overview') setSelectedEventId('');
+              if (id === 'judges') setShowIncompleteGradingModal(true);
+              if (id === 'event_history') fetchEventHistory();
+            }}
+          />
         </div>
 
       {/* TAB 1: OVERVIEW */}
