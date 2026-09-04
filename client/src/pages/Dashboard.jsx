@@ -1773,12 +1773,12 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6 animate-in fade-in duration-200 text-left">
           
           {/* Header */}
-          <div>
+          {/* <div>
             <h2 className="font-display font-black text-xl text-slate-900 dark:text-white">My Contest Entries</h2>
             <p className="text-sm text-black mt-1">
               View and manage your active contest entries, upload DSLR photographs, and review historical enrollment details.
             </p>
-          </div>
+          </div> */}
 
           {error && (
             <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/20 p-4 rounded-2xl text-sm text-red-600 dark:text-red-400 mb-2">
@@ -1795,7 +1795,7 @@ export default function Dashboard() {
                 if (e.status !== 'Active') return false;
                 const sub = allSubmissions.find(s => s.eventId === e._id || (s.eventTitle && s.eventTitle.trim().toLowerCase() === e.title.trim().toLowerCase()));
                 if (sub && (sub.refundStatus === 'Approved' || sub.paymentStatus === 'Refunded')) {
-                  // Hide from My Contest Entries ONLY if submission deadline has passed
+                  // Hide from  ONLY if submission deadline has passed
                   if (e.deadline && new Date() >= new Date(e.deadline)) {
                     return false;
                   }
@@ -2218,15 +2218,15 @@ export default function Dashboard() {
                                     ) : (
                                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch h-full">
                                         {submission.photographs.map((photo) => (
-                                          <div key={photo.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm h-full">
-                                            {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
-                                              <div className="aspect-video w-full bg-black flex items-center justify-center relative overflow-hidden rounded-t-2xl">
-                                                <video src={getBackendUrl(photo.fileUrl)} controls className="w-full h-full object-contain" />
-                                              </div>
-                                            ) : (
-                                              <WatermarkPreview src={getBackendUrl(photo.fileUrl)} className="aspect-video w-full" />
-                                            )}
-                                            <div className="p-4 flex flex-col gap-3 grow justify-between">
+                                          <div key={photo.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm h-full p-3.5">
+                                            <div className="w-full h-48 sm:h-52 bg-slate-100 dark:bg-slate-800/60 rounded-xl overflow-hidden flex items-start justify-start shrink-0 relative">
+                                              {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
+                                                <video src={getBackendUrl(photo.fileUrl)} controls className="w-full h-full object-cover object-left-top rounded-xl" />
+                                              ) : (
+                                                <WatermarkPreview src={getBackendUrl(photo.fileUrl)} objectFit="cover" className="w-full h-full rounded-xl" />
+                                              )}
+                                            </div>
+                                            <div className="pt-3 flex flex-col gap-3 grow justify-between">
                                               <div>
                                                 <div className="flex justify-between items-start gap-2">
                                                   <h4 className="font-display font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1">
@@ -2479,9 +2479,11 @@ export default function Dashboard() {
                                     ? photo.score.remarks
                                     : photo.scores?.find(s => s.approvalStatus === 'Disapproved')?.remarks;
                                   return (
-                                    <div key={photo.id} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-                                              <WatermarkPreview src={getBackendUrl(photo.fileUrl)} className="aspect-video w-full" />
-                                      <div className="p-3.5 flex flex-col gap-2.5">
+                                    <div key={photo.id} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between p-3.5">
+                                      <div className="w-full h-48 bg-slate-100 dark:bg-slate-800/60 rounded-xl overflow-hidden flex items-start justify-start shrink-0 relative">
+                                        <WatermarkPreview src={getBackendUrl(photo.fileUrl)} objectFit="cover" className="w-full h-full rounded-xl" />
+                                      </div>
+                                      <div className="pt-3 flex flex-col gap-2.5">
                                         <div>
                                           <div className="flex justify-between items-start gap-2">
                                             <h5 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{photo.title}</h5>

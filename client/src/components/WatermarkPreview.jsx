@@ -80,11 +80,13 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
     src.includes('video_')
   );
 
-  const fitClass = objectFit === 'cover' ? 'object-cover' : 'object-contain';
+  const fitClass = objectFit === 'cover' 
+    ? 'w-full h-full object-cover object-left-top' 
+    : 'max-w-full max-h-full w-auto h-auto object-contain mx-auto my-auto';
 
   return (
     <div 
-      className={`relative overflow-hidden w-full h-full flex items-center justify-center ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
+      className={`relative overflow-hidden w-full h-full flex ${objectFit === 'cover' ? 'items-start justify-start' : 'items-center justify-center'} ${enableZoom && !isVideoSrc ? 'cursor-zoom-in touch-none select-none' : ''} ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchMove}
@@ -102,7 +104,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           preload="metadata"
-          className={`max-w-full max-h-full w-auto h-auto object-contain mx-auto my-auto pointer-events-none rounded-xl ${fitClass}`} 
+          className={`pointer-events-none rounded-xl ${fitClass}`} 
         />
       ) : (
         <img 
@@ -110,7 +112,7 @@ export default function WatermarkPreview({ src, className = "", enableZoom = fal
           alt="Image Preview" 
           onError={handleImgError}
           style={enableZoom ? zoomStyle : undefined}
-          className={`max-w-full max-h-full w-auto h-auto object-contain mx-auto my-auto rounded-xl ${fitClass}`} 
+          className={`rounded-xl ${fitClass}`} 
         />
       )}
     </div>
