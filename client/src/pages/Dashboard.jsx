@@ -2221,7 +2221,16 @@ export default function Dashboard() {
                                           <div key={photo.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm h-full p-3.5">
                                             <div className="w-full h-48 sm:h-52 bg-slate-100 dark:bg-slate-800/60 rounded-xl overflow-hidden flex items-start justify-start shrink-0 relative">
                                               {photo.mediaType === 'video' || photo.fileUrl?.match(/\.(mp4|mov|webm|avi|mkv)$/i) ? (
-                                                <video src={getBackendUrl(photo.fileUrl)} controls className="w-full h-full object-cover object-left-top rounded-xl" />
+                                                <video 
+                                                  src={getBackendUrl(photo.fileUrl)} 
+                                                  controls 
+                                                  controlsList="nodownload"
+                                                  crossOrigin="anonymous" 
+                                                  referrerPolicy="no-referrer" 
+                                                  playsInline 
+                                                  preload="metadata" 
+                                                  className="w-full h-full object-cover object-left-top rounded-xl" 
+                                                />
                                               ) : (
                                                 <WatermarkPreview src={getBackendUrl(photo.fileUrl)} objectFit="cover" className="w-full h-full rounded-xl" />
                                               )}

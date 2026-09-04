@@ -1432,6 +1432,9 @@ export default function JudgeDashboard() {
                                     className="w-full h-full object-cover" 
                                     muted 
                                     playsInline 
+                                    crossOrigin="anonymous"
+                                    referrerPolicy="no-referrer"
+                                    preload="none"
                                     onMouseOver={(e) => e.target.play()} 
                                     onMouseOut={(e) => e.target.pause()}
                                   />
@@ -2490,6 +2493,11 @@ export default function JudgeDashboard() {
                     <video
                       src={getBackendUrl(readOnlyModalPhoto.fileUrl)}
                       controls
+                      controlsList="nodownload"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                      playsInline
+                      preload="metadata"
                       autoPlay
                       className="max-w-full max-h-[65vh] w-auto h-auto object-contain rounded-2xl mx-auto shadow-2xl"
                     />
@@ -2609,6 +2617,7 @@ export default function JudgeDashboard() {
                       controlsList="nodownload"
                       crossOrigin="anonymous"
                       referrerPolicy="no-referrer"
+                      playsInline
                       preload="metadata"
                       className="max-w-full max-h-[68vh] w-auto h-auto object-contain rounded-2xl mx-auto shadow-2xl"
                     />
@@ -2900,6 +2909,7 @@ export default function JudgeDashboard() {
                         controlsList="nodownload"
                         crossOrigin="anonymous"
                         referrerPolicy="no-referrer"
+                        playsInline
                         preload="metadata"
                         className="max-w-full max-h-[68vh] w-auto h-auto object-contain rounded-2xl mx-auto shadow-2xl"
                       />
