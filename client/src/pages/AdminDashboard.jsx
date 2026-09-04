@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 import { useAuth } from '../context/AuthContext';
 import { useEvent } from '../context/EventContext';
 import {
+  FolderDown,
   BarChart,
   LayoutDashboard,
   Users,
@@ -183,6 +185,8 @@ export default function AdminDashboard() {
   const [newEventCertificates, setNewEventCertificates] = useState({ firstPrize: '', secondPrize: '', thirdPrize: '', participation: '' });
   const [uploadingCert, setUploadingCert] = useState({ firstPrize: false, secondPrize: false, thirdPrize: false, participation: false });
   const [showIncompleteGradingModal, setShowIncompleteGradingModal] = useState(false);
+  const [downloadingMediaEventId, setDownloadingMediaEventId] = useState(null);
+  const [mediaDownloadProgress, setMediaDownloadProgress] = useState('');
 
   useEffect(() => {
     if (events.length > 0) {
@@ -650,6 +654,93 @@ export default function AdminDashboard() {
         img.src = fullUrl;
       }
     });
+  };
+
+  const handleDownloadEventMedia = async (eventObj, eventPhotos) => {
+    const evPhotos = eventPhotos || eventObj?.allPhotographs || [];
+    if (!evPhotos || evPhotos.length === 0) {
+      triggerSuccessModal(
+        'No Media Uploads',
+        `There are no participant media files uploaded for "${eventObj?.title || 'this event'}".`
+      );
+      return;
+    }
+
+    const currentEvId = eventObj?._id || eventObj?.id;
+    setDownloadingMediaEventId(currentEvId);
+    setMediaDownloadProgress(`0/${evPhotos.length}`);
+
+    try {
+      const zip = new JSZip();
+      const cleanEventTitle = (eventObj?.title || 'Event')
+        .replace(/[/\\?%*:|"<>]/g, '_')
+        .replace(/\s+/g, '_')
+        .trim();
+
+      // Create an event-wise folder using the respective event name inside the ZIP
+      const eventFolder = zip.folder(cleanEventTitle);
+
+      let successCount = 0;
+
+      for (let i = 0; i < evPhotos.length; i++) {
+        const photo = evPhotos[i];
+        setMediaDownloadProgress(`${i + 1}/${evPhotos.length}`);
+
+        if (!photo.fileUrl) continue;
+
+        try {
+          const fullUrl = getBackendUrl(photo.fileUrl);
+          const resp = await fetch(fullUrl);
+          if (!resp.ok) continue;
+
+          const blob = await resp.blob();
+
+          // Extract original extension or deduce default from mediaType
+          const rawFileName = photo.fileUrl.split('/').pop().split('?')[0] || `media_${i + 1}`;
+          const extMatch = rawFileName.match(/\.([a-zA-Z0-9]+)$/);
+          const ext = extMatch ? extMatch[1] : (photo.mediaType === 'video' ? 'mp4' : 'jpg');
+
+          // Build clean filename preserving original title & participant name
+          const cleanParticipant = (photo.participantName || photo.userName || 'Participant')
+            .replace(/[/\\?%*:|"<>]/g, '_')
+            .trim();
+          const cleanTitle = (photo.title || photo.photoTitle || `file_${i + 1}`)
+            .replace(/[/\\?%*:|"<>]/g, '_')
+            .trim();
+
+          const zipFileName = `${i + 1}_${cleanParticipant}_${cleanTitle}.${ext}`;
+
+          // Package file into event folder
+          eventFolder.file(zipFileName, blob);
+          successCount++;
+        } catch (err) {
+          console.warn(`Failed to package media file for ${photo.title}:`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        alert('Could not download any media files for this event. Please check network connectivity.');
+        return;
+      }
+
+      // Generate single ZIP file named after the respective event name
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const downloadUrl = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${cleanEventTitle}_Media.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+    } catch (error) {
+      console.error('Error packaging event media:', error);
+      alert(`Failed to download media zip: ${error.message || 'Unknown error'}`);
+    } finally {
+      setDownloadingMediaEventId(null);
+      setMediaDownloadProgress('');
+    }
   };
 
   const downloadEventPDF = async (e) => {
@@ -5005,6 +5096,18 @@ export default function AdminDashboard() {
                           >
                             <Download size={12} />
                             <span>PDF</span>
+                          </button>
+                          <button
+                            onClick={(evt) => {
+                              evt.stopPropagation();
+                              handleDownloadEventMedia(ev, evPhotos);
+                            }}
+                            disabled={downloadingMediaEventId === evId}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-[10px] rounded-xl shadow-xs transition-all cursor-pointer"
+                            title="Download All Media Files for this Event"
+                          >
+                            <FolderDown size={12} />
+                            <span>{downloadingMediaEventId === evId ? `Zipping (${mediaDownloadProgress})...` : 'Download Media'}</span>
                           </button>
                           <button
                             onClick={(evt) => {
