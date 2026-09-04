@@ -3249,7 +3249,7 @@ export default function AdminDashboard() {
           {/* Top 10 Stats Cards Grid with Modern UI/UX — 5 Cards per Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {/* Card 1: ASSIGNED CONTESTS */}
-            <div className="bg-[#f5f0ff] dark:bg-purple-950/30 border border-purple-200/90 dark:border-purple-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#f5f0ff] dark:bg-purple-950/30 border border-purple-200/90 dark:border-purple-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
                   ASSIGNED CONTESTS
@@ -3262,14 +3262,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.totalEvents || events.length || 0}
                 </p>
-                <p className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-400/80 mt-0.5">
                   Total events panel seat
                 </p>
               </div>
             </div>
 
             {/* Card 2: GRADED PHOTOS / VIDEOS */}
-            <div className="bg-[#edf7ff] dark:bg-sky-950/30 border border-sky-200/90 dark:border-sky-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#edf7ff] dark:bg-sky-950/30 border border-sky-200/90 dark:border-sky-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider">
                   GRADED PHOTOS / VIDEOS
@@ -3282,14 +3282,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.gradedCount ?? 0}
                 </p>
-                <p className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-400/80 mt-0.5">
                   Completed assessments
                 </p>
               </div>
             </div>
 
             {/* Card 3: UNGRADED PHOTOS */}
-            <div className="bg-[#edfaee] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#edfaee] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
                   UNGRADED PHOTOS
@@ -3302,14 +3302,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.ungradedPhotosCount ?? 0}
                 </p>
-                <p className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
                   Assessments remaining
                 </p>
               </div>
             </div>
 
             {/* Card 4: UNGRADED VIDEOS */}
-            <div className="bg-[#f0fdfa] dark:bg-teal-950/30 border border-teal-200/90 dark:border-teal-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#f0fdfa] dark:bg-teal-950/30 border border-teal-200/90 dark:border-teal-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-teal-700 dark:text-teal-300 uppercase tracking-wider">
                   UNGRADED VIDEOS
@@ -3322,14 +3322,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.ungradedVideosCount ?? 0}
                 </p>
-                <p className="text-[10px] font-semibold text-teal-700/80 dark:text-teal-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-teal-700/80 dark:text-teal-400/80 mt-0.5">
                   Assessments remaining
                 </p>
               </div>
             </div>
 
             {/* Card 5: UNPAID PHOTOS */}
-            <div className="bg-[#fffbeb] dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#fffbeb] dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                   UNPAID PHOTOS
@@ -3342,14 +3342,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.unpaidPhotosCount ?? 0}
                 </p>
-                <p className="text-[10px] font-semibold text-amber-700/80 dark:text-amber-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-amber-700/80 dark:text-amber-400/80 mt-0.5">
                   Payment pending entries
                 </p>
               </div>
             </div>
 
             {/* Card 6: UNPAID VIDEOS */}
-            <div className="bg-[#fff7ed] dark:bg-orange-950/30 border border-orange-200/90 dark:border-orange-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#fff7ed] dark:bg-orange-950/30 border border-orange-200/90 dark:border-orange-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-orange-700 dark:text-orange-300 uppercase tracking-wider">
                   UNPAID VIDEOS
@@ -3362,14 +3362,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.unpaidVideosCount ?? 0}
                 </p>
-                <p className="text-[10px] font-semibold text-orange-700/80 dark:text-orange-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-orange-700/80 dark:text-orange-400/80 mt-0.5">
                   Payment pending entries
                 </p>
               </div>
             </div>
 
             {/* Card 7: TOTAL PHOTOGRAPHS */}
-            <div className="bg-[#fff1f2] dark:bg-rose-950/30 border border-rose-200/90 dark:border-rose-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#fff1f2] dark:bg-rose-950/30 border border-rose-200/90 dark:border-rose-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-rose-700 dark:text-rose-300 uppercase tracking-wider">
                   TOTAL PHOTOGRAPHS
@@ -3382,14 +3382,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.totalPhotos || 0}
                 </p>
-                <p className="text-[10px] font-semibold text-rose-700/80 dark:text-rose-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-rose-700/80 dark:text-rose-400/80 mt-0.5">
                   Total image entries
                 </p>
               </div>
             </div>
 
             {/* Card 8: TOTAL VIDEOS */}
-            <div className="bg-[#f5f3ff] dark:bg-violet-950/30 border border-violet-200/90 dark:border-violet-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#f5f3ff] dark:bg-violet-950/30 border border-violet-200/90 dark:border-violet-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-violet-700 dark:text-violet-300 uppercase tracking-wider">
                   TOTAL VIDEOS
@@ -3402,14 +3402,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {stats?.totalVideos || 0}
                 </p>
-                <p className="text-[10px] font-semibold text-violet-700/80 dark:text-violet-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-violet-700/80 dark:text-violet-400/80 mt-0.5">
                   Total video entries
                 </p>
               </div>
             </div>
 
             {/* Card 9: TOTAL REVENUE */}
-            <div className="bg-[#f0fdf4] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#f0fdf4] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
                   TOTAL REVENUE
@@ -3422,14 +3422,14 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   ₹{(financialSummary?.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
                 </p>
-                <p className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
                   Successful payments volume
                 </p>
               </div>
             </div>
 
             {/* Card 10: NET PROFIT / LOSS */}
-            <div className="bg-[#eef2ff] dark:bg-indigo-950/30 border border-indigo-200/90 dark:border-indigo-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 sm:gap-2 shadow-2xs hover:shadow-md transition-all duration-200">
+            <div className="bg-[#eef2ff] dark:bg-indigo-950/30 border border-indigo-200/90 dark:border-indigo-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">
                   NET PROFIT / LOSS
@@ -3442,7 +3442,7 @@ export default function AdminDashboard() {
                 <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   ₹{(financialSummary?.netProfitLoss || 0).toLocaleString('en-IN')}
                 </p>
-                <p className="text-[10px] font-semibold text-indigo-700/80 dark:text-indigo-400/80 mt-0.5 sm:mt-1">
+                <p className="text-[10px] font-semibold text-indigo-700/80 dark:text-indigo-400/80 mt-0.5">
                   {(financialSummary?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
                 </p>
               </div>
