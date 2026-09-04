@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEvent } from "../context/EventContext";
 import ExifReader from "exifreader";
@@ -77,6 +78,7 @@ import { getBackendUrl, getApiBaseUrl } from "../utils/url";
 export default function Dashboard() {
   const { apiFetch, user, token, refreshUser } = useAuth();
   const { allEvents: globalEvents } = useEvent();
+  const routeLocation = useLocation();
 
   const COMMON_LABELS = [
     "Designer / Brand",
@@ -110,6 +112,12 @@ export default function Dashboard() {
   };
 
   const [dashboardTab, setDashboardTab] = useState("overview");
+
+  useEffect(() => {
+    if (routeLocation.state?.tab) {
+      setDashboardTab(routeLocation.state.tab);
+    }
+  }, [routeLocation.state]);
   const [showParticipantGuidanceModal, setShowParticipantGuidanceModal] = useState(false);
 
   useEffect(() => {

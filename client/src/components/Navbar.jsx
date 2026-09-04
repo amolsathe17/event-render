@@ -659,38 +659,42 @@ export default function Navbar() {
                   </>
                 )}
 
-                {/* If logged in as Contestant/User */}
+                {/* If logged in as Contestant / Participant: render full Participant Dashboard tabs */}
                 {user && user.role !== 'Admin' && user.role !== 'Judge' && (
                   <>
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/dashboard');
-                      }}
-                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
-                        isActive('/dashboard')
-                          ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md'
-                          : 'text-slate-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <LayoutDashboard size={16} className="text-slate-400" />
-                      <span>Dashboard</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/profile');
-                      }}
-                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
-                        isActive('/profile')
-                          ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md'
-                          : 'text-slate-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <User size={16} className="text-slate-400" />
-                      <span>Profile Settings</span>
-                    </button>
+                    {[
+                      { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+                      { id: 'entries', label: 'My Entries', icon: Camera },
+                      { id: 'certificates', label: 'Digital Certificates', icon: Award },
+                      { id: 'event_history', label: 'Event History', icon: Calendar },
+                      { id: 'profile', label: 'Profile Settings', icon: User }
+                    ].map(tab => {
+                      const Icon = tab.icon;
+                      const active = tab.id === 'profile'
+                        ? location.pathname === '/profile'
+                        : location.pathname === '/dashboard' && (location.state?.tab || 'overview') === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setIsOpen(false);
+                            if (tab.id === 'profile') {
+                              navigate('/profile');
+                            } else {
+                              navigate('/dashboard', { state: { tab: tab.id } });
+                            }
+                          }}
+                          className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-3 transition-all cursor-pointer text-left ${
+                            active
+                              ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25'
+                              : 'text-slate-300 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          <Icon size={16} className={active ? 'text-white' : 'text-slate-400'} />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
                   </>
                 )}
 
