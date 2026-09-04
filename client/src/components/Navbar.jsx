@@ -343,12 +343,7 @@ export default function Navbar() {
               <span>Contact Us</span>
             </Link>
 
-            {!user && (
-              <Link to="/admin" state={{ forceAdmin: true }} onClick={handleAdminClick} className={`flex items-center gap-1.5 ${navLinkClass('/admin')}`}>
-                <ShieldCheck size={16} />
-                <span>Admin Portal</span>
-              </Link>
-            )}
+
 
             {/* Display Dashboard link in top nav bar ONLY on Content pages (Event Info, Gallery & Results, Contact Us, etc.), NOT on dashboard pages */}
             {user && !['/dashboard', '/admin', '/judge', '/profile'].includes(location.pathname) && (
