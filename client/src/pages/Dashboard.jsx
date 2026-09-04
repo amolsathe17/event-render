@@ -985,8 +985,8 @@ export default function Dashboard() {
   return (
     <div className="w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row font-sans text-slate-800 dark:text-slate-200">
       
-      {/* ════════════════════ FIXED LEFT SIDEBAR ════════════════════ */}
-      <aside className="w-full lg:w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between shrink-0 px-5 py-6 shadow-xl border-r border-slate-800 z-30 h-auto lg:h-full overflow-y-auto">
+      {/* ════════════════════ FIXED LEFT SIDEBAR (Desktop: hidden lg:flex) ════════════════════ */}
+      <aside className="hidden lg:flex w-64 bg-[#181a2e] dark:bg-[#111322] text-white flex-col justify-between shrink-0 px-5 py-6 shadow-xl border-r border-slate-800 z-30 h-full overflow-y-auto">
         <div className="flex flex-col gap-6">
           {/* Navigation Links */}
           <nav className="flex flex-col gap-2">
