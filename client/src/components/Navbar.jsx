@@ -433,36 +433,6 @@ export default function Navbar() {
                             <User size={15} className="text-indigo-600 dark:text-indigo-400" />
                             <span>Profile Settings</span>
                           </button>
-
-                          {user.role === 'Admin' && (
-                            <button
-                              onClick={() => {
-                                setShowProfileDropdown(false);
-                                navigate('/admin', { state: { tab: 'event_history' } });
-                              }}
-                              className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
-                            >
-                              <History size={15} className="text-indigo-600 dark:text-indigo-400" />
-                              <span>All Events History</span>
-                            </button>
-                          )}
-
-                          {(user.role === 'Admin' || user.role === 'Judge') && (
-                            <button
-                              onClick={() => {
-                                setShowProfileDropdown(false);
-                                if (user.role === 'Admin') {
-                                  navigate('/admin', { state: { tab: 'notifications' } });
-                                } else {
-                                  navigate('/judge', { state: { tab: 'notifications' } });
-                                }
-                              }}
-                              className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
-                            >
-                              <Bell size={15} className="text-indigo-600 dark:text-indigo-400" />
-                              <span>Notifications</span>
-                            </button>
-                          )}
                         </div>
                       </div>
                     )}

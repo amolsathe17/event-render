@@ -2227,8 +2227,7 @@ export default function AdminDashboard() {
               { id: 'categories_config', label: 'Event Configuration', icon: Layers },
               { id: 'expenses', label: 'Expenses', icon: Wallet },
               { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
-              { id: 'event_history', label: 'Event History', icon: History },
-              { id: 'profile_settings', label: 'Settings', icon: Sliders }
+              { id: 'event_history', label: 'Event History', icon: History }
             ].map(t => {
               const IconComponent = t.icon;
               const isActive = activeTab === t.id;
@@ -2253,18 +2252,6 @@ export default function AdminDashboard() {
               );
             })}
           </nav>
-        </div>
-
-        {/* Sidebar Promo Bottom Card */}
-        <div className="mt-8 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border border-indigo-500/30 rounded-3xl p-4 flex flex-col gap-3 text-left relative overflow-hidden shadow-lg group">
-          <div className="flex flex-col gap-1 z-10 relative">
-            <h4 className="font-display font-black text-sm text-white tracking-wide">
-              Unleash Creativity
-            </h4>
-            <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
-              Empowering artists through meaningful competitions.
-            </p>
-          </div>
         </div>
       </aside>
 
@@ -2438,8 +2425,7 @@ export default function AdminDashboard() {
               { id: 'categories_config', label: 'Event Config', icon: Layers },
               { id: 'expenses', label: 'Expenses', icon: Wallet },
               { id: 'sponsorships', label: 'Sponsorships', icon: Building2 },
-              { id: 'event_history', label: 'History', icon: History },
-              { id: 'profile_settings', label: 'Settings', icon: Sliders }
+              { id: 'event_history', label: 'History', icon: History }
             ]}
             activeId={activeTab}
             onSelect={(id) => {
