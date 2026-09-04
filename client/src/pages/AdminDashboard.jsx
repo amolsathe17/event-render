@@ -3175,8 +3175,21 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          {/* Right Header Bar: Event Selector Dropdown, Today's Date Badge & Mobile Toggle Menu */}
+          {/* Right Header Bar: Event Selector Dropdown, Search Input (for History), Today's Date Badge */}
           <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-between sm:justify-end">
+            {activeTab === 'event_history' && (
+              <div className="relative w-full sm:w-64">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  placeholder="Search history contests..."
+                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-semibold focus:outline-none focus:border-indigo-600 shadow-xs"
+                />
+              </div>
+            )}
+
             {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
               <div className="relative flex items-center shrink-0 flex-1 sm:flex-none sm:w-auto">
                 <select
@@ -3197,7 +3210,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 shadow-xs">
+            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 shadow-xs shrink-0">
               <Calendar size={14} className="text-indigo-600" />
               <span>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
@@ -5467,27 +5480,6 @@ export default function AdminDashboard() {
       {/* TAB: CONTEST LEDGER & EVENTS HISTORY */}
       {activeTab === 'event_history' && (
         <div className="animate-in fade-in duration-200 flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-2xl">
-                <History size={20} />
-              </div>
-              <div>
-                <h2 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">Events History</h2>
-                <p className="text-[10px] text-slate-400">Complete historical event records, approved/disapproved entries, judge remarks, contestant profiles, and financial ledger</p>
-              </div>
-            </div>
-            <div className="relative w-full sm:max-w-xs">
-              <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-                placeholder="Search history contests..."
-                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-indigo-600"
-              />
-            </div>
-          </div>
 
           {historyLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
