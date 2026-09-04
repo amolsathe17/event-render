@@ -903,8 +903,8 @@ export default function JudgeDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 justify-start md:justify-end">
-            {/* Current Session Date Badge */}
-            <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
+            {/* Current Session Date Badge (Hidden on Mobile) */}
+            <div className="hidden sm:flex h-11 items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
               <Calendar size={15} className="text-indigo-500 shrink-0" />
               <span>Current Session: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
