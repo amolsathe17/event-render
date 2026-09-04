@@ -516,7 +516,7 @@ export default function Gallery() {
                               <p className="text-[11px] text-slate-500 mt-1">Judges are currently grading the entries. Winners will be declared shortly.</p>
                             </div>
                           ) : (
-                            <div className="flex flex-col gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
                               {ev.winners.map((w, idx) => {
                                 const isFirst = w.rank.toLowerCase().includes('1st') || w.rank.toLowerCase().includes('first');
                                 const isSecond = w.rank.toLowerCase().includes('2nd') || w.rank.toLowerCase().includes('second');
@@ -544,10 +544,10 @@ export default function Gallery() {
                                 return (
                                   <div
                                     key={idx}
-                                    className={`flex flex-col lg:flex-row items-center gap-6 p-6 bg-white dark:bg-slate-900 border rounded-3xl shadow-md transition-all hover:shadow-lg ${cardBorder}`}
+                                    className={`flex flex-col justify-between items-center gap-4 p-5 bg-white dark:bg-slate-900 border rounded-3xl shadow-md transition-all hover:shadow-lg h-full ${cardBorder}`}
                                   >
-                                    {/* Left: Winner Media Display */}
-                                    <div className="relative group shrink-0 w-full lg:w-64 aspect-video overflow-hidden rounded-2xl bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                                    {/* Left/Top: Winner Media Display */}
+                                    <div className="relative group shrink-0 w-full aspect-video overflow-hidden rounded-2xl bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
                                       {winnerMediaUrl ? (
                                         isVideo ? (
                                           <video
@@ -581,9 +581,9 @@ export default function Gallery() {
                                     </div>
 
                                     {/* Middle: Winner details */}
-                                    <div className="flex-1 flex flex-col justify-between gap-4 text-left w-full">
+                                    <div className="flex-1 flex flex-col justify-between gap-3 text-left w-full">
                                       <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap">
                                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${badgeBg}`}>
                                             <Trophy size={11} className={trophyColor} />
                                             {w.rank}
@@ -593,29 +593,29 @@ export default function Gallery() {
                                           </span>
                                         </div>
 
-                                        <h3 className="font-display font-black text-xl text-slate-900 dark:text-white leading-snug">
+                                        <h3 className="font-display font-black text-lg text-slate-900 dark:text-white leading-snug line-clamp-1">
                                           {w.photoTitle}
                                         </h3>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-500 border-t border-slate-100 dark:border-slate-800/60 pt-3 mt-1">
+                                        <div className="flex flex-col gap-2.5 text-xs text-slate-500 border-t border-slate-100 dark:border-slate-800/60 pt-2.5 mt-1">
                                           <div>
                                             <p className="font-bold text-slate-400 uppercase text-[9px] tracking-wider">Champion Artist</p>
-                                            <p className="mt-0.5 text-slate-850 dark:text-slate-200 font-extrabold text-sm">{w.userName}</p>
-                                            {w.userEmail && <p className="text-[10px] text-slate-400 mt-0.5">{w.userEmail}</p>}
+                                            <p className="mt-0.5 text-slate-850 dark:text-slate-200 font-extrabold text-xs">{w.userName}</p>
+                                            {w.userEmail && <p className="text-[10px] text-slate-400 mt-0.5 truncate">{w.userEmail}</p>}
                                           </div>
                                           <div>
                                             <p className="font-bold text-slate-400 uppercase text-[9px] tracking-wider">Reward & Accolades</p>
-                                            <p className="mt-0.5 text-indigo-600 dark:text-indigo-400 font-bold">{w.prizeAmount || (isFirst ? '₹50,000' : isSecond ? '₹30,000' : '₹20,000')} Cash</p>
-                                            <p className="text-[10px] text-slate-455 mt-0.5">Includes Winner Trophy & Certificate</p>
+                                            <p className="mt-0.5 text-indigo-600 dark:text-indigo-400 font-bold text-xs">{w.prizeAmount || (isFirst ? '₹50,000' : isSecond ? '₹30,000' : '₹20,000')} Cash</p>
+                                            <p className="text-[9px] text-slate-450 mt-0.5">Includes Winner Trophy & Certificate</p>
                                           </div>
                                         </div>
                                       </div>
                                     </div>
 
-                                    {/* Right: Certificate Preview and Action Buttons */}
-                                    <div className="shrink-0 w-full lg:w-44 flex flex-col gap-3 items-center border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800/60 pt-4 lg:pt-0 lg:pl-6">
+                                    {/* Bottom: Certificate Preview and Action Buttons */}
+                                    <div className="shrink-0 w-full flex flex-col gap-2.5 items-center border-t border-slate-100 dark:border-slate-800/60 pt-3">
                                       <div
-                                        className="relative group w-28 aspect-[1/1.414] overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer select-none"
+                                        className="relative group w-24 aspect-[1/1.414] overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer select-none"
                                         onClick={() => handleShowCertificateAlert('Champion')}
                                       >
                                         <img
@@ -631,7 +631,7 @@ export default function Gallery() {
                                           onContextMenu={e => e.preventDefault()}
                                         />
                                         <div className="absolute inset-0 bg-slate-900/10 flex items-center justify-center p-1 pointer-events-none">
-                                          <div className="text-[5.5px] leading-tight font-black text-red-600/45 dark:text-red-500/35 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/30 bg-white/80 px-1 py-0.5 rounded shadow-sm">
+                                          <div className="text-[5px] leading-tight font-black text-red-600/45 dark:text-red-500/35 uppercase tracking-tighter text-center select-none rotate-[-25deg] border border-dashed border-red-600/30 bg-white/80 px-1 py-0.5 rounded shadow-sm">
                                             SAMPLE CERTIFICATE
                                             <br />
                                             NOT VALID FOR
@@ -642,7 +642,7 @@ export default function Gallery() {
                                       </div>
                                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Certificate Preview</span>
 
-                                      <div className="flex flex-col gap-1.5 w-full mt-1">
+                                      <div className="flex flex-col gap-1.5 w-full">
                                         <button
                                           type="button"
                                           onClick={() => handleShowCertificateAlert('Champion')}
