@@ -3386,21 +3386,9 @@ export default function AdminDashboard() {
 
             {/* Results Exporter - Display selected event or all events */}
             <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-              <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Winner Rankings Export</h3>
-                  <p className="text-[11px] text-slate-400">Download official PDF reports for contest winner rankings</p>
-                </div>
-                {(!selectedEventId || selectedEventId === 'all') && (
-                  <button
-                    onClick={() => downloadWinnersPDF('all')}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl flex items-center justify-center gap-1.5 font-bold cursor-pointer text-xs shadow-xs transition-all shrink-0"
-                    title="Export All Events Winners PDF"
-                  >
-                    <Download size={14} />
-                    <span>Export All Events Winners PDF</span>
-                  </button>
-                )}
+              <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-base">Winner Rankings Export</h3>
+                <p className="text-[11px] text-slate-400">Download official PDF reports for contest winner rankings</p>
               </div>
 
               <div className="flex flex-col gap-3">
