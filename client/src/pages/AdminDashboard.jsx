@@ -19,7 +19,10 @@ import {
   Edit2,
   Check,
   X,
-  Plus,
+  Trophy,
+  CheckCircle2,
+  Image,
+  Play,
   TrendingUp,
   Download,
   AlertTriangle,
@@ -3243,107 +3246,166 @@ export default function AdminDashboard() {
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-200">
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {/* Financial Card 1: Total Revenue */}
-            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                TOTAL REVENUE {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-              </span>
-              <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
-                ₹{(financialSummary?.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
-              </p>
-              <span className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">Successful payments volume</span>
-            </div>
-
-            {/* Financial Card 2: Donation & Sponsorship */}
-            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                DONATION & SPONSORSHIP {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-              </span>
-              <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
-                ₹{(financialSummary?.totalFunding || 0).toLocaleString('en-IN')}
-              </p>
-              <span className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-300/80">CSR, Corporate & Donor grants</span>
-            </div>
-
-            {/* Financial Card 3: Total Expenses */}
-            <div className="bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-rose-900 dark:text-rose-300 font-extrabold uppercase tracking-wider">
-                TOTAL EXPENSES {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-              </span>
-              <p className="font-display font-black text-xl sm:text-2xl text-rose-950 dark:text-white">
-                ₹{(financialSummary?.totalExpenses || 0).toLocaleString('en-IN')}
-              </p>
-              <span className="text-[10px] font-semibold text-rose-700/80 dark:text-rose-300/80">Operational line items</span>
-            </div>
-
-            {/* Financial Card 4: Net Profit / Loss */}
-            <div className={`border rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md ${
-              (financialSummary?.netProfitLoss || 0) >= 0
-                ? 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800'
-                : 'bg-red-50/80 dark:bg-red-950/30 border-red-200 dark:border-red-800'
-            }`}>
-              <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">
-                NET PROFIT / LOSS {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-              </span>
-              <p className={`font-display font-black text-xl sm:text-2xl ${
-                (financialSummary?.netProfitLoss || 0) >= 0 ? 'text-sky-950 dark:text-white' : 'text-red-950 dark:text-white'
-              }`}>
-                ₹{(financialSummary?.netProfitLoss || 0).toLocaleString('en-IN')}
-              </p>
-              <span className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-300/80">
-                {(financialSummary?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
-              </span>
-            </div>
-          </div>
-
-          {/* Row 2: Operational & Payout Cards Grid - 4 Cards below in a row */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {/* Card 1: Total Participants */}
-            <div className="bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-sky-900 dark:text-sky-300 font-extrabold uppercase tracking-wider">TOTAL PARTICIPANTS</span>
-              <p className="font-display font-black text-xl sm:text-2xl text-sky-950 dark:text-white">
-                {stats?.totalParticipants || 0}
-              </p>
-              <span className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-300/80">{stats?.todayRegistrations || 0} added today</span>
-            </div>
-
-            {/* Card 2: Active Entries */}
-            <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-amber-900 dark:text-amber-300 font-extrabold uppercase tracking-wider">ACTIVE ENTRIES</span>
-              <p className="font-display font-black text-xl sm:text-2xl text-amber-950 dark:text-white">
-                {stats?.totalEntries || 0}
-              </p>
-              <span className="text-[10px] font-semibold text-amber-700/80 dark:text-amber-300/80">Locked submission folders</span>
-            </div>
-
-            {/* Card 3: Total Photographs / Videos Combined */}
-            <div className="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-purple-900 dark:text-purple-300 font-extrabold uppercase tracking-wider">
-                TOTAL PHOTOGRAPHS / VIDEOS
-              </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-display font-black text-xl sm:text-2xl text-purple-950 dark:text-white">
-                  {(stats?.totalPhotos || 0) + (stats?.totalVideos || 0)}
-                </p>
-                <span className="text-[11px] font-bold text-purple-800 dark:text-purple-300 bg-purple-200/80 dark:bg-purple-900/60 px-2 py-0.5 rounded-lg border border-purple-300 dark:border-purple-700">
-                  {stats?.totalPhotos || 0} Photos / {stats?.totalVideos || 0} Videos
+          {/* Top 8 Stats Cards Grid with Modern UI/UX */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: ASSIGNED CONTESTS */}
+            <div className="bg-[#f5f0ff] dark:bg-purple-950/30 border border-purple-200/90 dark:border-purple-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                  ASSIGNED CONTESTS
                 </span>
+                <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Trophy size={18} />
+                </div>
               </div>
-              <span className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-300/80">
-                High-res images & video media assets
-              </span>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  {stats?.totalEvents || events.length || 0}
+                </p>
+                <p className="text-[11px] font-semibold text-purple-700/80 dark:text-purple-400/80 mt-1.5">
+                  Total events panel seat
+                </p>
+              </div>
             </div>
 
-            {/* Card 4: Paid / Settled */}
-            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-1.5 shadow-2xs transition-all hover:shadow-md">
-              <span className="text-[10px] sm:text-[11px] text-emerald-900 dark:text-emerald-300 font-extrabold uppercase tracking-wider">
-                PAID / SETTLED {selectedEventId ? '(SELECTED)' : '(CUMULATIVE)'}
-              </span>
-              <p className="font-display font-black text-xl sm:text-2xl text-emerald-950 dark:text-white">
-                ₹{(financialSummary?.paidExpenses || 0).toLocaleString('en-IN')}
-              </p>
-              <span className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">Cleared vendor payouts</span>
+            {/* Card 2: GRADED PHOTOS / VIDEOS */}
+            <div className="bg-[#edf7ff] dark:bg-sky-950/30 border border-sky-200/90 dark:border-sky-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider">
+                  GRADED PHOTOS / VIDEOS
+                </span>
+                <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-900/60 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <CheckCircle2 size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  {stats?.gradedCount ?? 0}
+                </p>
+                <p className="text-[11px] font-semibold text-sky-700/80 dark:text-sky-400/80 mt-1.5">
+                  Completed assessments
+                </p>
+              </div>
+            </div>
+
+            {/* Card 3: UNGRADED PHOTOS / VIDEOS */}
+            <div className="bg-[#edfaee] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                  UNGRADED PHOTOS / VIDEOS
+                </span>
+                <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Clock size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  {stats?.ungradedCount ?? 0}
+                </p>
+                <p className="text-[11px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-1.5">
+                  Assessments remaining
+                </p>
+              </div>
+            </div>
+
+            {/* Card 4: UNPAID PHOTOS / VIDEOS */}
+            <div className="bg-[#fffbeb] dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                  UNPAID PHOTOS / VIDEOS
+                </span>
+                <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <UserCheck size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  {stats?.unpaidCount ?? stats?.pendingPaymentsCount ?? 0}
+                </p>
+                <p className="text-[11px] font-semibold text-amber-700/80 dark:text-amber-400/80 mt-1.5">
+                  Payment pending entries
+                </p>
+              </div>
+            </div>
+
+            {/* Card 5: TOTAL PHOTOGRAPHS */}
+            <div className="bg-[#fff1f2] dark:bg-rose-950/30 border border-rose-200/90 dark:border-rose-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-rose-700 dark:text-rose-300 uppercase tracking-wider">
+                  TOTAL PHOTOGRAPHS
+                </span>
+                <div className="w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Image size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  {stats?.totalPhotos || 0}
+                </p>
+                <p className="text-[11px] font-semibold text-rose-700/80 dark:text-rose-400/80 mt-1.5">
+                  Total image entries
+                </p>
+              </div>
+            </div>
+
+            {/* Card 6: TOTAL VIDEOS */}
+            <div className="bg-[#f5f3ff] dark:bg-violet-950/30 border border-violet-200/90 dark:border-violet-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-violet-700 dark:text-violet-300 uppercase tracking-wider">
+                  TOTAL VIDEOS
+                </span>
+                <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/60 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Play size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  {stats?.totalVideos || 0}
+                </p>
+                <p className="text-[11px] font-semibold text-violet-700/80 dark:text-violet-400/80 mt-1.5">
+                  Total video entries
+                </p>
+              </div>
+            </div>
+
+            {/* Card 7: TOTAL REVENUE */}
+            <div className="bg-[#f0fdf4] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                  TOTAL REVENUE
+                </span>
+                <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <IndianRupee size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  ₹{(financialSummary?.totalRevenue || stats?.totalRevenue || 0).toLocaleString('en-IN')}
+                </p>
+                <p className="text-[11px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-1.5">
+                  Successful payments volume
+                </p>
+              </div>
+            </div>
+
+            {/* Card 8: NET PROFIT / LOSS */}
+            <div className="bg-[#eef2ff] dark:bg-indigo-950/30 border border-indigo-200/90 dark:border-indigo-800/50 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">
+                  NET PROFIT / LOSS
+                </span>
+                <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <TrendingUp size={18} />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-none">
+                  ₹{(financialSummary?.netProfitLoss || 0).toLocaleString('en-IN')}
+                </p>
+                <p className="text-[11px] font-semibold text-indigo-700/80 dark:text-indigo-400/80 mt-1.5">
+                  {(financialSummary?.netProfitLoss || 0) >= 0 ? 'Surplus balance' : 'Deficit shortfall'}
+                </p>
+              </div>
             </div>
           </div>
 

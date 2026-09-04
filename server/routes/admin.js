@@ -289,6 +289,10 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
 
     let totalPhotos = 0;
     let totalVideos = 0;
+    let gradedCount = 0;
+    let ungradedCount = 0;
+    let unpaidCount = 0;
+
     submissions.forEach(s => {
       if (Array.isArray(s.photographs)) {
         s.photographs.forEach(p => {
@@ -298,9 +302,22 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
           } else {
             totalPhotos += 1;
           }
+
+          const hasScores = (Array.isArray(p.scores) && p.scores.length > 0) || (typeof p.averageScore === 'number' && p.averageScore > 0) || (typeof p.score === 'number' && p.score > 0);
+          if (hasScores) {
+            gradedCount += 1;
+          } else {
+            ungradedCount += 1;
+          }
+
+          if (p.paymentStatus === 'Pending' || s.paymentStatus === 'Pending' || s.isPaid === false) {
+            unpaidCount += 1;
+          }
         });
       }
     });
+
+    const totalEvents = eventId ? 1 : await Event.countDocuments({});
 
     // Today registrations (global — not event-scoped)
     const todayRegistrations = await User.countDocuments({
@@ -467,6 +484,10 @@ router.get('/dashboard-stats', protect, authorize('Admin'), async (req, res) => 
     res.json({
       success: true,
       stats: {
+        totalEvents,
+        gradedCount,
+        ungradedCount,
+        unpaidCount,
         totalParticipants,
         totalEntries,
         totalPhotos,
