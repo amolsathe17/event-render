@@ -2270,15 +2270,15 @@ export default function AdminDashboard() {
 
       {/* ════════════════════ MOBILE SLIDE-OVER SIDEBAR DRAWER (< lg) ════════════════════ */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
+        <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
           {/* Backdrop Blur Overlay */}
           <div
             className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          {/* Drawer Sidebar Panel */}
-          <aside className="relative w-72 max-w-[85vw] bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between p-5 h-full overflow-y-auto z-50 shadow-2xl animate-in slide-in-from-left duration-200 border-r border-slate-800 text-left">
+          {/* Drawer Sidebar Panel (Sliding in from Right) */}
+          <aside className="relative w-72 max-w-[85vw] bg-[#181a2e] dark:bg-[#111322] text-white flex flex-col justify-between p-5 h-full overflow-y-auto z-50 shadow-2xl animate-in slide-in-from-right duration-200 border-l border-slate-800 text-left">
             <div className="flex flex-col gap-5">
               {/* Drawer User Header (Matching Image 1) */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -2375,46 +2375,34 @@ export default function AdminDashboard() {
         
         {/* TOP HEADER / SEARCH & USER PROFILE BAR */}
         <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
-          <div className="flex items-center gap-3 text-left w-full md:w-auto justify-between md:justify-start">
-            {/* Hamburger Toggle Button for Mobile (< lg) */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="flex lg:hidden items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
-              title="Open Navigation Menu"
-              aria-label="Toggle Menu"
-            >
-              <Menu size={22} className="text-indigo-600 dark:text-indigo-400" />
-            </button>
-
-            <div>
-              <h1 className="font-display font-black text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-white leading-tight">
-                {activeTab === 'overview' && 'Dashboard'}
-                {activeTab === 'events' && 'Create Event'}
-                {activeTab === 'photographs' && 'Submissions Management'}
-                {activeTab === 'participants' && 'Registered Participants'}
-                {activeTab === 'judges' && 'Judges & Results'}
-                {activeTab === 'notifications' && 'Notification Management'}
-                {activeTab === 'reports' && 'Reports & Analytics'}
-                {activeTab === 'categories_config' && 'Event Configuration'}
-                {activeTab === 'expenses' && 'Event Expenses'}
-                {activeTab === 'sponsorships' && 'Donations & Sponsorships'}
-                {activeTab === 'event_history' && 'Events History'}
-                {activeTab === 'profile_settings' && 'Admin Settings'}
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5 hidden sm:block">
-                Welcome back, Admin {user?.name || "Amol Sathe"}!
-              </p>
-            </div>
+          <div className="text-left">
+            <h1 className="font-display font-black text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-white leading-tight">
+              {activeTab === 'overview' && 'Dashboard'}
+              {activeTab === 'events' && 'Create Event'}
+              {activeTab === 'photographs' && 'Submissions Management'}
+              {activeTab === 'participants' && 'Registered Participants'}
+              {activeTab === 'judges' && 'Judges & Results'}
+              {activeTab === 'notifications' && 'Notification Management'}
+              {activeTab === 'reports' && 'Reports & Analytics'}
+              {activeTab === 'categories_config' && 'Event Configuration'}
+              {activeTab === 'expenses' && 'Event Expenses'}
+              {activeTab === 'sponsorships' && 'Donations & Sponsorships'}
+              {activeTab === 'event_history' && 'Events History'}
+              {activeTab === 'profile_settings' && 'Admin Settings'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5 hidden sm:block">
+              Welcome back, Admin {user?.name || "Amol Sathe"}!
+            </p>
           </div>
 
-          {/* Right Header Bar: Event Selector Dropdown & Today's Date Badge */}
+          {/* Right Header Bar: Event Selector Dropdown, Today's Date Badge & Mobile Toggle Menu */}
           <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-between sm:justify-end">
             {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
-              <div className="relative flex items-center shrink-0 w-full sm:w-auto">
+              <div className="relative flex items-center shrink-0 flex-1 sm:flex-none sm:w-auto">
                 <select
                   value={selectedEventId || 'all'}
                   onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
-                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[240px]"
+                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[200px] sm:min-w-[240px]"
                 >
                   <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
                     All Events (Combined Ledger)
@@ -2433,6 +2421,16 @@ export default function AdminDashboard() {
               <Calendar size={14} className="text-indigo-600" />
               <span>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
+
+            {/* Toggle Menu Button on Far Right of Top Nav Bar (< lg) */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex lg:hidden items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0 ml-auto sm:ml-0"
+              title="Open Navigation Menu"
+              aria-label="Toggle Menu"
+            >
+              <Menu size={22} className="text-indigo-600 dark:text-indigo-400" />
+            </button>
           </div>
         </header>
 
