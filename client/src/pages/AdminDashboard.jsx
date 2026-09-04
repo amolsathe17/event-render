@@ -2421,16 +2421,6 @@ export default function AdminDashboard() {
               <Calendar size={14} className="text-indigo-600" />
               <span>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
-
-            {/* Toggle Menu Button on Far Right of Top Nav Bar (< lg) */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="flex lg:hidden items-center justify-center p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0 ml-auto sm:ml-0"
-              title="Open Navigation Menu"
-              aria-label="Toggle Menu"
-            >
-              <Menu size={22} className="text-indigo-600 dark:text-indigo-400" />
-            </button>
           </div>
         </header>
 
