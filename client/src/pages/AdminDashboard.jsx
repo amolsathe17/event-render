@@ -656,16 +656,502 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleDownloadEventMedia = async (eventObj, eventPhotos) => {
-    const evPhotos = eventPhotos || eventObj?.allPhotographs || [];
-    if (!evPhotos || evPhotos.length === 0) {
-      triggerSuccessModal(
-        'No Media Uploads',
-        `There are no participant media files uploaded for "${eventObj?.title || 'this event'}".`
-      );
-      return;
+  // Helper function to generate all 8 event-related PDF reports for ZIP packaging
+  const generateEventPDFBlobs = async (eventObj) => {
+    const pdfFiles = [];
+
+    try {
+      // 1. Synopsis & Full Audit PDF
+      const docSynopsis = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docSynopsis.setFillColor(30, 27, 75);
+      docSynopsis.rect(0, 0, 210, 36, 'F');
+      docSynopsis.setTextColor(255, 255, 255);
+      docSynopsis.setFont('helvetica', 'bold');
+      docSynopsis.setFontSize(16);
+      docSynopsis.text('EVENT SYNOPSIS & AUDIT REPORT', 14, 18);
+      docSynopsis.setFontSize(9);
+      docSynopsis.setFont('helvetica', 'normal');
+      docSynopsis.text(`Generated on: ${new Date().toLocaleDateString('en-IN')} | Sumbaran Art Society`, 14, 26);
+
+      docSynopsis.setFillColor(248, 250, 252);
+      docSynopsis.rect(14, 42, 182, 40, 'F');
+      docSynopsis.setDrawColor(226, 232, 240);
+      docSynopsis.rect(14, 42, 182, 40, 'S');
+
+      docSynopsis.setTextColor(15, 23, 42);
+      docSynopsis.setFont('helvetica', 'bold');
+      docSynopsis.setFontSize(13);
+      docSynopsis.text(eventObj.title || 'Untitled Event', 18, 51);
+      docSynopsis.setFontSize(8.5);
+      docSynopsis.setFont('helvetica', 'normal');
+      docSynopsis.setTextColor(71, 85, 105);
+      docSynopsis.text(`Status: ${eventObj.status || 'Active'}  |  Type: ${eventObj.mediaType === 'video' ? 'Short Video & Reels' : 'Photography'}`, 18, 59);
+      docSynopsis.text(`Submission Deadline: ${eventObj.deadline ? new Date(eventObj.deadline).toLocaleDateString('en-IN') : 'N/A'}`, 18, 65);
+      docSynopsis.text(`Venue: ${eventObj.venue || 'N/A'}`, 18, 71);
+      docSynopsis.text(`Exhibition Date: ${eventObj.exhibitionDate ? new Date(eventObj.exhibitionDate).toLocaleDateString('en-IN') : 'N/A'}`, 18, 77);
+
+      y = 90;
+      docSynopsis.setFont('helvetica', 'bold');
+      docSynopsis.setFontSize(11);
+      docSynopsis.setTextColor(15, 23, 42);
+      docSynopsis.text('SUBMISSIONS & PARTICIPATION SUMMARY', 14, y);
+      y += 8;
+
+      const rawPhotos = eventObj.allPhotographs || [];
+      docSynopsis.setFontSize(9);
+      docSynopsis.setFont('helvetica', 'normal');
+      docSynopsis.text(`• Total Registered Participants: ${eventObj.participantDetails?.length || 0}`, 18, y); y += 6;
+      docSynopsis.text(`• Total Submitted Media Entries: ${rawPhotos.length}`, 18, y); y += 6;
+      docSynopsis.text(`• Total Assigned Judges: ${eventObj.judgeDetails?.length || 0}`, 18, y); y += 6;
+      docSynopsis.text(`• Winners Declared: ${eventObj.winnersPublished ? 'Yes' : 'No'}`, 18, y); y += 6;
+
+      pdfFiles.push({ name: '01_Event_Synopsis.pdf', blob: docSynopsis.output('blob') });
+    } catch (e) {
+      console.warn('Synopsis PDF error', e);
     }
 
+    try {
+      // 2. Participants Directory PDF
+      const docParts = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docParts.setFillColor(30, 27, 75);
+      docParts.rect(0, 0, 210, 36, 'F');
+      docParts.setTextColor(255, 255, 255);
+      docParts.setFont('helvetica', 'bold');
+      docParts.setFontSize(16);
+      docParts.text('PARTICIPANTS DIRECTORY LEDGER', 14, 18);
+      docParts.setFontSize(9);
+      docParts.setFont('helvetica', 'normal');
+      docParts.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 45;
+      const parts = eventObj.participantDetails || [];
+      docParts.setFont('helvetica', 'bold');
+      docParts.setFontSize(10);
+      docParts.setTextColor(15, 23, 42);
+      docParts.text(`Total Registered Participants: ${parts.length}`, 14, y);
+      y += 8;
+
+      docParts.setFillColor(241, 245, 249);
+      docParts.rect(14, y, 182, 8, 'F');
+      docParts.setFontSize(8);
+      docParts.setFont('helvetica', 'bold');
+      docParts.setTextColor(51, 65, 85);
+      docParts.text('#', 16, y + 5.5);
+      docParts.text('Participant Name', 24, y + 5.5);
+      docParts.text('Email Address', 80, y + 5.5);
+      docParts.text('Mobile', 135, y + 5.5);
+      docParts.text('City', 165, y + 5.5);
+      y += 10;
+
+      if (parts.length > 0) {
+        parts.forEach((p, idx) => {
+          if (y > 275) { docParts.addPage(); y = 20; }
+          docParts.setFont('helvetica', 'normal');
+          docParts.setFontSize(7.5);
+          docParts.setTextColor(30, 41, 59);
+          docParts.text(`${idx + 1}`, 16, y);
+          docParts.text(p.name || 'N/A', 24, y);
+          docParts.text(p.email || 'N/A', 80, y);
+          docParts.text(String(p.mobile || 'N/A'), 135, y);
+          docParts.text(p.city || 'N/A', 165, y);
+          y += 6;
+        });
+      } else {
+        docParts.setFont('helvetica', 'italic');
+        docParts.setFontSize(8.5);
+        docParts.setTextColor(148, 163, 184);
+        docParts.text('No registered participants found.', 14, y);
+      }
+      pdfFiles.push({ name: '02_Participants_Directory.pdf', blob: docParts.output('blob') });
+    } catch (e) {
+      console.warn('Participants PDF error', e);
+    }
+
+    try {
+      // 3. Payments & Revenue PDF
+      const docPay = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docPay.setFillColor(30, 27, 75);
+      docPay.rect(0, 0, 210, 36, 'F');
+      docPay.setTextColor(255, 255, 255);
+      docPay.setFont('helvetica', 'bold');
+      docPay.setFontSize(16);
+      docPay.text('PAYMENTS & REVENUE LEDGER', 14, 18);
+      docPay.setFontSize(9);
+      docPay.setFont('helvetica', 'normal');
+      docPay.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 45;
+      const rev = eventObj.totalRevenue || 0;
+      docPay.setFont('helvetica', 'bold');
+      docPay.setFontSize(10);
+      docPay.setTextColor(15, 23, 42);
+      docPay.text(`Total Registration Revenue: Rs. ${rev.toLocaleString()}`, 14, y);
+      y += 8;
+
+      docPay.setFillColor(241, 245, 249);
+      docPay.rect(14, y, 182, 8, 'F');
+      docPay.setFontSize(8);
+      docPay.setFont('helvetica', 'bold');
+      docPay.setTextColor(51, 65, 85);
+      docPay.text('#', 16, y + 5.5);
+      docPay.text('Participant', 24, y + 5.5);
+      docPay.text('Package Tier', 85, y + 5.5);
+      docPay.text('Amount (Rs)', 135, y + 5.5);
+      docPay.text('Status', 170, y + 5.5);
+      y += 10;
+
+      const subs = eventObj.submissions || eventObj.allSubmissions || [];
+      if (subs.length > 0) {
+        subs.forEach((s, idx) => {
+          if (y > 275) { docPay.addPage(); y = 20; }
+          docPay.setFont('helvetica', 'normal');
+          docPay.setFontSize(7.5);
+          docPay.setTextColor(30, 41, 59);
+          docPay.text(`${idx + 1}`, 16, y);
+          docPay.text(s.userName || s.participantName || 'Participant', 24, y);
+          docPay.text(s.packageName || 'Standard', 85, y);
+          docPay.text(`Rs. ${(s.amount || 0).toLocaleString()}`, 135, y);
+          docPay.text(s.isPaid ? 'PAID' : 'PENDING', 170, y);
+          y += 6;
+        });
+      } else {
+        docPay.setFont('helvetica', 'normal');
+        docPay.setFontSize(8.5);
+        docPay.setTextColor(148, 163, 184);
+        docPay.text(`Total Revenue Collected: Rs. ${rev.toLocaleString()} across active contest packages.`, 14, y);
+      }
+      pdfFiles.push({ name: '03_Payments_and_Revenue.pdf', blob: docPay.output('blob') });
+    } catch (e) {
+      console.warn('Payments PDF error', e);
+    }
+
+    try {
+      // 4. Results & Winners PDF
+      const docWin = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docWin.setFillColor(30, 27, 75);
+      docWin.rect(0, 0, 210, 36, 'F');
+      docWin.setTextColor(255, 255, 255);
+      docWin.setFont('helvetica', 'bold');
+      docWin.setFontSize(16);
+      docWin.text('RESULTS & WINNERS CIRCLE REPORT', 14, 18);
+      docWin.setFontSize(9);
+      docWin.setFont('helvetica', 'normal');
+      docWin.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 45;
+      const winners = eventObj.winners || [];
+      if (winners.length > 0) {
+        winners.forEach((w, idx) => {
+          if (y + 30 > 275) { docWin.addPage(); y = 20; }
+          docWin.setFillColor(254, 252, 232);
+          docWin.rect(14, y, 182, 25, 'F');
+          docWin.setDrawColor(217, 119, 6);
+          docWin.rect(14, y, 182, 25, 'S');
+
+          docWin.setFont('helvetica', 'bold');
+          docWin.setFontSize(11);
+          docWin.setTextColor(217, 119, 6);
+          docWin.text(`${(w.rank || 'WINNER').toUpperCase()}`, 18, y + 8);
+
+          docWin.setFontSize(10);
+          docWin.setTextColor(15, 23, 42);
+          docWin.text(`Artist: ${w.userName || 'N/A'}`, 18, y + 15);
+
+          docWin.setFont('helvetica', 'normal');
+          docWin.setFontSize(8.5);
+          docWin.setTextColor(71, 85, 105);
+          docWin.text(`Winning Entry: "${w.photoTitle || 'Untitled'}"  |  Score: ${w.score || 0}/10  |  Prize: ${w.reward || w.prizeAmount || 'Accolades'}`, 18, y + 21);
+
+          y += 30;
+        });
+      } else {
+        docWin.setFont('helvetica', 'italic');
+        docWin.setFontSize(9);
+        docWin.setTextColor(148, 163, 184);
+        docWin.text('Winners rankings have not been declared/published yet.', 14, y);
+      }
+      pdfFiles.push({ name: '04_Results_and_Winners.pdf', blob: docWin.output('blob') });
+    } catch (e) {
+      console.warn('Winners PDF error', e);
+    }
+
+    try {
+      // 5. Expenses Ledger PDF
+      const docExp = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docExp.setFillColor(30, 27, 75);
+      docExp.rect(0, 0, 210, 36, 'F');
+      docExp.setTextColor(255, 255, 255);
+      docExp.setFont('helvetica', 'bold');
+      docExp.setFontSize(16);
+      docExp.text('OPERATIONAL EXPENSES LEDGER', 14, 18);
+      docExp.setFontSize(9);
+      docExp.setFont('helvetica', 'normal');
+      docExp.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 45;
+      const expTotal = eventObj.totalExpenses || 0;
+      const expensesList = eventObj.expenseDetails || [];
+      docExp.setFont('helvetica', 'bold');
+      docExp.setFontSize(10);
+      docExp.setTextColor(15, 23, 42);
+      docExp.text(`Total Operational Expenses: Rs. ${expTotal.toLocaleString()}`, 14, y);
+      y += 8;
+
+      docExp.setFillColor(241, 245, 249);
+      docExp.rect(14, y, 182, 8, 'F');
+      docExp.setFontSize(8);
+      docExp.setFont('helvetica', 'bold');
+      docExp.setTextColor(51, 65, 85);
+      docExp.text('#', 16, y + 5.5);
+      docExp.text('Expense Title / Category', 24, y + 5.5);
+      docExp.text('Amount (Rs)', 105, y + 5.5);
+      docExp.text('Date', 140, y + 5.5);
+      docExp.text('Mode / Notes', 170, y + 5.5);
+      y += 10;
+
+      if (expensesList.length > 0) {
+        expensesList.forEach((ex, idx) => {
+          if (y > 275) { docExp.addPage(); y = 20; }
+          docExp.setFont('helvetica', 'normal');
+          docExp.setFontSize(7.5);
+          docExp.setTextColor(30, 41, 59);
+          docExp.text(`${idx + 1}`, 16, y);
+          docExp.text(ex.title || ex.category || 'Expense', 24, y);
+          docExp.text(`Rs. ${(ex.amount || 0).toLocaleString()}`, 105, y);
+          docExp.text(ex.date ? new Date(ex.date).toLocaleDateString('en-IN') : 'N/A', 140, y);
+          docExp.text(ex.paymentMode || ex.notes || 'N/A', 170, y);
+          y += 6;
+        });
+      } else {
+        docExp.setFont('helvetica', 'italic');
+        docExp.setFontSize(8.5);
+        docExp.setTextColor(148, 163, 184);
+        docExp.text('No detailed expense entries logged for this event.', 14, y);
+      }
+      pdfFiles.push({ name: '05_Expenses_Ledger.pdf', blob: docExp.output('blob') });
+    } catch (e) {
+      console.warn('Expenses PDF error', e);
+    }
+
+    try {
+      // 6. Sponsorships & Donations PDF
+      const docSpon = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docSpon.setFillColor(30, 27, 75);
+      docSpon.rect(0, 0, 210, 36, 'F');
+      docSpon.setTextColor(255, 255, 255);
+      docSpon.setFont('helvetica', 'bold');
+      docSpon.setFontSize(16);
+      docSpon.text('SPONSORSHIPS & DONATIONS LEDGER', 14, 18);
+      docSpon.setFontSize(9);
+      docSpon.setFont('helvetica', 'normal');
+      docSpon.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 45;
+      const sponTotal = eventObj.totalSponsorship || 0;
+      const sponList = eventObj.sponsorshipDetails || [];
+      docSpon.setFont('helvetica', 'bold');
+      docSpon.setFontSize(10);
+      docSpon.setTextColor(15, 23, 42);
+      docSpon.text(`Total Sponsorships & Grants: Rs. ${sponTotal.toLocaleString()}`, 14, y);
+      y += 8;
+
+      docSpon.setFillColor(241, 245, 249);
+      docSpon.rect(14, y, 182, 8, 'F');
+      docSpon.setFontSize(8);
+      docSpon.setFont('helvetica', 'bold');
+      docSpon.setTextColor(51, 65, 85);
+      docSpon.text('#', 16, y + 5.5);
+      docSpon.text('Sponsor Name / Donor', 24, y + 5.5);
+      docSpon.text('Tier / Level', 95, y + 5.5);
+      docSpon.text('Amount (Rs)', 135, y + 5.5);
+      docSpon.text('Notes', 170, y + 5.5);
+      y += 10;
+
+      if (sponList.length > 0) {
+        sponList.forEach((sp, idx) => {
+          if (y > 275) { docSpon.addPage(); y = 20; }
+          docSpon.setFont('helvetica', 'normal');
+          docSpon.setFontSize(7.5);
+          docSpon.setTextColor(30, 41, 59);
+          docSpon.text(`${idx + 1}`, 16, y);
+          docSpon.text(sp.sponsorName || sp.title || 'Sponsor', 24, y);
+          docSpon.text(sp.tier || 'General Sponsor', 95, y);
+          docSpon.text(`Rs. ${(sp.amount || 0).toLocaleString()}`, 135, y);
+          docSpon.text(sp.notes || 'N/A', 170, y);
+          y += 6;
+        });
+      } else {
+        docSpon.setFont('helvetica', 'italic');
+        docSpon.setFontSize(8.5);
+        docSpon.setTextColor(148, 163, 184);
+        docSpon.text('No separate sponsorship entries logged for this event.', 14, y);
+      }
+      pdfFiles.push({ name: '06_Sponsorships_and_Donations.pdf', blob: docSpon.output('blob') });
+    } catch (e) {
+      console.warn('Sponsorships PDF error', e);
+    }
+
+    try {
+      // 7. Profit & Loss PDF
+      const docPL = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docPL.setFillColor(30, 27, 75);
+      docPL.rect(0, 0, 210, 36, 'F');
+      docPL.setTextColor(255, 255, 255);
+      docPL.setFont('helvetica', 'bold');
+      docPL.setFontSize(16);
+      docPL.text('PROFIT & LOSS FINANCIAL STATEMENT', 14, 18);
+      docPL.setFontSize(9);
+      docPL.setFont('helvetica', 'normal');
+      docPL.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 48;
+      const rev = eventObj.totalRevenue || 0;
+      const spon = eventObj.totalSponsorship || 0;
+      const exp = eventObj.totalExpenses || 0;
+      const net = (rev + spon) - exp;
+
+      docPL.setFillColor(236, 253, 245);
+      docPL.rect(14, y, 42, 20, 'F');
+      docPL.setFillColor(250, 245, 255);
+      docPL.rect(60, y, 42, 20, 'F');
+      docPL.setFillColor(255, 241, 242);
+      docPL.rect(106, y, 42, 20, 'F');
+      docPL.setFillColor(net >= 0 ? 238 : 255, net >= 0 ? 242 : 241, net >= 0 ? 255 : 242);
+      docPL.rect(152, y, 44, 20, 'F');
+
+      docPL.setFontSize(6.5);
+      docPL.setFont('helvetica', 'bold');
+      docPL.setTextColor(4, 120, 87);
+      docPL.text('REGISTRATION REVENUE', 17, y + 6);
+      docPL.setTextColor(126, 34, 206);
+      docPL.text('SPONSORSHIPS', 63, y + 6);
+      docPL.setTextColor(190, 18, 60);
+      docPL.text('OPERATIONAL EXPENSES', 109, y + 6);
+      docPL.setTextColor(net >= 0 ? 67 : 190, net >= 0 ? 56 : 18, net >= 0 ? 202 : 60);
+      docPL.text('NET PROFIT / LOSS', 155, y + 6);
+
+      docPL.setFontSize(10);
+      docPL.setTextColor(15, 23, 42);
+      docPL.text(`Rs. ${rev.toLocaleString()}`, 17, y + 14);
+      docPL.text(`Rs. ${spon.toLocaleString()}`, 63, y + 14);
+      docPL.text(`Rs. ${exp.toLocaleString()}`, 109, y + 14);
+      docPL.text(`Rs. ${net.toLocaleString()}`, 155, y + 14);
+
+      y += 32;
+      docPL.setFont('helvetica', 'bold');
+      docPL.setFontSize(10);
+      docPL.text('Financial Statement Summary', 14, y);
+      y += 6;
+
+      docPL.setFillColor(241, 245, 249);
+      docPL.rect(14, y, 182, 8, 'F');
+      docPL.setFontSize(8);
+      docPL.text('Line Item', 18, y + 5.5);
+      docPL.text('Category', 105, y + 5.5);
+      docPL.text('Amount (INR)', 160, y + 5.5);
+      y += 10;
+
+      docPL.setFont('helvetica', 'normal');
+      docPL.setFontSize(8);
+      docPL.text('Registration Toll Fees Collected', 18, y);
+      docPL.text('Income', 105, y);
+      docPL.text(`+ Rs. ${rev.toLocaleString()}`, 160, y);
+      y += 7;
+
+      docPL.text('Sponsorships & External Grants', 18, y);
+      docPL.text('Income', 105, y);
+      docPL.text(`+ Rs. ${spon.toLocaleString()}`, 160, y);
+      y += 7;
+
+      docPL.text('Operational & Event Expenses', 18, y);
+      docPL.text('Expense', 105, y);
+      docPL.text(`- Rs. ${exp.toLocaleString()}`, 160, y);
+      y += 9;
+
+      docPL.setFont('helvetica', 'bold');
+      docPL.setDrawColor(203, 213, 225);
+      docPL.line(14, y, 196, y);
+      y += 6;
+
+      docPL.text('Net Balance (Profit / Loss)', 18, y);
+      docPL.setTextColor(net >= 0 ? 16 : 220, net >= 0 ? 185 : 38, net >= 0 ? 129 : 38);
+      docPL.text(`Rs. ${net.toLocaleString()}`, 160, y);
+
+      pdfFiles.push({ name: '07_Profit_and_Loss_Statement.pdf', blob: docPL.output('blob') });
+    } catch (e) {
+      console.warn('Profit & Loss PDF error', e);
+    }
+
+    try {
+      // 8. Refunds & Cancellations PDF
+      const docRef = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 20;
+      docRef.setFillColor(30, 27, 75);
+      docRef.rect(0, 0, 210, 36, 'F');
+      docRef.setTextColor(255, 255, 255);
+      docRef.setFont('helvetica', 'bold');
+      docRef.setFontSize(16);
+      docRef.text('REFUNDS & CANCELLATIONS LEDGER', 14, 18);
+      docRef.setFontSize(9);
+      docRef.setFont('helvetica', 'normal');
+      docRef.text(`Event: ${eventObj.title} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 26);
+
+      y = 45;
+      const rawPhotos = eventObj.allPhotographs || [];
+      const disapprovedPhotos = rawPhotos.filter(p => p.status === 'Rejected' || p.status === 'Disapproved');
+
+      docRef.setFont('helvetica', 'bold');
+      docRef.setFontSize(10);
+      docRef.setTextColor(15, 23, 42);
+      docRef.text('Disapproved / Cancelled Submissions Audit', 14, y);
+      y += 8;
+
+      if (disapprovedPhotos.length > 0) {
+        docRef.setFillColor(241, 245, 249);
+        docRef.rect(14, y, 182, 8, 'F');
+        docRef.setFontSize(8);
+        docRef.setFont('helvetica', 'bold');
+        docRef.setTextColor(51, 65, 85);
+        docRef.text('#', 16, y + 5.5);
+        docRef.text('Entry Title & Participant', 24, y + 5.5);
+        docRef.text('Category', 110, y + 5.5);
+        docRef.text('Status', 160, y + 5.5);
+        y += 10;
+
+        disapprovedPhotos.forEach((p, idx) => {
+          if (y > 275) { docRef.addPage(); y = 20; }
+          docRef.setFont('helvetica', 'normal');
+          docRef.setFontSize(7.5);
+          docRef.setTextColor(30, 41, 59);
+          docRef.text(`${idx + 1}`, 16, y);
+          docRef.text(`"${p.title}" by ${p.participantName || 'Artist'}`, 24, y);
+          docRef.text(p.category || 'General', 110, y);
+          docRef.text(p.status || 'Disapproved', 160, y);
+          y += 6;
+        });
+      } else {
+        docRef.setFont('helvetica', 'italic');
+        docRef.setFontSize(8.5);
+        docRef.setTextColor(148, 163, 184);
+        docRef.text('No refunds, cancellations, or disapproved submission claims logged.', 14, y);
+      }
+      pdfFiles.push({ name: '08_Refunds_and_Cancellations.pdf', blob: docRef.output('blob') });
+    } catch (e) {
+      console.warn('Refunds PDF error', e);
+    }
+
+    return pdfFiles;
+  };
+
+  const handleDownloadEventMedia = async (eventObj, eventPhotos) => {
+    const evPhotos = eventPhotos || eventObj?.allPhotographs || [];
     const currentEvId = eventObj?._id || eventObj?.id;
     setDownloadingMediaEventId(currentEvId);
     setMediaDownloadProgress(`0/${evPhotos.length}`);
@@ -680,8 +1166,15 @@ export default function AdminDashboard() {
       // Create an event-wise folder using the respective event name inside the ZIP
       const eventFolder = zip.folder(cleanEventTitle);
 
+      // 1. Generate & Package all 8 event-related PDF Reports directly inside the event folder
+      const pdfReports = await generateEventPDFBlobs(eventObj);
+      pdfReports.forEach(report => {
+        eventFolder.file(report.name, report.blob);
+      });
+
       let successCount = 0;
 
+      // 2. Fetch & Package all participant uploaded media files (photos, videos, MP3s)
       for (let i = 0; i < evPhotos.length; i++) {
         const photo = evPhotos[i];
         setMediaDownloadProgress(`${i + 1}/${evPhotos.length}`);
@@ -695,12 +1188,10 @@ export default function AdminDashboard() {
 
           const blob = await resp.blob();
 
-          // Extract original extension or deduce default from mediaType
           const rawFileName = photo.fileUrl.split('/').pop().split('?')[0] || `media_${i + 1}`;
           const extMatch = rawFileName.match(/\.([a-zA-Z0-9]+)$/);
           const ext = extMatch ? extMatch[1] : (photo.mediaType === 'video' ? 'mp4' : 'jpg');
 
-          // Build clean filename preserving original title & participant name
           const cleanParticipant = (photo.participantName || photo.userName || 'Participant')
             .replace(/[/\\?%*:|"<>]/g, '_')
             .trim();
@@ -708,9 +1199,8 @@ export default function AdminDashboard() {
             .replace(/[/\\?%*:|"<>]/g, '_')
             .trim();
 
-          const zipFileName = `${i + 1}_${cleanParticipant}_${cleanTitle}.${ext}`;
+          const zipFileName = `Media_${i + 1}_${cleanParticipant}_${cleanTitle}.${ext}`;
 
-          // Package file into event folder
           eventFolder.file(zipFileName, blob);
           successCount++;
         } catch (err) {
@@ -718,25 +1208,20 @@ export default function AdminDashboard() {
         }
       }
 
-      if (successCount === 0) {
-        alert('Could not download any media files for this event. Please check network connectivity.');
-        return;
-      }
-
       // Generate single ZIP file named after the respective event name
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const downloadUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `${cleanEventTitle}_Media.zip`;
+      link.download = `${cleanEventTitle}_Package.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(downloadUrl);
 
     } catch (error) {
-      console.error('Error packaging event media:', error);
-      alert(`Failed to download media zip: ${error.message || 'Unknown error'}`);
+      console.error('Error packaging event media and reports:', error);
+      alert(`Failed to download event package zip: ${error.message || 'Unknown error'}`);
     } finally {
       setDownloadingMediaEventId(null);
       setMediaDownloadProgress('');
