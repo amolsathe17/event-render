@@ -2358,10 +2358,12 @@ export default function AdminDashboard() {
       )}
 
       {/* ════════════════════ SCROLLABLE RIGHT WORKSPACE ════════════════════ */}
-      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 min-w-0 text-left">
+      <main className={`flex-1 h-full px-4 sm:px-6 lg:px-8 py-5 min-w-0 text-left flex flex-col ${
+        activeTab === 'participants' ? 'overflow-hidden' : 'overflow-y-auto'
+      }`}>
         
         {/* TOP HEADER / SEARCH & USER PROFILE BAR */}
-        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
+        <header className="shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
           <div className="text-left">
             <h1 className="font-display font-black text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-white leading-tight">
               {activeTab === 'overview' && 'Dashboard'}
@@ -2412,7 +2414,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Mobile Navigation Tabs Subnav with Left & Right Arrows (< lg) */}
-        <div className="block lg:hidden mb-5">
+        <div className="block lg:hidden mb-5 shrink-0">
           <ScrollableTabs
             items={[
               { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
@@ -2559,10 +2561,10 @@ export default function AdminDashboard() {
 
       {/* TAB 2: PARTICIPANTS */}
       {activeTab === 'participants' && (
-        <div className="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-in fade-in duration-200">
+        <div className="flex-1 min-h-0 flex flex-col glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm animate-in fade-in duration-200 overflow-hidden">
           
           {/* Filters row */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 pb-4 border-b border-slate-100 dark:border-slate-800/80 mb-2">
             <div className="relative w-full sm:max-w-xs">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -2620,18 +2622,18 @@ export default function AdminDashboard() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto">
+          <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-slate-100 dark:border-slate-800/80">
             <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-250 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
-                  <th className="pb-3 pr-4">Name</th>
-                  <th className="pb-3 px-4">Contact</th>
-                  <th className="pb-3 px-4">Location</th>
-                  <th className="pb-3 px-4 text-center">Package</th>
-                  <th className="pb-3 px-4 text-center">Photos</th>
-                  <th className="pb-3 px-4 text-center">Payment</th>
-                  <th className="pb-3 px-4">Last Login</th>
-                  <th className="pb-3 pl-4 pr-6 text-right">Actions</th>
+              <thead className="sticky top-0 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xs z-10 shadow-2xs">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                  <th className="py-3 pl-4 pr-4">Name</th>
+                  <th className="py-3 px-4">Contact</th>
+                  <th className="py-3 px-4">Location</th>
+                  <th className="py-3 px-4 text-center">Package</th>
+                  <th className="py-3 px-4 text-center">Photos</th>
+                  <th className="py-3 px-4 text-center">Payment</th>
+                  <th className="py-3 px-4">Last Login</th>
+                  <th className="py-3 pl-4 pr-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
