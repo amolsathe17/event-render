@@ -237,7 +237,7 @@ export default function Gallery() {
                     <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/40 flex flex-col gap-6">
                       
                       {/* Sub-Navigation Tabs Bar */}
-                      <div className="flex justify-center w-full">
+                      <div className="flex justify-start w-full">
                         <div className={`grid ${showWinnersTab ? 'grid-cols-3' : 'grid-cols-2'} bg-slate-200/70 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 w-full sm:w-auto sm:flex gap-1`}>
                           <button
                             onClick={() => setEventTab(ev._id, 'gallery')}
@@ -331,7 +331,7 @@ export default function Gallery() {
                               <p className="text-xs font-semibold">No approved submissions found for this contest.</p>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                               {approvedPhotos.map(photo => (
                                 <div
                                   key={photo.photoId}
@@ -412,7 +412,7 @@ export default function Gallery() {
                               <p className="text-xs font-semibold">No disapproved submissions for this contest.</p>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                               {disapprovedPhotos.map(photo => {
                                 const disapprovals = photo.scores?.filter(s => s.approvalStatus === 'Disapproved') || [];
                                 return (
