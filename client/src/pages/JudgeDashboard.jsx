@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Camera, ShieldAlert, Award, Star, CheckCircle2, ChevronRight, X, Check, 
+  Camera, ShieldAlert, Award, Star, CheckCircle2, ChevronRight, ChevronDown, X, Check, 
   AlertTriangle, Clock, XCircle, ListChecks, History, Calendar, 
   Send, Bell, Trash2, Users, UserCheck, Search, Megaphone, Eye, 
   TrendingUp, Palette, LayoutDashboard, FileText, Sparkles, Filter, 
