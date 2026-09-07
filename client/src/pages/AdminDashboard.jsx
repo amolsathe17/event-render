@@ -62,7 +62,8 @@ import {
   LogOut,
   Info,
   Mail,
-  BookOpen
+  BookOpen,
+  Plus
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import StatsCharts from '../components/StatsCharts';
