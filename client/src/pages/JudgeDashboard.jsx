@@ -911,8 +911,7 @@ export default function JudgeDashboard() {
 
             {/* Event Selector Dropdown */}
             {events.length > 0 && judgeDashboardTab !== 'profile_settings' && (
-              <div className="h-11 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-3.5 shadow-2xs shrink-0">
-                <Filter size={14} className="text-amber-500 shrink-0" />
+              <div className="relative flex items-center shrink-0 flex-1 sm:flex-none w-full sm:w-auto max-w-full">
                 <select
                   value={userSelectedEventId || 'all'}
                   onChange={(e) => {
@@ -920,15 +919,18 @@ export default function JudgeDashboard() {
                     setUserSelectedEventId(val);
                     handleEventChange(val);
                   }}
-                  className="text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none outline-none cursor-pointer"
+                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[180px] sm:min-w-[240px] max-w-full truncate"
                 >
-                  <option value="all">All Assigned Events ({events.length})</option>
+                  <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                    All Events (Combined Ledger)
+                  </option>
                   {events.map((ev) => (
-                    <option key={ev._id} value={ev._id}>
+                    <option key={ev._id} value={ev._id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
                       {ev.title} ({ev.status})
                     </option>
                   ))}
                 </select>
+                <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
               </div>
             )}
           </div>

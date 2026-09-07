@@ -3190,11 +3190,11 @@ export default function AdminDashboard() {
             )}
 
             {!['events', 'categories', 'categories_config', 'event_history'].includes(activeTab) && (
-              <div className="relative flex items-center shrink-0 flex-1 sm:flex-none sm:w-auto">
+              <div className="relative flex items-center shrink-0 flex-1 sm:flex-none w-full sm:w-auto max-w-full">
                 <select
                   value={selectedEventId || 'all'}
                   onChange={(e) => setSelectedEventId(e.target.value === 'all' ? '' : e.target.value)}
-                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[200px] sm:min-w-[240px]"
+                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[180px] sm:min-w-[240px] max-w-full truncate"
                 >
                   <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
                     All Events (Combined Ledger)

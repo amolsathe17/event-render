@@ -73,6 +73,7 @@ import DragDropUpload from "../components/DragDropUpload";
 import WatermarkPreview from "../components/WatermarkPreview";
 import QRInvoice from "../components/QRInvoice";
 import Certificate from "../components/Certificate";
+import ScrollableTabs from "../components/ScrollableTabs";
 import { getBackendUrl, getApiBaseUrl } from "../utils/url";
 
 export default function Dashboard() {
@@ -1076,10 +1077,10 @@ export default function Dashboard() {
       </aside>
 
       {/* ════════════════════ SCROLLABLE RIGHT CONTENT AREA ════════════════════ */}
-      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 min-w-0 text-left">
+      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 min-w-0 text-left overflow-x-hidden max-w-full">
         
         {/* HEADER / TITLE TOOLBAR */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 w-full max-w-full overflow-hidden">
           <div>
             <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white">
               {dashboardTab === "overview" && "Dashboard"}
@@ -1092,36 +1093,54 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-between sm:justify-end">
             {/* Session Date Badge (Left of Dropdown Menu - Hidden on Mobile) */}
             <div className="hidden sm:flex h-11 items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 text-xs font-extrabold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
               <Clock size={15} className="text-indigo-500 shrink-0" />
               <span>Session: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
 
-            {/* Event Selection Dropdown matching media_1788335227174.png */}
+            {/* Event Selection Dropdown matching Admin and Judge Portals */}
             {eventsList.length > 0 && (
-              <div className="relative h-11 flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 sm:px-5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs shrink-0 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-                <Calendar size={16} className="text-amber-500 shrink-0" />
+              <div className="relative flex items-center shrink-0 flex-1 sm:flex-none w-full sm:w-auto max-w-full">
                 <select
                   value={userSelectedEventId || 'all'}
                   onChange={(e) => handleEventDropdownChange(e.target.value)}
-                  className="bg-transparent font-extrabold text-xs text-slate-800 dark:text-slate-200 border-none outline-none cursor-pointer pr-6 appearance-none"
+                  className="w-full sm:w-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs py-2.5 pl-4 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs focus:outline-none focus:border-indigo-600 cursor-pointer appearance-none min-w-[180px] sm:min-w-[240px] max-w-full truncate"
                 >
-                  <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold">
-                    All Events
+                  <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
+                    All Events (Combined Ledger)
                   </option>
                   {eventsList.map((e) => (
-                    <option key={e._id} value={e._id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold">
+                    <option key={e._id} value={e._id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold">
                       {e.title} {e.status ? `(${e.status})` : ''}
                     </option>
                   ))}
                 </select>
-                <ChevronDown size={15} className="text-slate-400 shrink-0 pointer-events-none absolute right-4" />
+                <ChevronDown size={15} className="absolute right-3.5 text-slate-400 pointer-events-none" />
               </div>
             )}
           </div>
         </header>
+
+        {/* Mobile Navigation Tabs Subnav with Left & Right Arrows (< lg) */}
+        <div className="block lg:hidden mb-5 shrink-0 w-full max-w-full overflow-hidden">
+          <ScrollableTabs
+            items={[
+              { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'entries', label: 'My Submissions', icon: Camera },
+              { id: 'certificates', label: 'Certificates', icon: Award },
+              { id: 'event_history', label: 'History', icon: Calendar }
+            ]}
+            activeId={dashboardTab}
+            onSelect={(id) => {
+              setDashboardTab(id);
+              if (id === 'event_history' && (!userSelectedEventId || userSelectedEventId === 'all')) {
+                setShowSelectEventModal(true);
+              }
+            }}
+          />
+        </div>
 
       {dashboardTab === "overview" && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-200">
