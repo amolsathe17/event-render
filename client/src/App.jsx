@@ -64,9 +64,11 @@ function MainLayout() {
   const location = useLocation();
   const isLanding = location.pathname === '/';
   const isDashboardPage = ['/judge', '/admin', '/dashboard'].includes(location.pathname);
+  const isContactPage = location.pathname === '/contact';
+  const isNoScrollPage = isDashboardPage || isContactPage;
 
   useEffect(() => {
-    if (isDashboardPage) {
+    if (isNoScrollPage) {
       document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
     } else {
@@ -77,11 +79,11 @@ function MainLayout() {
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
     };
-  }, [isDashboardPage]);
+  }, [isNoScrollPage]);
 
   return (
     <div className={`flex flex-col w-full max-w-full transition-colors duration-300 ${
-      isDashboardPage
+      isNoScrollPage
         ? 'h-screen max-h-screen overflow-hidden bg-slate-50 dark:bg-slate-950'
         : 'min-h-screen overflow-x-hidden ' + (isLanding ? '' : 'bg-slate-50 dark:bg-slate-950')
     }`}>
@@ -89,7 +91,7 @@ function MainLayout() {
       <GlobalTooltip />
       <Navbar />
       <main className={`w-full max-w-full ${isLanding ? '' : 'pt-16'} ${
-        isDashboardPage ? 'flex-1 h-[calc(100vh-4rem)] overflow-hidden' : 'flex-grow overflow-x-hidden'
+        isNoScrollPage ? 'flex-1 overflow-hidden flex flex-col' : 'flex-grow overflow-x-hidden'
       }`}>
         <Routes>
           {/* Public Routes */}
