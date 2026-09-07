@@ -320,17 +320,6 @@ export default function StatsCharts({
 
           </div>
 
-          {/* Bottom Action Link: "View full analytics ->" */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex justify-center">
-            <button
-              onClick={() => onNavigateAnalytics && onNavigateAnalytics()}
-              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors cursor-pointer group"
-            >
-              <span>View full analytics</span>
-              <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
-            </button>
-          </div>
-
         </div>
 
       </div>
