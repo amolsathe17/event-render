@@ -3,19 +3,19 @@ import { MapPin, ExternalLink, Mail, Phone, Building2, Globe, Heart } from 'luci
 
 export default function Contact() {
   return (
-    <div className="w-full bg-slate-50 dark:bg-slate-950 py-3 sm:py-4 transition-colors duration-300 text-slate-800 dark:text-slate-200 font-sans">
+    <div className="w-full bg-slate-50 dark:bg-slate-950 py-2 sm:py-2.5 transition-colors duration-300 text-slate-800 dark:text-slate-200 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header Banner */}
-        <div className="bg-linear-to-r from-indigo-900 via-purple-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md mb-4 text-left relative overflow-hidden">
+        <div className="bg-linear-to-r from-indigo-900 via-purple-950 to-slate-900 rounded-2xl p-3.5 sm:p-4 text-white shadow-md mb-3 text-left relative overflow-hidden">
           <div className="relative z-10 max-w-2xl">
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-300 bg-indigo-500/20 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
               Reach Out To Us
             </span>
-            <h1 className="font-display font-black text-xl sm:text-3xl mt-1.5 text-white">
+            <h1 className="font-display font-black text-xl sm:text-2xl mt-1 text-white">
               Contact & Location
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
               Have questions about competition rules, submission requirements, or partnership opportunities? We'd love to hear from you.
             </p>
           </div>
@@ -23,7 +23,7 @@ export default function Contact() {
         </div>
 
         {/* 3 Column Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch text-left mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch text-left mb-1">
           
           {/* Column 1: Who We Are */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between h-full gap-2">
