@@ -1144,97 +1144,95 @@ export default function Dashboard() {
 
       {dashboardTab === "overview" && (
         <div className="flex flex-col gap-3.5 animate-in fade-in duration-200">
-          {/* Top 4 Stats Cards Grid (Grid 2 on Mobile, Grid 4 on Desktop) matching Judge Dashboard UI/UX */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 items-stretch w-full">
-            {/* Card 1: Registered Contests */}
-            <div className="bg-[#f0edff] dark:bg-indigo-950/30 border border-[#e0d9ff] dark:border-indigo-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] sm:text-xs text-indigo-700 dark:text-indigo-300 font-extrabold uppercase tracking-wider leading-snug">
+          {/* Top 4 Stats Cards Grid (Matching Admin Dashboard UI/UX & circular icon badges) */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+            {/* Card 1: REGISTERED CONTESTS */}
+            <div className="bg-[#f5f0ff] dark:bg-purple-950/30 border border-purple-200/90 dark:border-purple-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
                   REGISTERED CONTESTS
                 </span>
-                <div className="p-2 bg-indigo-200/60 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-xl shrink-0">
-                  <Trophy size={16} />
+                <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Trophy size={14} />
                 </div>
               </div>
-              <div className="mt-1">
-                <h3 className="font-display font-black text-2xl sm:text-3xl text-indigo-950 dark:text-white leading-none">
+              <div>
+                <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {allSubmissions.length}
-                </h3>
-                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-extrabold block mt-1 truncate">
+                </p>
+                <p className="text-[10px] font-semibold text-purple-700/80 dark:text-purple-400/80 mt-0.5 truncate">
                   Total events registered
-                </span>
+                </p>
               </div>
             </div>
             
-            {/* Card 2: Total Uploads */}
-            <div className="bg-[#e6f7ed] dark:bg-emerald-950/30 border border-[#b7ebc9] dark:border-emerald-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-300 font-extrabold uppercase tracking-wider leading-snug">
+            {/* Card 2: TOTAL UPLOADS */}
+            <div className="bg-[#edfaee] dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
                   TOTAL UPLOADS
                 </span>
-                <div className="p-2 bg-emerald-200/60 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-xl shrink-0">
-                  <Camera size={16} />
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Camera size={14} />
                 </div>
               </div>
-              <div className="mt-1">
-                <h3 className="font-display font-black text-2xl sm:text-3xl text-emerald-950 dark:text-white leading-none">
+              <div>
+                <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {allSubmissions.reduce((acc, s) => acc + (s.photographs || []).length, 0)}
-                </h3>
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold block mt-1 truncate">
+                </p>
+                <p className="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 truncate">
                   DSLR verified
-                </span>
+                </p>
               </div>
             </div>
 
-            {/* Card 3: Fees Paid */}
-            <div className="bg-[#e6f4ff] dark:bg-sky-950/30 border border-[#bae0ff] dark:border-sky-800 rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] sm:text-xs text-sky-700 dark:text-sky-300 font-extrabold uppercase tracking-wider leading-snug">
+            {/* Card 3: FEES PAID */}
+            <div className="bg-[#edf7ff] dark:bg-sky-950/30 border border-sky-200/90 dark:border-sky-800/50 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider">
                   FEES PAID
                 </span>
-                <div className="p-2 bg-sky-200/60 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 rounded-xl shrink-0">
-                  <CreditCard size={16} />
+                <div className="w-7 h-7 rounded-full bg-sky-100 dark:bg-sky-900/60 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <CreditCard size={14} />
                 </div>
               </div>
-              <div className="mt-1">
-                <h3 className="font-display font-black text-2xl sm:text-3xl text-sky-950 dark:text-white leading-none">
+              <div>
+                <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   ₹{allSubmissions.reduce((acc, s) => acc + (s.paymentStatus === 'Paid' ? s.amount : 0), 0)}
-                </h3>
-                <span className="text-xs text-sky-600 dark:text-sky-400 font-extrabold block mt-1 truncate">
+                </p>
+                <p className="text-[10px] font-semibold text-sky-700/80 dark:text-sky-400/80 mt-0.5 truncate">
                   Successful payments
-                </span>
+                </p>
               </div>
             </div>
 
-            {/* Card 4: Account Status */}
+            {/* Card 4: ACCOUNT STATUS */}
             <div className={`${
               user?.isSuspended
-                ? 'bg-[#fff0f0] dark:bg-red-950/30 border border-[#ffccc7] dark:border-red-800'
-                : 'bg-[#e6f8f6] dark:bg-teal-950/30 border border-[#b2ebe4] dark:border-teal-800'
-            } rounded-2xl p-3.5 sm:p-4 text-left flex flex-col justify-between gap-2 shadow-2xs`}>
-              <div className="flex justify-between items-start">
-                <span className={`text-[11px] sm:text-xs font-extrabold uppercase tracking-wider leading-snug ${
+                ? 'bg-[#fff0f0] dark:bg-red-950/30 border border-red-200/90 dark:border-red-800/50'
+                : 'bg-[#eafaf7] dark:bg-teal-950/30 border border-teal-200/90 dark:border-teal-800/50'
+            } rounded-2xl p-2.5 sm:p-3 flex flex-col justify-start gap-1 shadow-2xs hover:shadow-md transition-all duration-200 text-left`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider ${
                   user?.isSuspended ? 'text-red-700 dark:text-red-300' : 'text-teal-700 dark:text-teal-300'
                 }`}>
                   ACCOUNT STATUS
                 </span>
-                <div className={`p-2 rounded-xl shrink-0 ${
-                  user?.isSuspended ? 'bg-red-200/60 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 'bg-teal-200/60 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300'
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-2xs ${
+                  user?.isSuspended ? 'bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300' : 'bg-teal-100 dark:bg-teal-900/60 text-teal-600 dark:text-teal-300'
                 }`}>
-                  <ShieldCheck size={16} />
+                  <ShieldCheck size={14} />
                 </div>
               </div>
-              <div className="mt-1">
-                <h3 className={`font-display font-black text-2xl sm:text-3xl leading-none ${
-                  user?.isSuspended ? 'text-red-950 dark:text-white' : 'text-teal-950 dark:text-white'
-                }`}>
+              <div>
+                <p className="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white leading-none">
                   {user?.isSuspended ? 'Suspended' : 'Active'}
-                </h3>
-                <span className={`text-xs font-extrabold block mt-1 truncate ${
-                  user?.isSuspended ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'
+                </p>
+                <p className={`text-[10px] font-semibold mt-0.5 truncate ${
+                  user?.isSuspended ? 'text-red-700/80 dark:text-red-400/80' : 'text-teal-700/80 dark:text-teal-400/80'
                 }`}>
                   {user?.isSuspended ? 'Action required' : 'Verified account'}
-                </span>
+                </p>
               </div>
             </div>
           </div>
