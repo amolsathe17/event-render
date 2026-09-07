@@ -3244,7 +3244,7 @@ export default function AdminDashboard() {
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-3 animate-in fade-in duration-200">
 
           {/* Top 10 Stats Cards Grid with Modern UI/UX — 5 Cards per Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -8603,32 +8603,32 @@ export default function AdminDashboard() {
 
       {/* Export Action Buttons Bar directly over copyright footer (Dashboard tab only) */}
       {activeTab === 'overview' && (
-        <div className="mt-10 mb-4 pt-6 border-t border-slate-200/80 dark:border-slate-800 flex flex-col items-center justify-center gap-4 text-center">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-3xl">
+        <div className="mt-3 mb-1 pt-2.5 border-t border-slate-200/80 dark:border-slate-800 flex flex-col items-center justify-center gap-2 text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full max-w-3xl">
             <button
               onClick={() => handleExportCSV('participants')}
-              className="w-full sm:w-auto bg-[#d97706] hover:bg-[#b45309] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
+              className="w-full sm:w-auto bg-[#d97706] hover:bg-[#b45309] text-white font-extrabold py-1.5 px-4 rounded-xl text-[11px] shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 tracking-wider uppercase"
               title="Export Participants List Excel/CSV"
             >
-              <Download size={15} className="text-white" />
+              <Download size={14} className="text-white" />
               <span>Export Participants Excel/CSV</span>
             </button>
 
             <button
               onClick={() => handleExportCSV('financial')}
-              className="w-full sm:w-auto bg-[#111625] hover:bg-slate-900 text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase border border-slate-700/60"
+              className="w-full sm:w-auto bg-[#111625] hover:bg-slate-900 text-white font-extrabold py-1.5 px-4 rounded-xl text-[11px] shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 tracking-wider uppercase border border-slate-700/60"
               title="Export Revenue Ledger Excel/CSV"
             >
-              <Download size={15} className="text-white" />
+              <Download size={14} className="text-white" />
               <span>Export Revenue Ledger Excel/CSV</span>
             </button>
 
             <button
               onClick={() => handleExportCSV('photographs')}
-              className="w-full sm:w-auto bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-black py-3 px-6 rounded-full text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2.5 tracking-wide uppercase"
+              className="w-full sm:w-auto bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-extrabold py-1.5 px-4 rounded-xl text-[11px] shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 tracking-wider uppercase"
               title="Export Photos Metadata Excel/CSV"
             >
-              <Download size={15} className="text-white" />
+              <Download size={14} className="text-white" />
               <span>Export Photos Metadata Excel/CSV</span>
             </button>
           </div>

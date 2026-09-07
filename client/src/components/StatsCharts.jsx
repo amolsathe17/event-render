@@ -123,23 +123,23 @@ export default function StatsCharts({
   const totalDonutCount = totalCategorySubmissions > 0 ? totalCategorySubmissions : 100;
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-3">
       {/* Main Container Header (Dynamic dates from Event Created to Submission Deadline) */}
       <div className="text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h3 className="font-display font-black text-slate-900 dark:text-white text-lg flex items-center gap-2 flex-wrap">
+          <h3 className="font-display font-black text-slate-900 dark:text-white text-base flex items-center gap-2 flex-wrap">
             <span>Activity & Financial Trends</span>
             {selectedEventId && selectedEventTitle ? (
-              <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-base">
+              <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">
                 — {selectedEventTitle}
               </span>
             ) : (
-              <span className="text-slate-400 font-semibold text-sm">
+              <span className="text-slate-400 font-semibold text-xs">
                 — All Events
               </span>
             )}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
             {selectedEventId && selectedEventTitle
               ? `Breakdown of entry fees, corporate sponsorship funding, and category distribution from event launch to deadline`
               : 'Cumulative breakdown of registration revenue, corporate sponsorship funding, and category distribution across event timelines'
@@ -148,7 +148,7 @@ export default function StatsCharts({
         </div>
 
         {/* Date Range Badge: Event Created Date -> Submission Deadline */}
-        <div className="inline-flex items-center gap-2 self-start sm:self-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-2xl shadow-2xs">
+        <div className="inline-flex items-center gap-2 self-start sm:self-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-2xl shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
           <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
             {dateRangeLabel}
@@ -157,10 +157,10 @@ export default function StatsCharts({
       </div>
 
       {/* 3 Dedicated Analytics Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
         
         {/* CARD 1: Registration Revenue (Bar Chart) */}
-        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800 transition-all">
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col gap-2 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800 transition-all">
           <div className="flex justify-between items-start">
             <div className="text-left">
               <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
@@ -174,15 +174,15 @@ export default function StatsCharts({
             </span>
           </div>
 
-          <div className="w-full h-64">
+          <div className="w-full h-44">
             {dailyStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={180}>
-                <BarChart data={dailyStats} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={140}>
+                <BarChart data={dailyStats} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
                   <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v.toLocaleString('en-IN')}`} />
                   <Tooltip content={<RevenueTooltip />} />
-                  <Bar dataKey="revenue" name="Registration Revenue" fill="#4f46e5" shape={renderCustomBar("#4f46e5")} barSize={26} isAnimationActive={false} />
+                  <Bar dataKey="revenue" name="Registration Revenue" fill="#4f46e5" shape={renderCustomBar("#4f46e5")} barSize={22} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -192,7 +192,7 @@ export default function StatsCharts({
         </div>
 
         {/* CARD 2: Donation & Sponsorship (Bar Chart) */}
-        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xs hover:border-purple-300 dark:hover:border-purple-800 transition-all">
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col gap-2 shadow-xs hover:border-purple-300 dark:hover:border-purple-800 transition-all">
           <div className="flex justify-between items-start">
             <div className="text-left">
               <h4 className="font-display font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
@@ -206,15 +206,15 @@ export default function StatsCharts({
             </span>
           </div>
 
-          <div className="w-full h-64">
+          <div className="w-full h-44">
             {dailyStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={180}>
-                <BarChart data={dailyStats} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={140}>
+                <BarChart data={dailyStats} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800/50" />
                   <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v.toLocaleString('en-IN')}`} />
                   <Tooltip content={<SponsorshipTooltip />} />
-                  <Bar dataKey="sponsorships" name="Donation & Sponsorship" fill="#a855f7" shape={renderCustomBar("#a855f7")} barSize={26} isAnimationActive={false} />
+                  <Bar dataKey="sponsorships" name="Donation & Sponsorship" fill="#a855f7" shape={renderCustomBar("#a855f7")} barSize={22} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -224,7 +224,7 @@ export default function StatsCharts({
         </div>
 
         {/* CARD 3: Submissions by Category (Donut Chart - Matching media_1788408297347.png) */}
-        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-2 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all">
+        <div className="bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between gap-2 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all">
           
           {/* Header */}
           <div className="flex justify-between items-start">
@@ -241,7 +241,7 @@ export default function StatsCharts({
           </div>
 
           {/* Donut Chart and Legend Row */}
-          <div className="w-full flex flex-row items-center justify-between gap-2 h-52">
+          <div className="w-full flex flex-row items-center justify-between gap-2 h-44">
             
             {/* Donut with Centered Total Badge */}
             <div className="relative w-1/2 h-full flex items-center justify-center">
