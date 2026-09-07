@@ -1143,7 +1143,7 @@ export default function Dashboard() {
         </div>
 
       {dashboardTab === "overview" && (
-        <div className="flex flex-col gap-3.5 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-3 animate-in fade-in duration-200">
           {/* Top 4 Stats Cards Grid (Matching Admin Dashboard UI/UX & circular icon badges) */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
             {/* Card 1: REGISTERED CONTESTS */}
@@ -1238,7 +1238,7 @@ export default function Dashboard() {
           </div>
 
           {/* 4 Overview Cards Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               
               {/* Card 1: Donut Chart for Submission Status */}
               {(() => {
