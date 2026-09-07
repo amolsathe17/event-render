@@ -8,14 +8,14 @@ export default function Contact() {
         
         {/* Header Banner */}
         <div className="bg-linear-to-r from-indigo-900 via-purple-950 to-slate-900 rounded-2xl p-3.5 sm:p-4 text-white shadow-md mb-3 text-left relative overflow-hidden shrink-0">
-          <div className="relative z-10 max-w-3xl">
+          <div className="relative z-10 max-w-none">
             <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-300 bg-indigo-500/20 px-3 py-0.5 rounded-full border border-indigo-500/30">
               Reach Out To Us
             </span>
             <h1 className="font-display font-black text-xl sm:text-2xl mt-1 text-white">
               Contact & Location
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-0.5 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
               Have questions about competition rules, submission requirements, or partnership opportunities? We'd love to hear from you.
             </p>
           </div>
