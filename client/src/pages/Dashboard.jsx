@@ -1286,7 +1286,7 @@ export default function Dashboard() {
                 ];
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
                       <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Submission Status
@@ -1395,7 +1395,7 @@ export default function Dashboard() {
                     ];
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
                       <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Category Distribution
@@ -1492,7 +1492,7 @@ export default function Dashboard() {
                 timelineEvents.sort((a, b) => b.date - a.date);
 
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
                       <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Activities History Timeline
@@ -1530,7 +1530,7 @@ export default function Dashboard() {
               {(() => {
                 const refundedSubs = allSubmissions.filter(s => s.paymentStatus === 'Refunded' || s.paymentStatus === 'Withdrawn');
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 text-left flex flex-col justify-between gap-3 shadow-xs">
                     <div>
                       <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                         Refund Status Tracking
